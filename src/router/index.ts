@@ -15,9 +15,15 @@ const router = createRouter({
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-  
-  if (to.meta.requiresAuth && !authStore.isAuthenticated) {
+  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
+  const isPublicOnly = to.matched.some(record => record.meta.publicOnly)
+
+  if (requiresAuth && !authStore.isAuthenticated) {
+    // Protected route + Not logged in -> Login
     next({ name: 'login' })
+  } else if (isPublicOnly && authStore.isAuthenticated) {
+    // Public route (Login/Register) + Logged in -> Dashboard
+    next({ name: 'dashboard' })
   } else {
     next()
   }

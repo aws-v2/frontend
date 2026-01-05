@@ -3,11 +3,13 @@ export default [
     path: '/login',
     name: 'login',
     component: () => import('./pages/LoginPage.vue'),
+    meta: { publicOnly: true }
   },
   {
     path: '/register',
     name: 'register',
     component: () => import('./pages/RegisterPage.vue'),
+    meta: { publicOnly: true }
   },
   {
     path: '/forgot-password',

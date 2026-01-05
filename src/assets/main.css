@@ -1,0 +1,138 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --bg-main: #ffffff;
+    --text-main: #000000;
+    --border-main: #000000;
+    --border-subtle: #e5e7eb;
+    --input-bg: #ffffff;
+    --accent-warning: #FFD700;
+    --accent-info: #00F0FF;
+    --accent-error: #FF4D4D;
+  }
+
+  [data-theme='dark'] {
+    --bg-main: #121212;
+    --text-main: #ffffff;
+    --border-main: #ffffff;
+    --border-subtle: #374151;
+    --input-bg: #1e1e1e;
+    --accent-warning: #CCA300;
+    --accent-info: #00B4CC;
+    --accent-error: #990000;
+  }
+
+  body {
+    @apply bg-[var(--bg-main)] text-[var(--text-main)];
+    font-family: 'Inter', sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+@layer components {
+  /* Flat Boxes */
+  .retro-box {
+    border: 2px solid var(--border-main);
+    border-radius: 0px !important;
+    @apply bg-[var(--bg-main)] transition-colors duration-300;
+  }
+
+  /* Flat Buttons */
+  .btn-retro-primary {
+    @apply px-6 py-3 font-bold uppercase tracking-wider transition-all duration-200;
+    background-color: var(--text-main);
+    color: var(--bg-main);
+    border: 2px solid var(--text-main);
+    border-radius: 0px !important;
+  }
+
+  .btn-retro-primary:hover:not(:disabled) {
+    @apply opacity-90;
+    transform: translateY(-1px);
+  }
+
+  .btn-retro-primary:active:not(:disabled) {
+    transform: translateY(0);
+  }
+
+  .btn-retro-primary:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  .btn-retro-secondary {
+    @apply px-6 py-3 font-bold uppercase tracking-wider transition-all duration-200;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    border: 2px solid var(--text-main);
+    border-radius: 0px !important;
+  }
+
+  .btn-retro-secondary:hover {
+    @apply bg-gray-100 dark:bg-gray-800;
+  }
+
+  /* Flat Inputs */
+  .input-retro {
+    @apply w-full px-4 py-3 border-2 transition-all duration-200 font-mono text-sm;
+    background-color: var(--input-bg);
+    border-color: var(--border-main);
+    border-radius: 0px !important;
+  }
+
+  .input-retro:focus {
+    @apply outline-none ring-0;
+    border-color: var(--text-main);
+    background-color: var(--input-bg);
+  }
+
+  .label-retro {
+    @apply text-[11px] font-black uppercase tracking-[0.2em] mb-2 block opacity-60;
+  }
+
+  /* Status Banners */
+  .banner-retro {
+    @apply border-2 p-4 flex items-center gap-4 font-bold text-xs mb-8;
+    border-radius: 0px !important;
+  }
+
+  /* Retro Progress (Flat) */
+  .loader-retro {
+    @apply w-full h-1 p-0;
+    background-color: var(--border-subtle);
+    border-radius: 0px !important;
+  }
+
+  .loader-retro-bar {
+    @apply h-full;
+    background-color: var(--text-main);
+    border-radius: 0px !important;
+    animation: loader 2s infinite linear;
+  }
+}
+
+@keyframes loader {
+  0% { width: 0%; }
+  100% { width: 100%; }
+}
+/* Add these dark mode styles to your existing CSS */
+
+.retro-box {
+  @apply bg-white dark:bg-gray-800 border-2 border-black dark:border-gray-600 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(75,85,99,1)];
+}
+
+.input-retro {
+  @apply w-full px-4 py-3 border-2 border-black dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black dark:focus:ring-gray-500;
+}
+
+.label-retro {
+  @apply block text-xs font-bold uppercase tracking-widest mb-2 text-gray-900 dark:text-gray-100;
+}
+
+.btn-retro-primary {
+  @apply bg-black dark:bg-gray-700 text-white border-2 border-black dark:border-gray-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(75,85,99,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(75,85,99,1)] active:shadow-none transition-all font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed;
+}

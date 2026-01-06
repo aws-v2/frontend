@@ -6,8 +6,8 @@ const router = useRouter()
 const toastStore = useToastStore()
 
 const completeFlow = (plan: string) => {
-    toastStore.addToast(`Successfully switched to ${plan} plan! Welcome to Serwin.`, 'success')
-    router.push('/dashboard')
+    // Both plans lead to payment verification for identity/billing setup
+    router.push('/auth/payment-method')
 }
 </script>
 

@@ -27,47 +27,57 @@ const handleReset = async (e: Event) => {
 </script>
 
 <template>
-    <div class="min-h-[calc(100vh-88px)] flex items-center justify-center p-6 bg-gray-50 dark:bg-transparent">
+    <div class="auth-container">
         <div class="w-full max-w-md">
-            <div class="retro-box p-10 space-y-8 bg-white">
-                <div class="text-center space-y-2">
-                    <h1 class="text-5xl font-black">Reset</h1>
-                    <p class="font-mono text-sm opacity-60">recover_account_access</p>
+            <div class="auth-card space-y-6">
+                <div class="text-center">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Forgot password</h1>
+                    <p class="text-sm text-gray-500 mt-2">Enter the email address associated with your account</p>
                 </div>
 
-                <div v-if="isSubmitted" class="space-y-6 text-center">
+                <div v-if="isSubmitted" class="space-y-6">
                     <div
-                        class="retro-box bg-black text-white p-6 font-mono text-xs uppercase tracking-widest leading-relaxed">
-                        Incoming transmission... link dispatched to <br />
-                        <span class="underline">{{ email }}</span>
+                        class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-sm">
+                        <p class="text-sm text-blue-800 dark:text-blue-300 leading-relaxed">
+                            Instructions for resetting your password have been sent to <strong>{{ email }}</strong>.
+                            Please check your email.
+                        </p>
                     </div>
-                    <p class="text-sm font-medium">Please check your inbox (and spam folder) for further instructions.
-                    </p>
-                    <router-link to="/login" class="btn-retro-primary w-full py-5 text-xl block">
-                        Return to Login
+                    <router-link to="/login" class="btn-aws-primary w-full py-2.5 block text-center">
+                        Back to sign in
                     </router-link>
                 </div>
 
-                <form v-else @submit="handleReset" class="space-y-6">
+                <form v-else @submit="handleReset" class="space-y-4">
                     <div>
-                        <label class="label-retro">Email Address</label>
-                        <input v-model="email" type="email" class="input-retro" placeholder="user@serwin.io" required>
-                        <p class="text-[10px] uppercase font-bold mt-2 opacity-40">We'll send you a reset link</p>
+                        <label class="aws-label">Email address</label>
+                        <input v-model="email" type="email" class="aws-input" placeholder="user@example.com" required>
                     </div>
 
                     <button type="submit" :disabled="isLoading"
-                        class="btn-retro-primary w-full py-5 text-xl flex items-center justify-center gap-2">
-                        <span v-if="isLoading" class="animate-spin">⟳</span>
-                        {{ isLoading ? 'Processing...' : 'Send Reset Link' }}
+                        class="btn-aws-primary w-full py-2.5 mt-2 flex items-center justify-center gap-2">
+                        <svg v-if="isLoading" class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                        {{ isLoading ? 'Sending...' : 'Send reset link' }}
                     </button>
 
-                    <div class="pt-6 border-t-2 border-black/10 text-center">
-                        <p class="text-sm font-medium">
+                    <div class="pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
+                        <p class="text-sm text-gray-600 dark:text-gray-400">
                             Remember your password?
-                            <router-link to="/login" class="font-black hover:underline ml-1">Back to Login</router-link>
+                            <router-link to="/login" class="text-[var(--aws-blue)] font-bold hover:underline ml-1">Sign
+                                In</router-link>
                         </p>
                     </div>
                 </form>
+            </div>
+
+            <div class="mt-8 text-center text-[10px] text-gray-400 uppercase tracking-widest font-medium">
+                &copy; 2026 Serwin Technologies or its affiliates.
             </div>
         </div>
     </div>

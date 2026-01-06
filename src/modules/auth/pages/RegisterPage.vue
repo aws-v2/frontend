@@ -39,54 +39,62 @@ const handleRegister = async (e: Event) => {
 </script>
 
 <template>
-    <div class="min-h-[calc(100vh-88px)] flex items-center justify-center p-6 bg-gray-50 dark:bg-transparent">
+    <div class="auth-container">
         <div class="w-full max-w-md">
-            <div class="retro-box p-10 space-y-8 bg-white">
-                <div class="text-center space-y-2">
-                    <h1 class="text-5xl font-black leading-tight">Join <br /> Serwin</h1>
-                    <p class="font-mono text-sm opacity-60">initialize_new_user</p>
+            <div class="auth-card space-y-6">
+                <div class="text-center">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Create account</h1>
+                    <p class="text-sm text-gray-500 mt-2">Join the Serwin Cloud community</p>
                 </div>
 
-                <form @submit="handleRegister" class="space-y-6">
+                <form @submit="handleRegister" class="space-y-4">
                     <div>
-                        <label class="label-retro">Email Address</label>
-                        <input v-model="email" type="email" class="input-retro" placeholder="john@doe.com" required>
+                        <label class="aws-label">Email address</label>
+                        <input v-model="email" type="email" class="aws-input" placeholder="user@example.com" required>
                     </div>
 
                     <div>
-                        <label class="label-retro">Password</label>
-                        <input v-model="password" type="password" class="input-retro" placeholder="••••••••" required>
+                        <label class="aws-label">Password</label>
+                        <input v-model="password" type="password" class="aws-input" placeholder="At least 8 characters"
+                            required>
                     </div>
 
                     <div>
-                        <label class="label-retro">Confirm Password</label>
-                        <input v-model="confirmPassword" type="password" class="input-retro" placeholder="••••••••"
+                        <label class="aws-label">Confirm password</label>
+                        <input v-model="confirmPassword" type="password" class="aws-input" placeholder="Repeat password"
                             required>
                     </div>
 
                     <div class="flex items-start gap-3 py-2">
                         <input type="checkbox" id="terms"
-                            class="w-5 h-5 border-2 border-black rounded-none appearance-none checked:bg-black cursor-pointer"
+                            class="mt-1 w-4 h-4 text-[var(--aws-blue)] border-gray-300 rounded focus:ring-[var(--aws-blue)] cursor-pointer"
                             required>
-                        <label for="terms" class="text-xs font-medium leading-tight select-none cursor-pointer">
-                            I agree to the Serwin Terms & Conditions and Retro Computing Manifesto.
+                        <label for="terms"
+                            class="text-xs text-gray-600 dark:text-gray-400 leading-normal select-none cursor-pointer">
+                            I agree to the Serwin Terms & Conditions and the Customer Agreement.
                         </label>
                     </div>
 
                     <button type="submit" :disabled="isLoading"
-                        class="btn-retro-primary w-full py-5 text-xl flex items-center justify-center gap-2">
-                        <span v-if="isLoading" class="animate-spin">⟳</span>
-                        {{ isLoading ? 'Processing...' : 'Create Account' }}
+                        class="btn-aws-primary w-full py-2.5 mt-2 flex items-center justify-center gap-2">
+                        <svg v-if="isLoading" class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                            </circle>
+                            <path class="opacity-75" fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                            </path>
+                        </svg>
+                        {{ isLoading ? 'Creating account...' : 'Create Account' }}
                     </button>
 
-                    <div class="relative flex items-center py-2">
-                        <div class="flex-grow border-t border-black/10 dark:border-white/10"></div>
-                        <span
-                            class="flex-shrink mx-4 text-[10px] font-mono opacity-40 uppercase tracking-widest">or</span>
-                        <div class="flex-grow border-t border-black/10 dark:border-white/10"></div>
+                    <div class="relative py-4 flex items-center">
+                        <div class="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
+                        <span class="mx-4 text-xs text-gray-400 font-medium bg-white dark:bg-[#1c2732] px-2">OR</span>
+                        <div class="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
                     </div>
 
-                    <button type="button" @click="authStore.loginWithGoogle" class="btn-google">
+                    <button type="button" @click="authStore.loginWithGoogle"
+                        class="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-bold flex items-center justify-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-sm shadow-sm">
                         <svg class="w-4 h-4" viewBox="0 0 24 24">
                             <path fill="currentColor"
                                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -101,19 +109,18 @@ const handleRegister = async (e: Event) => {
                     </button>
                 </form>
 
-                <div class="pt-6 border-t-2 border-black/10 text-center">
-                    <p class="text-sm font-medium">
+                <div class="pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
                         Already have an account?
-                        <router-link to="/login" class="font-black hover:underline ml-1">Sign In</router-link>
+                        <router-link to="/login" class="text-[var(--aws-blue)] font-bold hover:underline ml-1">Sign
+                            In</router-link>
                     </p>
                 </div>
+            </div>
+
+            <div class="mt-8 text-center text-[10px] text-gray-400 uppercase tracking-widest font-medium">
+                &copy; 2026 Serwin Technologies or its affiliates.
             </div>
         </div>
     </div>
 </template>
-
-<style scoped>
-input[type="checkbox"]:checked {
-    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
-}
-</style>

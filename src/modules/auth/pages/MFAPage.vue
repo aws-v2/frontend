@@ -2,20 +2,34 @@
 import { ref } from 'vue'
 import { useToastStore } from '@/shared/store/toastStore'
 import { useRouter } from 'vue-router'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 
 const toastStore = useToastStore()
+const authStore = useAuthStore()
 const router = useRouter()
 const code = ref(['', '', '', '', '', ''])
 const inputs = ref<HTMLInputElement[]>([])
+const isLoading = ref(false)
 
-const handleComplete = (e: Event) => {
+const handleComplete = async (e: Event) => {
     e.preventDefault()
-    toastStore.addToast('MFA verification successful!', 'success')
-    router.push('/dashboard')
+    const fullCode = code.value.join('')
+    if (fullCode.length < 6) return
+
+    isLoading.value = true
+    try {
+        await authStore.verifyMfa(fullCode)
+        toastStore.addToast('MFA verification successful!', 'success')
+        router.push('/dashboard')
+    } catch (error) {
+        toastStore.addToast('Invalid verification code', 'error')
+    } finally {
+        isLoading.value = false
+    }
 }
 
 const handleSkip = () => {
-    toastStore.addToast('MFA skipped for now.', 'error')
+    toastStore.addToast('MFA skipped for now.', 'info')
     router.push('/dashboard')
 }
 
@@ -36,44 +50,41 @@ const onKeyDown = (index: number, e: KeyboardEvent) => {
 </script>
 
 <template>
-    <div class="min-h-[calc(100vh-88px)] flex items-center justify-center p-6 bg-gray-50 dark:bg-transparent">
+    <div class="auth-container">
         <div class="w-full max-w-md">
-            <div class="retro-box p-10 space-y-8 bg-white">
-                <div class="text-center space-y-2">
-                    <h1 class="text-5xl font-black">Security</h1>
-                    <p class="font-mono text-sm opacity-60">mfa_challenge_required</p>
+            <div class="auth-card space-y-6">
+                <div class="text-center">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Verify identity</h1>
+                    <p class="text-sm text-gray-500 mt-2">Enter the code from your authenticator app</p>
                 </div>
 
-                <div class="space-y-6">
-                    <p class="text-sm font-medium leading-relaxed opacity-70 text-center">
-                        Enter the 6-digit code from your authenticator app to authorize this session.
-                    </p>
+                <form @submit="handleComplete" class="space-y-6">
+                    <div class="flex justify-between gap-2">
+                        <input v-for="(digit, i) in 6" :key="i" ref="inputs" v-model="code[i]" type="text" maxlength="1"
+                            class="w-12 h-14 border border-gray-300 dark:border-gray-600 rounded-sm text-center text-xl font-bold focus:outline-none focus:ring-1 focus:ring-[var(--aws-blue)] focus:border-[var(--aws-blue)] dark:bg-gray-800 dark:text-white transition-all"
+                            @input="onInput(i, $event)" @keydown="onKeyDown(i, $event)">
+                    </div>
 
-                    <form @submit="handleComplete" class="space-y-8">
-                        <div class="flex justify-between gap-2">
-                            <input v-for="(digit, i) in 6" :key="i" ref="inputs" v-model="code[i]" type="text"
-                                maxlength="1"
-                                class="w-12 h-16 border-2 border-black text-center text-2xl font-black selection:bg-transparent focus:outline-none focus:bg-gray-50"
-                                @input="onInput(i, $event)" @keydown="onKeyDown(i, $event)">
-                        </div>
+                    <button type="submit" class="btn-aws-primary w-full py-2.5">
+                        Verify
+                    </button>
 
-                        <button type="submit" class="btn-retro-primary w-full py-5 text-xl">
-                            Verify Code
-                        </button>
+                    <button type="button" @click="handleSkip"
+                        class="w-full text-xs text-gray-500 dark:text-gray-400 hover:underline">
+                        Skip for now
+                    </button>
+                </form>
 
-                        <button type="button" @click="handleSkip"
-                            class="w-full text-[10px] font-bold uppercase tracking-widest opacity-40 hover:opacity-100 hover:underline">
-                            Skip for now
-                        </button>
-                    </form>
-                </div>
-
-                <div class="pt-6 border-t-2 border-black/10 text-center">
-                    <p class="text-sm font-medium">
-                        Lost your device?
-                        <a href="#" class="font-black hover:underline ml-1">Use Recovery Code</a>
+                <div class="pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
+                    <p class="text-sm text-gray-600 dark:text-gray-400">
+                        Lost access to your device?
+                        <a href="#" class="text-[var(--aws-blue)] font-bold hover:underline ml-1">Use recovery code</a>
                     </p>
                 </div>
+            </div>
+
+            <div class="mt-8 text-center text-[10px] text-gray-400 uppercase tracking-widest font-medium">
+                &copy; 2026 Serwin Technologies or its affiliates.
             </div>
         </div>
     </div>

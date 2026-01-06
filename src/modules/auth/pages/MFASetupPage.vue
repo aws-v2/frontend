@@ -15,44 +15,23 @@ const isLoading = ref(false)
 // Form states
 const phoneNumber = ref('')
 const otpCode = ref('')
-const appSecret = 'JBSW Y3DP EHPK 3PXP' // Mock secret
+const qrCode = ref('')
+const appSecret = ref('')
 
 const handleSkip = () => {
-    toastStore.addToast('MFA setup skipped. You can enable it later in settings.', 'success')
-    router.push('/dashboard')
+    toastStore.addToast('MFA setup skipped. You can enable it later in settings.', 'info')
+    router.push('/auth/payment-method')
 }
 
-const startSmsSetup = () => {
-    currentStep.value = 'sms-input'
-}
-
-const startAppSetup = () => {
-    currentStep.value = 'app-verify'
-}
-
-const sendOtp = async () => {
-    if (!phoneNumber.value) return
+const startAppSetup = async () => {
     isLoading.value = true
     try {
-        await authStore.sendSmsOtp(phoneNumber.value)
-        currentStep.value = 'sms-verify'
-        toastStore.addToast('OTP sent to your device', 'success')
+        const data = await authStore.enableMfa()
+        qrCode.value = data.qrCode
+        appSecret.value = data.secret
+        currentStep.value = 'app-verify'
     } catch (e) {
-        toastStore.addToast('Failed to send OTP', 'error')
-    } finally {
-        isLoading.value = false
-    }
-}
-
-const verifySms = async () => {
-    if (!otpCode.value) return
-    isLoading.value = true
-    try {
-        await authStore.verifySmsOtp(otpCode.value)
-        toastStore.addToast('SMS MFA enabled successfully', 'success')
-        router.push('/dashboard')
-    } catch (e) {
-        toastStore.addToast('Invalid OTP code', 'error')
+        toastStore.addToast('Failed to initialize MFA setup', 'error')
     } finally {
         isLoading.value = false
     }
@@ -62,9 +41,9 @@ const verifyApp = async () => {
     if (!otpCode.value) return
     isLoading.value = true
     try {
-        await authStore.verifyAppOtp(otpCode.value)
+        await authStore.verifyMfa(otpCode.value)
         toastStore.addToast('Authenticator App enabled successfully', 'success')
-        router.push('/dashboard')
+        router.push('/auth/payment-method')
     } catch (e) {
         toastStore.addToast('Invalid verification code', 'error')
     } finally {
@@ -75,132 +54,110 @@ const verifyApp = async () => {
 const goBack = () => {
     currentStep.value = 'choice'
     otpCode.value = ''
+    qrCode.value = ''
+    appSecret.value = ''
 }
 </script>
 
 <template>
-    <div class="min-h-[calc(100vh-88px)] flex items-center justify-center p-6 bg-gray-50 dark:bg-transparent">
+    <div class="auth-container">
         <div class="w-full max-w-2xl">
-            <div class="retro-box p-10 space-y-8 bg-white">
-
+            <div class="auth-card space-y-8">
                 <!-- Header -->
-                <div class="text-center space-y-2">
-                    <h1 class="text-5xl font-black">Security</h1>
-                    <p class="font-mono text-sm opacity-60">mfa_initialization_sequence</p>
+                <div class="text-center">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Secure your account</h1>
+                    <p class="text-sm text-gray-500 mt-2">Add an extra layer of security with MFA</p>
                 </div>
 
                 <!-- Choice Step -->
-                <div v-if="currentStep === 'choice'" class="space-y-8">
-                    <p class="text-center font-medium max-w-md mx-auto">
-                        Enhance your account security by enabling Multi-Factor Authentication. Choose your preferred
-                        method:
+                <div v-if="currentStep === 'choice'" class="space-y-6">
+                    <p class="text-sm text-gray-600 dark:text-gray-400 text-center max-w-md mx-auto leading-relaxed">
+                        To help keep your account secure, we require Multi-Factor Authentication. Please choose a method
+                        to get started.
                     </p>
 
-                    <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
+                    <div class="grid grid-cols-1 gap-4">
                         <button @click="startAppSetup"
-                            class="retro-box p-8 text-left hover:bg-black hover:text-white transition-colors group">
-                            <div class="text-2xl mb-2 font-black">Authenticator App</div>
-                            <p class="text-xs opacity-60 font-mono">Use Google Authenticator or Authy to generate secure
-                                codes.</p>
-                            <div class="mt-4 text-sm font-bold border-b-2 border-current inline-block">Select Method →
+                            class="flex items-center gap-4 p-6 border border-gray-200 dark:border-gray-700 hover:border-[var(--aws-blue)] dark:hover:border-[var(--aws-blue)] transition-all group text-left rounded-sm">
+                            <div
+                                class="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center rounded-full text-[var(--aws-blue)] group-hover:bg-[var(--aws-blue)] group-hover:text-white transition-colors text-2xl font-bold">
+                                📱
                             </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-gray-900 dark:text-white">Authenticator app</h3>
+                                <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Use an app like Google
+                                    Authenticator or Authy to generate codes.</p>
+                            </div>
+                            <div
+                                class="ml-auto text-[var(--aws-blue)] opacity-0 group-hover:opacity-100 transition-opacity">
+                                →</div>
                         </button>
-
-                        <!-- <button @click="startSmsSetup"
-                            class="retro-box p-8 text-left hover:bg-black hover:text-white transition-colors group">
-                            <div class="text-2xl mb-2 font-black">SMS Mobile</div>
-                            <p class="text-xs opacity-60 font-mono">Receive a one-time security code via text message.
-                            </p>
-                            <div class="mt-4 text-sm font-bold border-b-2 border-current inline-block">Select Method →
-                            </div>
-                        </button> -->
                     </div>
 
-                    <div class="pt-6 border-t-2 border-black/10 text-center">
+                    <div class="pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
                         <button @click="handleSkip"
-                            class="font-mono text-xs uppercase tracking-widest opacity-40 hover:opacity-100 transition-opacity">
-                            [ Skip for now ]
+                            class="text-xs text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 hover:underline">
+                            Skip for now (not recommended)
                         </button>
                     </div>
-                </div>
-
-                <!-- SMS Input Step -->
-                <div v-else-if="currentStep === 'sms-input'" class="space-y-6">
-                    <div class="space-y-4">
-                        <label class="label-retro">Enter Phone Number</label>
-                        <div class="flex gap-4">
-                            <input v-model="phoneNumber" type="tel" class="input-retro flex-1"
-                                placeholder="+1 (555) 000-0000">
-                            <button @click="sendOtp" :disabled="isLoading || !phoneNumber"
-                                class="btn-retro-primary px-8">
-                                {{ isLoading ? '...' : 'Send OTP' }}
-                            </button>
-                        </div>
-                        <p class="text-[10px] uppercase font-bold opacity-40">Standard data rates may apply</p>
-                    </div>
-                    <button @click="goBack" class="text-sm font-bold hover:underline">← Change Method</button>
-                </div>
-
-                <!-- SMS Verify Step -->
-                <div v-else-if="currentStep === 'sms-verify'" class="space-y-6 text-center">
-                    <div class="retro-box bg-black text-white p-6 font-mono text-xs uppercase tracking-widest mb-6">
-                        Verification code dispatched to <br />
-                        <span class="underline">{{ phoneNumber }}</span>
-                    </div>
-                    <div class="max-w-xs mx-auto space-y-4">
-                        <label class="label-retro block text-left">Enter 6-Digit Code</label>
-                        <input v-model="otpCode" type="text" maxlength="6"
-                            class="input-retro text-center text-2xl tracking-[1em]" placeholder="000000">
-                        <button @click="verifySms" :disabled="isLoading || otpCode.length < 6"
-                            class="btn-retro-primary w-full py-4 text-xl">
-                            {{ isLoading ? 'Verifying...' : 'Enable SMS MFA' }}
-                        </button>
-                    </div>
-                    <button @click="goBack" class="text-sm font-bold hover:underline">← Back</button>
                 </div>
 
                 <!-- App Verify Step -->
                 <div v-else-if="currentStep === 'app-verify'" class="space-y-8">
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                        <div class="retro-box p-4 bg-white flex items-center justify-center">
-                            <!-- Placeholder QR Code -->
-                            <div
-                                class="w-48 h-48 bg-gray-100 border-2 border-dashed border-black flex flex-col items-center justify-center p-4 text-center">
-                                <span class="font-mono text-[10px] uppercase font-bold text-black/20 mb-2">Authenticator
-                                    QR</span>
-                                <div class="grid grid-cols-4 gap-1 opacity-20">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                        <div
+                            class="border border-gray-200 dark:border-gray-700 p-4 bg-white flex items-center justify-center rounded-sm shadow-sm self-start">
+                            <!-- Real QR Code -->
+                            <div v-if="qrCode" class="w-48 h-48 flex items-center justify-center">
+                                <img :src="qrCode" alt="MFA QR Code" class="w-full h-full object-contain" />
+                            </div>
+                            <!-- Loading Placeholder -->
+                            <div v-else
+                                class="w-48 h-48 bg-gray-50 flex flex-col items-center justify-center border-2 border-dashed border-gray-200 p-4 text-center">
+                                <span class="text-[10px] text-gray-300 font-bold uppercase mb-2">Generating QR...</span>
+                                <div class="grid grid-cols-4 gap-1 opacity-10">
                                     <div v-for="i in 16" :key="i" class="w-6 h-6 bg-black"></div>
                                 </div>
                             </div>
                         </div>
                         <div class="space-y-4">
-                            <p class="text-sm font-bold uppercase tracking-tight">Setup Instructions:</p>
-                            <ol class="text-xs space-y-2 list-decimal pl-4 font-mono opacity-70">
-                                <li>Install Google Authenticator or Authy.</li>
+                            <h3 class="text-sm font-bold text-gray-900 dark:text-white">Setup Instructions:</h3>
+                            <ol class="text-xs space-y-3 text-gray-400 leading-relaxed list-decimal pl-4">
+                                <li>Open your authenticator app.</li>
                                 <li>Scan the QR code or enter the secret manually.</li>
-                                <li>Enter the 6-digit code below to confirm.</li>
+                                <li>Enter the 6-digit code to confirm activation.</li>
                             </ol>
-                            <div class="p-3 bg-gray-50 border-2 border-black font-mono text-[10px]">
-                                SECRET: <span class="font-bold">{{ appSecret }}</span>
+                            <div
+                                class="p-3 bg-gray-50/50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-sm">
+                                <p class="text-[10px] text-gray-400 uppercase font-bold mb-1">Manual Secret</p>
+                                <code
+                                    class="text-xs font-mono font-bold text-gray-900 dark:text-gray-100 break-all block">{{ appSecret || '•••• •••• •••• ••••' }}</code>
                             </div>
                         </div>
                     </div>
 
-                    <div class="max-w-xs mx-auto space-y-4">
-                        <label class="label-retro block text-left">Verification Code</label>
-                        <input v-model="otpCode" type="text" maxlength="6"
-                            class="input-retro text-center text-2xl tracking-[1em]" placeholder="000000">
+                    <div class="max-w-xs mx-auto space-y-4 pt-4">
+                        <div class="text-center">
+                            <label class="aws-label">Verification code</label>
+                            <input v-model="otpCode" type="text" maxlength="6"
+                                class="w-full bg-[#16191f] text-white border-none rounded-sm px-4 py-4 text-center text-4xl font-bold tracking-[0.4em] focus:ring-2 focus:ring-[var(--aws-blue)] transition-all"
+                                placeholder="000000">
+                        </div>
                         <button @click="verifyApp" :disabled="isLoading || otpCode.length < 6"
-                            class="btn-retro-primary w-full py-4 text-xl">
-                            {{ isLoading ? 'Activating...' : 'Enable App MFA' }}
+                            class="btn-aws-primary w-full py-3.5 text-base shadow-lg shadow-orange-500/10">
+                            {{ isLoading ? 'Activating...' : 'Activate MFA' }}
                         </button>
                     </div>
 
                     <div class="text-center">
-                        <button @click="goBack" class="text-sm font-bold hover:underline">← Change Method</button>
+                        <button @click="goBack" class="text-xs text-[var(--aws-blue)] hover:underline">← Change
+                            method</button>
                     </div>
                 </div>
+            </div>
 
+            <div class="mt-8 text-center text-[10px] text-gray-400 uppercase tracking-widest font-medium">
+                &copy; 2026 Serwin Technologies or its affiliates.
             </div>
         </div>
     </div>

@@ -3,6 +3,7 @@ import { useAuthStore } from '@/modules/auth/store/authStore'
 import authRoutes from '@/modules/auth/routes'
 import dashboardRoutes from '@/modules/dashboard/routes'
 import landingRoutes from '@/modules/landing/routes'
+import s3Routes from '@/modules/s3/routes'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -10,6 +11,7 @@ const router = createRouter({
     ...landingRoutes,
     ...authRoutes,
     ...dashboardRoutes,
+    ...s3Routes,
   ],
 })
 
@@ -17,8 +19,12 @@ router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
   const isPublicOnly = to.matched.some(record => record.meta.publicOnly)
+  const isMfaPage = to.name === 'mfa'
 
-  if (requiresAuth && !authStore.isAuthenticated) {
+  if (isMfaPage && authStore.mfaRequired) {
+    // Allow access to MFA page if challenge is pending
+    next()
+  } else if (requiresAuth && !authStore.isAuthenticated) {
     // Protected route + Not logged in -> Login
     next({ name: 'login' })
   } else if (isPublicOnly && authStore.isAuthenticated) {

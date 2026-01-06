@@ -10,30 +10,33 @@ const handleUpdate = (e: Event) => {
 </script>
 
 <template>
-    <div class="min-h-[calc(100vh-88px)] flex items-center justify-center p-6 bg-gray-50 dark:bg-transparent">
+    <div class="auth-container">
         <div class="w-full max-w-md">
-            <div class="retro-box p-10 space-y-8 bg-white">
-                <div class="text-center space-y-2">
-                    <h1 class="text-5xl font-black">New Pass</h1>
-                    <p class="font-mono text-sm opacity-60">update_account_security</p>
+            <div class="auth-card space-y-6">
+                <div class="text-center">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Reset password</h1>
+                    <p class="text-sm text-gray-500 mt-2">Enter your new password below</p>
                 </div>
 
-                <form @submit="handleUpdate" class="space-y-6">
+                <form @submit="handleUpdate" class="space-y-4">
                     <div>
-                        <label class="label-retro">New Password</label>
-                        <input type="password" class="input-retro" placeholder="••••••••" required>
-                        <p class="text-[10px] uppercase font-bold mt-2 opacity-40">Minimum 12 characters</p>
+                        <label class="aws-label">New password</label>
+                        <input type="password" class="aws-input" placeholder="At least 12 characters" required>
                     </div>
 
                     <div>
-                        <label class="label-retro">Confirm Password</label>
-                        <input type="password" class="input-retro" placeholder="••••••••" required>
+                        <label class="aws-label">Confirm new password</label>
+                        <input type="password" class="aws-input" placeholder="Repeat new password" required>
                     </div>
 
-                    <button type="submit" class="btn-retro-primary w-full py-5 text-xl">
-                        Update Password
+                    <button type="submit" class="btn-aws-primary w-full py-2.5 mt-2">
+                        Update password
                     </button>
                 </form>
+            </div>
+
+            <div class="mt-8 text-center text-[10px] text-gray-400 uppercase tracking-widest font-medium">
+                &copy; 2026 Serwin Technologies or its affiliates.
             </div>
         </div>
     </div>

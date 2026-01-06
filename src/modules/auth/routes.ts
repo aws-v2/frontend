@@ -38,4 +38,22 @@ export default [
     name: 'verify-email',
     component: () => import('./pages/VerifyEmailPage.vue'),
   },
+  {
+    path: '/auth/complete-setup',
+    name: 'complete-setup',
+    component: () => import('./pages/CompleteSetupPage.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/auth/support-plan',
+    name: 'support-plan',
+    component: () => import('./pages/SupportPlanPage.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/auth/account-plan',
+    name: 'account-plan',
+    component: () => import('./pages/AccountPlanPage.vue'),
+    meta: { requiresAuth: true }
+  },
 ]

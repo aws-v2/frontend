@@ -96,7 +96,7 @@ const goBack = () => {
                         method:
                     </p>
 
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="grid grid-cols-1 md:grid-cols-1 gap-6">
                         <button @click="startAppSetup"
                             class="retro-box p-8 text-left hover:bg-black hover:text-white transition-colors group">
                             <div class="text-2xl mb-2 font-black">Authenticator App</div>
@@ -106,14 +106,14 @@ const goBack = () => {
                             </div>
                         </button>
 
-                        <button @click="startSmsSetup"
+                        <!-- <button @click="startSmsSetup"
                             class="retro-box p-8 text-left hover:bg-black hover:text-white transition-colors group">
                             <div class="text-2xl mb-2 font-black">SMS Mobile</div>
                             <p class="text-xs opacity-60 font-mono">Receive a one-time security code via text message.
                             </p>
                             <div class="mt-4 text-sm font-bold border-b-2 border-current inline-block">Select Method →
                             </div>
-                        </button>
+                        </button> -->
                     </div>
 
                     <div class="pt-6 border-t-2 border-black/10 text-center">

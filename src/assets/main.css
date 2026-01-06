@@ -7,30 +7,29 @@
 @layer base {
   :root {
     --bg-main: #ffffff;
+    --bg-console: #f2f3f3;
+    --nav-bg: #16191f;
+    --nav-text: #ffffff;
     --text-main: #000000;
-    --border-main: #000000;
-    --border-subtle: #e5e7eb;
-    --input-bg: #ffffff;
-    --accent-warning: #FFD700;
-    --accent-info: #00F0FF;
-    --accent-error: #FF4D4D;
+    --border-main: #eaeded;
+    --aws-orange: #ec7211;
+    --aws-blue: #0073bb;
   }
 
   [data-theme='dark'] {
     --bg-main: #121212;
+    --bg-console: #0f172a;
+    --nav-bg: #16191f;
+    --nav-text: #ffffff;
     --text-main: #ffffff;
-    --border-main: #ffffff;
-    --border-subtle: #374151;
-    --input-bg: #1e1e1e;
-    --accent-warning: #CCA300;
-    --accent-info: #00B4CC;
-    --accent-error: #990000;
+    --border-main: #1e293b;
+    --aws-orange: #ff9900;
+    --aws-blue: #3b82f6;
   }
 
   body {
-    @apply bg-[var(--bg-main)] text-[var(--text-main)];
+    @apply bg-[var(--bg-console)] text-[var(--text-main)];
     font-family: 'Inter', sans-serif;
-    -webkit-font-smoothing: antialiased;
   }
 }
 
@@ -119,7 +118,6 @@
   0% { width: 0%; }
   100% { width: 100%; }
 }
-/* Add these dark mode styles to your existing CSS */
 
 .retro-box {
   @apply bg-white dark:bg-gray-800 border-2 border-black dark:border-gray-600 shadow-[8px_8px_0px_0px_rgba(0,0,0,1)] dark:shadow-[8px_8px_0px_0px_rgba(75,85,99,1)];
@@ -135,4 +133,8 @@
 
 .btn-retro-primary {
   @apply bg-black dark:bg-gray-700 text-white border-2 border-black dark:border-gray-600 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] dark:shadow-[4px_4px_0px_0px_rgba(75,85,99,1)] hover:shadow-[2px_2px_0px_0px_rgba(0,0,0,1)] dark:hover:shadow-[2px_2px_0px_0px_rgba(75,85,99,1)] active:shadow-none transition-all font-bold uppercase tracking-wider disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.btn-google {
+  @apply w-full py-4 mt-4 flex items-center justify-center gap-3 bg-white border-2 border-black text-black font-bold uppercase tracking-widest text-[10px] transition-all hover:bg-gray-50 active:translate-y-0 shadow-[4px_4px_0px_0px_rgba(0,0,0,1)];
 }

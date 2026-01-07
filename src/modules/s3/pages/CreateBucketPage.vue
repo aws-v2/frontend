@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useS3Store } from '../store/s3Store'
 import { useToastStore } from '@/shared/store/toastStore'
 import ChooseBucketModal from '../components/ChooseBucketModal.vue'
+import apiClient from '@/shared/api/apiClient'
 
 const router = useRouter()
 const s3Store = useS3Store()
@@ -29,21 +30,78 @@ watch(objectLock, (newValue) => {
     }
 })
 
-const handleCreateBucket = () => {
-    if (!bucketName.value) {
-        toastStore.addToast('Bucket name is required', 'error')
+const validateBucketName = (name: string): { valid: boolean; error?: string } => {
+    // Bucket name validation rules
+    if (!name) {
+        return { valid: false, error: 'Bucket name is required' }
+    }
+    if (name.length < 3 || name.length > 63) {
+        return { valid: false, error: 'Bucket name must be between 3 and 63 characters' }
+    }
+    if (!/^[a-z0-9][a-z0-9.-]*[a-z0-9]$/.test(name)) {
+        return { valid: false, error: 'Bucket name must start and end with a letter or number, and contain only lowercase letters, numbers, periods, and hyphens' }
+    }
+    if (/\.\./.test(name)) {
+        return { valid: false, error: 'Bucket name cannot contain consecutive periods' }
+    }
+    if (/^\d+\.\d+\.\d+\.\d+$/.test(name)) {
+        return { valid: false, error: 'Bucket name cannot be formatted as an IP address' }
+    }
+    return { valid: true }
+}
+
+const handleCreateBucket = async () => {
+    // Validate bucket name
+    const validation = validateBucketName(bucketName.value)
+    if (!validation.valid) {
+        toastStore.addToast(validation.error || 'Invalid bucket name', 'error')
         return
     }
 
-    s3Store.addBucket({
+    // Collect all form data
+    const bucketData = {
         name: bucketName.value,
         region: region.value,
-        creationDate: new Date().toLocaleString(),
-        access: blockPublicAccess.value ? 'Bucket and objects not public' : 'Objects can be public'
-    })
+        bucketType: bucketType.value,
+        objectOwnership: objectOwnership.value,
+        blockPublicAccess: {
+            blockPublicAcls: blockPublicAccess.value,
+            ignorePublicAcls: blockPublicAccess.value,
+            blockPublicPolicy: blockPublicAccess.value,
+            restrictPublicBuckets: blockPublicAccess.value
+        },
+        versioning: bucketVersioning.value === 'Enable',
+        tags: tags.value,
+        encryption: {
+            type: encryptionType.value,
+            bucketKeyEnabled: bucketKey.value === 'Enable'
+        },
+        objectLock: objectLock.value === 'Enable'
+    }
 
-    toastStore.addToast(`Successfully created bucket "${bucketName.value}"`, 'success')
-    router.push('/s3/buckets')
+    try {
+        // TODO: Uncomment when backend is ready
+        // const response = await apiClient.post('/api/v1/buckets/create-bucket', bucketData)
+        // if (response.data.success) {
+        //     toastStore.addToast(`Successfully created bucket "${bucketName.value}"`, 'success')
+        //     router.push('/s3/buckets')
+        // }
+
+        // Temporary: Add to local store for demo purposes
+        s3Store.addBucket({
+            name: bucketName.value,
+            region: region.value,
+            creationDate: new Date().toLocaleString(),
+            access: blockPublicAccess.value ? 'Bucket and objects not public' : 'Objects can be public'
+        })
+
+        console.log('Bucket data prepared for API:', bucketData)
+        toastStore.addToast(`Successfully created bucket "${bucketName.value}"`, 'success')
+        router.push('/s3/buckets')
+    } catch (error: any) {
+        console.error('Error creating bucket:', error)
+        toastStore.addToast(error.response?.data?.message || 'Failed to create bucket', 'error')
+    }
 }
 
 const handleBucketSelection = (bucketName: string) => {

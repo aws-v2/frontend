@@ -26,13 +26,13 @@ export const useAuthStore = defineStore('auth', () => {
     console.log('Setting session with data:', data)
     token.value = data.token || data.auth_token || data.jwt
     email.value = data.email
-    
+
     // Support both camelCase and snake_case from backend
     mfaEnabled.value = data.mfaEnabled === true || data.mfa_enabled === true
     mfaRequired.value = data.mfaRequired === true || data.mfa_required === true
     // If backend provides this, use it, otherwise rely on local flow
     if (data.registrationComplete !== undefined) {
-        registrationComplete.value = data.registrationComplete
+      registrationComplete.value = data.registrationComplete
     }
 
     localStorage.setItem('auth_token', token.value || '')
@@ -52,7 +52,11 @@ export const useAuthStore = defineStore('auth', () => {
       console.log('Attempting login for:', payload.email)
       const response = await apiClient.post<LoginResponse>('/auth/login', payload)
       console.log('Login raw response:', response)
-      setSession(response.data)
+      // Ensure email is preserved if not returned by backend
+      setSession({
+        ...response.data,
+        email: response.data.email || payload.email,
+      })
       return response.data
     } catch (error) {
       console.error('Login failed:', error)
@@ -62,7 +66,10 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function forgotPassword(payload: { email: string }) {
     try {
-      const response = await apiClient.post<{ message: string; email: string }>('/auth/forgot-password', payload)
+      const response = await apiClient.post<{ message: string; email: string }>(
+        '/auth/forgot-password',
+        payload,
+      )
       return response.data
     } catch (error) {
       console.error('Forgot password request failed:', error)
@@ -82,9 +89,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function verifyMfa(code: string) {
     try {
-      const response = await apiClient.post<LoginResponse>('/auth/mfa/verify', { 
+      const response = await apiClient.post<LoginResponse>('/auth/mfa/verify', {
         code,
-        email: email.value 
+        email: email.value,
       })
       setSession(response.data)
       return response.data
@@ -109,7 +116,11 @@ export const useAuthStore = defineStore('auth', () => {
   async function register(payload: any) {
     try {
       const response = await apiClient.post<LoginResponse>('/auth/register', payload)
-      setSession(response.data)
+      // Ensure email is preserved if not returned by backend
+      setSession({
+        ...response.data,
+        email: response.data.email || payload.email,
+      })
       return response.data
     } catch (error) {
       console.error('Registration failed:', error)
@@ -147,13 +158,13 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('auth_registration_complete')
   }
 
-  return { 
-    token, 
-    email, 
-    mfaEnabled, 
-    mfaRequired, 
+  return {
+    token,
+    email,
+    mfaEnabled,
+    mfaRequired,
     registrationComplete,
-    isAuthenticated, 
+    isAuthenticated,
     login,
     forgotPassword,
     enableMfa,
@@ -162,7 +173,7 @@ export const useAuthStore = defineStore('auth', () => {
     register,
     verifyPayment,
     completeRegistration,
-    loginWithGoogle, 
-    logout 
+    loginWithGoogle,
+    logout,
   }
 })

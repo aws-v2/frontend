@@ -6,7 +6,8 @@ import { onMounted } from 'vue'
 const router = useRouter()
 const s3Store = useS3Store()
 
-onMounted(() => {
+onMounted(async () => {
+    await s3Store.fetchBuckets()
     if (s3Store.buckets.length > 0) {
         router.push('/s3/buckets')
     }

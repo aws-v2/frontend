@@ -81,21 +81,21 @@ const handleCreateBucket = async () => {
 
     try {
         // TODO: Uncomment when backend is ready
-        // const response = await apiClient.post('/api/v1/buckets/create-bucket', bucketData)
-        // if (response.data.success) {
-        //     toastStore.addToast(`Successfully created bucket "${bucketName.value}"`, 'success')
-        //     router.push('/s3/buckets')
-        // }
+        const response = await apiClient.post('/api/v1/buckets/create-bucket', bucketData)
+        if (response.data.success) {
+            toastStore.addToast(`Successfully created bucket "${bucketName.value}"`, 'success')
+            router.push('/s3/buckets')
+        }
 
         // Temporary: Add to local store for demo purposes
-        s3Store.addBucket({
-            name: bucketName.value,
-            region: region.value,
-            creationDate: new Date().toLocaleString(),
-            access: blockPublicAccess.value ? 'Bucket and objects not public' : 'Objects can be public'
-        })
+        // s3Store.addBucket({
+        //     name: bucketName.value,
+        //     region: region.value,
+        //     creationDate: new Date().toLocaleString(),
+        //     access: blockPublicAccess.value ? 'Bucket and objects not public' : 'Objects can be public'
+        // })
 
-        console.log('Bucket data prepared for API:', bucketData)
+        // console.log('Bucket data prepared for API:', bucketData)
         toastStore.addToast(`Successfully created bucket "${bucketName.value}"`, 'success')
         router.push('/s3/buckets')
     } catch (error: any) {

@@ -20,12 +20,14 @@ export interface Bucket {
 }
 
 export interface S3Object {
-  object_id: string
+  file_id: string
+  bucket_id: string
   key: string
   size: number
-  type: string
-  storage_class: string
-  last_modified: string
+  mime_type: string
+  storage_class?: string
+  last_modified?: string
+  created_at: string
   metadata?: any
   tags?: any[]
 }
@@ -42,6 +44,13 @@ export const useS3Store = defineStore('s3', () => {
   const currentBucket = ref<Bucket | null>(null)
   const currentBucketStats = ref<BucketStats | null>(null)
   const isLoading = ref(false)
+  const lastUploadResult = ref<{
+    destination: string
+    files: Array<{ name: string; size: number; status: string; type: string; error?: string }>
+    succeededCount: number
+    failedCount: number
+    totalSize: number
+  } | null>(null)
 
   const fetchBuckets = async () => {
     isLoading.value = true
@@ -85,11 +94,12 @@ export const useS3Store = defineStore('s3', () => {
     buckets.value.push(bucket)
   }
 
-  const fetchFiles = async (bucketId: string) => {
+  const fetchFiles = async (bucketId: string, prefix: string = '') => {
     isLoading.value = true
     try {
       const response = await apiClient.get<{ count: number; files: S3Object[] }>(
         `/api/v1/files/${bucketId}`,
+        { params: { prefix } },
       )
       files.value = response.data.files || []
     } catch (error) {
@@ -100,16 +110,121 @@ export const useS3Store = defineStore('s3', () => {
     }
   }
 
+  const createFolder = async (bucketId: string, name: string) => {
+    isLoading.value = true
+    try {
+      await apiClient.post(`/api/v1/files/folders/${bucketId}`, { name })
+      await fetchFiles(bucketId) // Refresh list
+    } catch (error) {
+      console.error(`Failed to create folder ${name} in bucket ${bucketId}:`, error)
+      throw error // Re-throw for modal handling
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const uploadFiles = async (bucketId: string, formData: FormData) => {
+    isLoading.value = true
+    try {
+      await apiClient.post(`/api/v1/files/upload/${bucketId}`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      })
+
+      // Store results for the status page
+      const uploadedFiles = Array.from(formData.getAll('files') as File[])
+      const prefix = (formData.get('prefix') as string) || ''
+
+      lastUploadResult.value = {
+        destination: `s3://${bucketId}/${prefix}`,
+        files: uploadedFiles.map((f) => ({
+          name: f.name,
+          size: f.size,
+          status: 'Succeeded',
+          type: f.type,
+        })),
+        succeededCount: uploadedFiles.length,
+        failedCount: 0,
+        totalSize: uploadedFiles.reduce((acc, f) => acc + f.size, 0),
+      }
+
+      await fetchFiles(bucketId, prefix) // Refresh list
+    } catch (error) {
+      console.error(`Failed to upload files to bucket ${bucketId}:`, error)
+      throw error
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const getDirectoryItems = (prefix: string) => {
+    const rawFiles = files.value
+    const items = new Map<
+      string,
+      S3Object | { key: string; mime_type: string; isFolder: boolean }
+    >()
+
+    rawFiles.forEach((file) => {
+      // If file.key starts with prefix
+      if (file.key.startsWith(prefix)) {
+        const relativeKey = file.key.slice(prefix.length)
+        if (!relativeKey) return // It's the folder itself
+
+        const parts = relativeKey.split('/')
+        if (parts.length === 1) {
+          // It's a file or folder marker in this directory
+          items.set(parts[0], file)
+        } else {
+          // It's something deeper, so it should be represented by a folder
+          const folderName = parts[0] + '/'
+          if (!items.has(folderName)) {
+            items.set(folderName, {
+              key: prefix + folderName,
+              mime_type: 'folder',
+              isFolder: true,
+            })
+          }
+        }
+      }
+    })
+
+    return Array.from(items.values())
+  }
+
+  const currentFile = ref<S3Object | null>(null)
+
+  const fetchFileDetails = async (bucketId: string, objectKey: string) => {
+    isLoading.value = true
+    try {
+      // Assuming a backend endpoint exists or we filter from files
+      // If we need a dedicated endpoint:
+      const response = await apiClient.get<S3Object>(`/api/v1/files/${bucketId}/${objectKey}`)
+      currentFile.value = response.data
+    } catch (error) {
+      console.error(`Failed to fetch file details for ${objectKey} in bucket ${bucketId}:`, error)
+      currentFile.value = null
+    } finally {
+      isLoading.value = false
+    }
+  }
+
   return {
     buckets,
     files,
     currentBucket,
     currentBucketStats,
+    currentFile,
     isLoading,
     fetchBuckets,
     fetchBucket,
     fetchBucketStats,
-    addBucket,
     fetchFiles,
+    fetchFileDetails,
+    createFolder,
+    uploadFiles,
+    getDirectoryItems,
+    addBucket,
+    lastUploadResult,
   }
 })

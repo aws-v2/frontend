@@ -1,20 +1,24 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted, computed, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
 import { useS3Store, type S3Object } from '@/modules/s3/store/s3Store'
 import KenyanCostHeader from '../widgets/KenyanCostHeader.vue'
 import BucketPropertiesWidget from '../widgets/BucketPropertiesWidget.vue'
 import StorageMetricsWidget from '../widgets/StorageMetricsWidget.vue'
+import CreateFolderModal from '../modals/CreateFolderModal.vue'
 
 const props = defineProps<{
     bucketName: string
     region?: string
+    prefix?: string
 }>()
 
+const route = useRoute()
 const router = useRouter()
 const s3Store = useS3Store()
 const searchQuery = ref('')
 const showActionsDropdown = ref(false)
+const showCreateFolderModal = ref(false)
 const selectedFileIds = ref<string[]>([])
 
 const toggleSelectAll = () => {
@@ -70,10 +74,69 @@ const filteredFiles = computed(() => {
     )
 })
 
-onMounted(() => {
-    s3Store.fetchFiles(props.bucketName)
-console.log(s3Store)
+const navigateToObject = (file: S3Object) => {
+    if (file.mime_type === 'folder' || file.key.endsWith('/')) {
+        router.push({
+            name: 's3-folder-contents',
+            params: {
+                bucketName: props.bucketName,
+                prefix: file.key
+            }
+        })
+    } else {
+        router.push({
+            name: 's3-object-details',
+            params: {
+                bucketName: props.bucketName,
+                objectKey: file.key
+            }
+        })
+    }
+}
 
+const handleOpenObject = () => {
+    if (selectedFileIds.value.length === 1) {
+        const file = s3Store.files.find(f => f.key === selectedFileIds.value[0])
+        if (file) {
+            navigateToObject(file)
+        }
+    }
+}
+
+const handleObjectClick = (file: S3Object) => {
+    navigateToObject(file)
+}
+
+const navigateToBreadcrumb = (p: string) => {
+    if (p === '') {
+        router.push(`/s3/buckets/${props.bucketName}?tab=objects`)
+    } else {
+        router.push({
+            name: 's3-folder-contents',
+            params: {
+                bucketName: props.bucketName,
+                prefix: p
+            }
+        })
+    }
+}
+
+const breadcrumbs = computed(() => {
+    if (!props.prefix) return []
+    const parts = props.prefix.split('/').filter(p => p)
+    let currentPath = ''
+    return parts.map(part => {
+        currentPath += part + '/'
+        return { name: part, path: currentPath }
+    })
+})
+
+watch(() => props.prefix, () => {
+    selectedFileIds.value = []
+})
+
+onMounted(() => {
+    s3Store.fetchFiles(props.bucketName, props.prefix)
 })
 </script>
 
@@ -86,7 +149,7 @@ console.log(s3Store)
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <BucketPropertiesWidget :bucketName="bucketName" :region="s3Store.currentBucket?.region || region"
                 :createdAt="s3Store.currentBucket?.created_at" />
-            <StorageMetricsWidget :totalSize="s3Store.currentBucketStats?.total_size_bytes || 0"
+            <StorageMetricsWidget :totalSize="s3Store.currentBucketStats?.total_size || 0"
                 :totalFiles="s3Store.currentBucketStats?.total_files || 0" :changePercent="0" :usagePercent="0" />
         </div>
 
@@ -120,7 +183,7 @@ console.log(s3Store)
                             class="px-3 py-1 text-xs font-bold border rounded-sm transition-colors">
                             Download
                         </button>
-                        <button :disabled="!isSingleSelected"
+                        <button :disabled="!isSingleSelected" @click="handleOpenObject"
                             :class="isSingleSelected ? 'text-gray-900 border-gray-300 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed border-gray-300'"
                             class="px-3 py-1 text-xs font-bold border rounded-sm transition-colors">
                             Open ↗
@@ -194,11 +257,12 @@ console.log(s3Store)
                             </div>
                         </div>
 
-                        <button @click="router.push(`/s3/buckets/${bucketName}/create-folder`)"
-                            class="px-3 py-1 text-xs font-bold border border-[var(--aws-blue)] text-[var(--aws-blue)] bg-blue-50/10 rounded-sm">
+                        <button @click="showCreateFolderModal = true"
+                            class="px-3 py-1 text-xs font-bold border border-[var(--aws-blue)] text-[var(--aws-blue)] bg-blue-50/10 rounded-sm hover:bg-blue-50/30 transition-colors">
                             Create folder
                         </button>
-                        <button @click="router.push(`/s3/buckets/${bucketName}/upload`)"
+                        <button
+                            @click="router.push({ path: `/s3/buckets/${bucketName}/upload`, query: { prefix: props.prefix } })"
                             class="px-3 py-1 text-xs font-bold bg-[var(--aws-orange)] text-white rounded-sm hover:opacity-90 flex items-center gap-1">
                             <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -217,15 +281,28 @@ console.log(s3Store)
                     <span class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn more ↗</span>
                 </p>
 
-                <!-- Search -->
-                <div class="relative w-full max-w-lg">
-                    <svg class="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                    <input v-model="searchQuery" type="text" placeholder="Find objects by prefix"
-                        class="w-full pl-9 pr-4 py-1.5 text-sm border border-gray-400 rounded-sm focus:ring-1 focus:ring-[var(--aws-blue)] outline-none">
+                <!-- Search and Breadcrumbs -->
+                <div class="space-y-4">
+                    <div class="flex items-center gap-2 text-sm">
+                        <span @click="navigateToBreadcrumb('')"
+                            class="text-[var(--aws-blue)] hover:underline cursor-pointer font-medium">Objects</span>
+                        <template v-for="bc in breadcrumbs" :key="bc.path">
+                            <span class="text-gray-400">/</span>
+                            <span @click="navigateToBreadcrumb(bc.path)"
+                                class="text-[var(--aws-blue)] hover:underline cursor-pointer font-medium">{{ bc.name
+                                }}</span>
+                        </template>
+                    </div>
+
+                    <div class="relative w-full max-w-lg">
+                        <svg class="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-500" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input v-model="searchQuery" type="text" placeholder="Find objects by prefix"
+                            class="w-full pl-9 pr-4 py-1.5 text-sm border border-gray-400 rounded-sm focus:ring-1 focus:ring-[var(--aws-blue)] outline-none">
+                    </div>
                 </div>
             </div>
 
@@ -289,30 +366,47 @@ console.log(s3Store)
                 <p class="text-xs text-gray-500 mt-4">Loading objects...</p>
             </div>
 
-            <div v-else-if="filteredFiles.length > 0">
-                <div v-for="file in filteredFiles" :key="file.key"
-                    :class="selectedFileIds.includes(file.key) ? 'bg-blue-50' : 'hover:bg-gray-50'"
-                    class="border-b border-gray-200 flex text-[11px] text-gray-900 transition-colors">
+            <div v-else-if="s3Store.getDirectoryItems(prefix || '').length > 0">
+                <div v-for="file in s3Store.getDirectoryItems(prefix || '')"
+                    :key="(file as S3Object).file_id || (file as any).key"
+                    class="hover:bg-gray-50 group border-b border-gray-100 last:border-0 flex text-[11px] text-gray-900 transition-colors"
+                    :class="{ 'bg-blue-50/50': selectedFileIds.includes((file as S3Object).key) }">
                     <div class="w-10 p-2 border-r border-gray-200 flex justify-center items-center">
-                        <input type="checkbox" :checked="selectedFileIds.includes(file.key)"
-                            @change="toggleSelectOne(file.key)" class="w-3.5 h-3.5 rounded border-gray-300">
+                        <input type="checkbox" :value="(file as S3Object).key" v-model="selectedFileIds"
+                            class="w-3.5 h-3.5 rounded border-gray-300">
                     </div>
                     <div class="flex-1 p-2 border-r border-gray-200 flex items-center gap-2 overflow-hidden">
-                        <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
-                        </svg>
-                        <span class="font-medium text-[var(--aws-blue)] hover:underline cursor-pointer truncate">{{
-                            file.key }}</span>
+                        <!-- Folder Icon -->
+                        <div v-if="(file as any).mime_type === 'folder' || (file as any).key?.endsWith('/')"
+                            class="w-4 h-4 text-blue-400 shrink-0">
+                            <svg fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path>
+                            </svg>
+                        </div>
+                        <!-- File Icon -->
+                        <div v-else class="w-4 h-4 text-gray-400 shrink-0">
+                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                                xmlns="http://www.w3.org/2000/svg">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z">
+                                </path>
+                            </svg>
+                        </div>
+                        <span class="font-medium text-[var(--aws-blue)] hover:underline cursor-pointer truncate"
+                            @click="navigateToObject(file as S3Object)">
+                            {{ (prefix && (file as any).key?.startsWith(prefix)) ? (file as
+                                any).key.slice(prefix.length) : (file as
+                                    any).key }}
+                        </span>
                     </div>
-                    <div class="w-32 p-2 border-r border-gray-200 flex items-center">{{ file.type || 'Binary' }}
+                    <div class="w-32 p-2 border-r border-gray-200 flex items-center">{{ (file as any).mime_type || '-'
+                    }}</div>
+                    <div class="w-48 p-2 border-r border-gray-200 flex items-center">{{ formatDate((file as
+                        any).last_modified) }}
                     </div>
-                    <div class="w-48 p-2 border-r border-gray-200 flex items-center">{{
-                        formatDate(file.last_modified) }}</div>
-                    <div class="w-32 p-2 border-r border-gray-200 flex items-center">{{ formatSize(file.size) }}
-                    </div>
-                    <div class="w-40 p-2 flex items-center">{{ file.storage_class || 'Standard' }}</div>
+                    <div class="w-32 p-2 border-r border-gray-200 flex items-center">{{ (file as any).isFolder ? '-' :
+                        formatSize((file as any).size || 0) }}</div>
+                    <div class="w-40 p-2 flex items-center">{{ (file as any).storage_class || 'Standard' }}</div>
                 </div>
             </div>
 
@@ -331,4 +425,8 @@ console.log(s3Store)
             </div>
         </div>
     </div>
+
+    <!-- Create Folder Modal -->
+    <CreateFolderModal :isOpen="showCreateFolderModal" :bucketName="bucketName" :currentPrefix="prefix || ''"
+        @close="showCreateFolderModal = false" @success="s3Store.fetchFiles(bucketName, prefix)" />
 </template>

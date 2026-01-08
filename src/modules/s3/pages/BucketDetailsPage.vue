@@ -16,6 +16,7 @@ const activeTab = computed({
     get: () => (route.query.tab as string) || 'overview',
     set: (tab) => router.push({ query: { ...route.query, tab } })
 })
+const currentPrefix = computed(() => (route.query.prefix as string) || '')
 
 const fetchData = () => {
     if (bucketName.value) {
@@ -26,6 +27,11 @@ const fetchData = () => {
 
 onMounted(fetchData)
 watch(bucketName, fetchData)
+watch(currentPrefix, () => {
+    if (bucketName.value && activeTab.value === 'overview') {
+        s3Store.fetchFiles(bucketName.value, currentPrefix.value)
+    }
+})
 
 const tabs = ['Overview', 'Connectivity', 'Settings']
 </script>
@@ -70,7 +76,8 @@ const tabs = ['Overview', 'Connectivity', 'Settings']
             </div>
 
             <!-- Tab Content -->
-            <OverviewTab v-if="activeTab.toLowerCase() === 'overview'" :bucketName="bucketName" :region="region" />
+            <OverviewTab v-if="activeTab.toLowerCase() === 'overview'" :bucketName="bucketName" :region="region"
+                :prefix="currentPrefix" />
             <ConnectivityTab v-else-if="activeTab.toLowerCase() === 'connectivity'" :bucketName="bucketName" />
             <SettingsTab v-else-if="activeTab.toLowerCase() === 'settings'" />
         </div>

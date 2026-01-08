@@ -26,15 +26,21 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
-    path: '/s3/buckets/:bucketName/create-folder',
-    name: 's3-create-folder',
-    component: () => import('./pages/CreateFolderPage.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
     path: '/s3/buckets/:bucketName/upload',
     name: 's3-upload',
     component: () => import('./pages/UploadPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/s3/buckets/:bucketName/upload-status',
+    name: 's3-upload-status',
+    component: () => import('./pages/UploadStatusPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/s3/buckets/:bucketName/folder/:prefix+',
+    name: 's3-folder-contents',
+    component: () => import('./pages/FolderContentsPage.vue'),
     meta: { requiresAuth: true },
   },
   {
@@ -47,6 +53,12 @@ const routes: RouteRecordRaw[] = [
     path: '/s3/buckets/:bucketName/create-access-point',
     name: 's3-create-access-point',
     component: () => import('./pages/CreateAccessPointPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/s3/buckets/:bucketName/objects/:objectKey+',
+    name: 's3-object-details',
+    component: () => import('./pages/ObjectDetailsPage.vue'),
     meta: { requiresAuth: true },
   },
 ]

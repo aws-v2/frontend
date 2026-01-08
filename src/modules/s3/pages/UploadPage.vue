@@ -2,7 +2,10 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToastStore } from '@/shared/store/toastStore'
+import { useS3Store } from '@/modules/s3/store/s3Store'
 import apiClient from '@/shared/api/apiClient'
+
+const s3Store = useS3Store()
 
 const route = useRoute()
 const router = useRouter()
@@ -20,6 +23,7 @@ const isVersioningEnabled = ref(false)
 const storageClass = ref('Standard')
 const encryptionKeyType = ref('None') // 'None' or 'Specify'
 const checksumFunction = ref('CRC64NVME (recommended)')
+const folderPath = ref((route.query.prefix as string) || '')
 
 const storageClasses = [
     { id: 'Standard', name: 'Standard', designedFor: 'Frequently accessed data (more than once a month) with milliseconds access', zones: '≥ 3', minDuration: '-', minSize: '-', fees: '-' },
@@ -147,6 +151,9 @@ const handleUpload = async () => {
 
     // Append metadata and settings matching the required structure
     formData.append('bucketId', bucketName.value)
+    if (folderPath.value) {
+        formData.append('prefix', folderPath.value)
+    }
 
     formData.append('destinationSettings', JSON.stringify({
         versioningEnabled: isVersioningEnabled.value,
@@ -163,15 +170,9 @@ const handleUpload = async () => {
 
     try {
         toastStore.addToast('Uploading ' + files.value.length + ' files...', 'info')
-
-        await apiClient.post(`/api/v1/files/upload/${bucketName.value}`, formData, {
-            headers: {
-                'Content-Type': 'multipart/form-data'
-            }
-        })
-
+        await s3Store.uploadFiles(bucketName.value, formData)
         toastStore.addToast('Upload successful', 'success')
-        router.push(`/s3/buckets/${bucketName.value}?tab=objects`)
+        router.push(`/s3/buckets/${bucketName.value}/upload-status`)
     } catch (error) {
         console.error('Upload failed:', error)
         toastStore.addToast('Upload failed', 'error')
@@ -301,12 +302,19 @@ const handleUpload = async () => {
                     </h2>
                 </div>
                 <div class="p-6 bg-white">
-                    <p class="text-xs font-bold text-gray-900 mb-1">Destination</p>
-                    <p class="text-xs text-[var(--aws-blue)] mb-4">s3://{{ bucketName }} <svg class="w-3 h-3 inline"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <p class="text-xs text-[var(--aws-blue)] mb-4 font-mono">s3://{{ bucketName }}/{{ folderPath }} <svg
+                            class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                         </svg></p>
+
+                    <div class="mb-6 max-w-xl">
+                        <label class="block text-xs font-bold text-gray-900 mb-1">Folder path (Optional)</label>
+                        <input v-model="folderPath" type="text" placeholder="e.g. documents/work/"
+                            class="w-full px-3 py-1.5 text-sm border border-gray-400 rounded-sm focus:ring-1 focus:ring-[var(--aws-blue)] outline-none">
+                        <p class="text-[10px] text-gray-500 mt-1">If specified, files will be uploaded into this folder
+                            structure.</p>
+                    </div>
 
                     <button @click="toggleSection('destination')"
                         class="flex items-center gap-1 text-sm font-bold text-gray-900 focus:outline-none">

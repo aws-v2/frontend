@@ -1,22 +1,30 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { onMounted, ref, computed } from 'vue'
+import { useS3Store } from '../store/s3Store'
 
 const props = defineProps<{
     isOpen: boolean
 }>()
 
 const emit = defineEmits(['close', 'select'])
+const s3Store = useS3Store()
 
 const searchQuery = ref('')
 const selectedBucket = ref('')
-// Mock data matching the screenshot
-const buckets = ref([
-    { name: 'serwin-test', region: 'Europe (Stockholm) eu-north-1' }
-])
+
+const refreshBuckets = async () => {
+    await s3Store.fetchBuckets()
+}
+
+onMounted(() => {
+    if (s3Store.buckets.length === 0) {
+        s3Store.fetchBuckets()
+    }
+})
 
 const filteredBuckets = computed(() => {
-    if (!searchQuery.value) return buckets.value
-    return buckets.value.filter(b => b.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
+    if (!searchQuery.value) return s3Store.buckets
+    return s3Store.buckets.filter(b => b.name.toLowerCase().includes(searchQuery.value.toLowerCase()))
 })
 
 const handleClose = () => {
@@ -60,7 +68,7 @@ const handleSelect = () => {
                     <div class="flex items-center justify-between p-2 border-b border-gray-200 bg-white">
                         <div class="flex items-center gap-2 w-full max-w-xl">
                             <span class="text-lg font-bold text-gray-900 px-2 whitespace-nowrap">Buckets ({{
-                                filteredBuckets.length }}/{{ buckets.length }})</span>
+                                filteredBuckets.length }}/{{ s3Store.buckets.length }})</span>
                             <div class="relative w-full">
                                 <svg class="w-4 h-4 absolute left-2 top-2.5 text-gray-500" fill="none"
                                     stroke="currentColor" viewBox="0 0 24 24">
@@ -72,8 +80,10 @@ const handleSelect = () => {
                             </div>
                         </div>
                         <div class="flex items-center gap-4 px-2">
-                            <button class="text-gray-600 hover:text-gray-900">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <button @click="refreshBuckets" class="text-gray-600 hover:text-gray-900"
+                                :disabled="s3Store.isLoading">
+                                <svg class="w-5 h-5" :class="{ 'animate-spin': s3Store.isLoading }" fill="none"
+                                    stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>

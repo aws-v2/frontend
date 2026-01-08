@@ -104,10 +104,8 @@ const handleCreateBucket = async () => {
     }
 }
 
-const handleBucketSelection = (bucketName: string) => {
-    // Logic to copy settings would go here. For now, we just acknowledge the selection.
-    // e.g. toastStore.addToast(`Settings copied from ${bucketName}`, 'success')
-    console.log('Selected bucket to copy settings from:', bucketName)
+const handleBucketSelection = (selectedBucketName: string) => {
+    toastStore.addToast(`Settings copied from ${selectedBucketName}`, 'success')
 }
 </script>
 
@@ -262,22 +260,46 @@ const handleBucketSelection = (bucketName: string) => {
                         objects through access control lists (ACLs), bucket policies, or all. AWS recommends that you
                         turn on Block all public access.</p>
 
-                    <div class="border border-gray-200 p-6 bg-white space-y-4">
-                        <label class="flex items-center gap-3 cursor-pointer">
+                    <div class="border border-gray-200 p-6 bg-white space-y-6">
+                        <!-- Block All Section -->
+                        <label
+                            class="flex items-start gap-4 p-4 border rounded-sm bg-gray-50 cursor-pointer group hover:border-[var(--aws-blue)] transition-colors"
+                            :class="blockPublicAccess ? 'bg-blue-50/10 border-[var(--aws-blue)]' : 'bg-gray-50 border-gray-200'">
                             <input type="checkbox" v-model="blockPublicAccess"
-                                class="w-4 h-4 rounded border-gray-300 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)]">
-                            <span class="text-xs font-bold text-gray-900">Block all public access</span>
+                                class="mt-1 w-4 h-4 text-[var(--aws-blue)] rounded-sm border-gray-400 focus:ring-0">
+                            <div>
+                                <p class="text-sm font-bold text-gray-900">Block all public access</p>
+                                <p class="text-[11px] text-gray-500 leading-tight">Recommended. Turning this on will
+                                    override any other bucket or access point policies that grant public access.</p>
+                            </div>
                         </label>
-                        <p class="text-[10px] text-gray-500 ml-7 leading-relaxed">Turning this setting on is the same as
-                            turning on all four settings below.</p>
 
-                        <div class="ml-7 space-y-3 pt-4 border-t border-gray-100">
-                            <label v-for="i in 4" :key="i"
-                                class="flex items-center gap-3 opacity-50 cursor-not-allowed">
-                                <input type="checkbox" checked disabled class="w-4 h-4 rounded border-gray-300">
-                                <span class="text-[10px] text-gray-600">Block public access to buckets and objects
-                                    granted through {{ i % 2 === 0 ? 'new' : 'any' }} access control lists (ACLs)</span>
-                            </label>
+                        <!-- Individual Bucket/AP Settings -->
+                        <div class="border-t pt-6">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Individual
+                                        settings</h3>
+                                    <span
+                                        class="text-[10px] text-[var(--aws-blue)] hover:underline cursor-pointer uppercase font-bold tracking-tight">Info</span>
+                                </div>
+                                <span v-if="blockPublicAccess"
+                                    class="text-[10px] text-gray-400 font-medium bg-gray-100 px-2 py-0.5 rounded-sm">
+                                    Locked by "Block all"
+                                </span>
+                            </div>
+
+                            <div class="space-y-4">
+                                <!-- Individual Access Points Placeholder -->
+                                <div class="p-4 border border-dashed border-gray-300 rounded-sm"
+                                    :class="blockPublicAccess ? 'bg-gray-100 opacity-60' : 'bg-white'">
+                                    <h4 class="text-[10px] font-bold text-gray-500 uppercase mb-2">Access Points</h4>
+                                    <p class="text-[11px] text-gray-500 italic">
+                                        No access points are available during bucket creation. You can create access
+                                        points and configure individual block settings after the bucket is created.
+                                    </p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

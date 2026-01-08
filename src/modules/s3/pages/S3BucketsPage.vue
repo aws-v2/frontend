@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { onMounted, ref } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import { useS3Store } from '../store/s3Store'
 import { useToastStore } from '@/shared/store/toastStore'
 
@@ -9,6 +9,10 @@ const s3Store = useS3Store()
 const toastStore = useToastStore()
 
 const selectedBucketName = ref<string | null>(null)
+const activeTab = ref('general')
+
+const generalBuckets = computed(() => s3Store.buckets.filter(b => b.bucket_type !== 'DIRECTORY'))
+const directoryBuckets = computed(() => s3Store.buckets.filter(b => b.bucket_type === 'DIRECTORY'))
 
 const createBucket = () => {
     router.push('/s3/create-bucket')
@@ -45,10 +49,18 @@ const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleString()
 }
 
-// Helper to determine access string from BlockPublicAccess (simplified for now)
+// Helper to determine access string from BlockPublicAccess
 const getAccessString = (bucket: any) => {
-    // TODO: Implement actual logic based on BlockPublicAccess fields
-    return 'Bucket and objects not public'
+    const bpa = bucket.block_public_access
+    if (!bpa) return 'Bucket and objects not public'
+
+    // If all are blocked
+    if (bpa.block_all || (bpa.blockPublicAcls && bpa.ignorePublicAcls && bpa.blockPublicPolicy && bpa.restrictPublicBuckets)) {
+        return 'Bucket and objects not public'
+    }
+
+    // If some are public
+    return 'Objects can be public'
 }
 
 onMounted(() => {
@@ -56,13 +68,13 @@ onMounted(() => {
 })
 
 const viewBucket = (bucket: any) => {
-    console.log(bucket.region)
-
     // Extract region code if possible, or use the full string/default
     // The store seems to save "Europe (Stockholm) eu-north-1"
-    // We try to extract "eu-north-1" or just pass it all.
-    // Simple extraction:
-    const regionCode = bucket.region ? bucket.region.split(' ').pop() : bucket.region == "" ? 'eu-north-1' : "d"
+    let regionCode = 'eu-north-1'
+    if (bucket.region) {
+        const parts = bucket.region.split(' ')
+        regionCode = parts[parts.length - 1]
+    }
 
     router.push({
         path: `/s3/buckets/${bucket.name}`,
@@ -84,7 +96,7 @@ const viewBucket = (bucket: any) => {
                 </div>
                 <div>
                     <p class="text-xs font-bold">Successfully created bucket "{{ s3Store.buckets[s3Store.buckets.length
-                        - 1].name }}"</p>
+                        - 1]?.name }}"</p>
                     <p class="text-[10px] opacity-80">To upload files and folders, or to configure additional bucket
                         settings, choose View details.</p>
                 </div>
@@ -99,9 +111,12 @@ const viewBucket = (bucket: any) => {
 
         <div class="flex justify-between items-end mb-8 border-b border-gray-200 pb-2">
             <div class="flex gap-8 text-[11px] font-bold text-gray-500">
-                <span class="text-gray-900 border-b-2 border-[var(--aws-blue)] pb-2 cursor-pointer">General purpose
-                    buckets</span>
-                <span class="hover:text-gray-900 cursor-pointer pb-2">Directory buckets</span>
+                <span @click="activeTab = 'general'; selectedBucketName = null"
+                    :class="activeTab === 'general' ? 'text-gray-900 border-b-2 border-[var(--aws-blue)]' : 'hover:text-gray-900'"
+                    class="pb-2 cursor-pointer transition-colors">General purpose buckets</span>
+                <span @click="activeTab = 'directory'; selectedBucketName = null"
+                    :class="activeTab === 'directory' ? 'text-gray-900 border-b-2 border-[var(--aws-blue)]' : 'hover:text-gray-900'"
+                    class="pb-2 cursor-pointer transition-colors">Directory buckets</span>
             </div>
         </div>
 
@@ -109,11 +124,12 @@ const viewBucket = (bucket: any) => {
             <!-- Main Content (Table) -->
             <div class="flex-grow min-w-0">
                 <div class="border border-gray-200 rounded-sm">
+                    <!-- Table Header Controls -->
                     <div class="p-4 flex justify-between items-center bg-gray-50/50 border-b border-gray-200">
                         <div class="flex items-center gap-2">
-                            <h2 class="text-lg font-bold text-gray-900">General purpose buckets ({{
-                                s3Store.buckets.length
-                                }})
+                            <h2 class="text-lg font-bold text-gray-900">
+                                {{ activeTab === 'general' ? 'General purpose buckets' : 'Directory buckets' }}
+                                ({{ activeTab === 'general' ? generalBuckets.length : directoryBuckets.length }})
                             </h2>
                             <span
                                 class="text-[10px] text-[var(--aws-blue)] hover:underline cursor-pointer uppercase font-bold tracking-tight">Info</span>
@@ -168,19 +184,18 @@ const viewBucket = (bucket: any) => {
                         </div>
                     </div>
 
-                    <!-- Table -->
-                    <table class="w-full text-left border-collapse">
+                    <!-- Table (General Purpose) -->
+                    <table v-if="activeTab === 'general'" class="w-full text-left border-collapse">
                         <thead class="bg-gray-50 border-b border-gray-200">
                             <tr class="text-[11px] font-bold text-gray-600">
-                                <th class="w-10 p-4"><input type="checkbox" class="w-4 h-4 rounded border-gray-300">
-                                </th>
+                                <th class="w-10 p-4"></th>
                                 <th class="p-4 border-r border-gray-200">Name</th>
                                 <th class="p-4 border-r border-gray-200">AWS Region</th>
                                 <th class="p-4">Creation date</th>
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="bucket in s3Store.buckets" :key="bucket.name"
+                            <tr v-for="bucket in generalBuckets" :key="bucket.name"
                                 class="border-b border-gray-100 hover:bg-gray-50 text-[12px] group">
                                 <td class="p-4">
                                     <input type="radio" name="bucket-selection" :value="bucket.name"
@@ -193,8 +208,42 @@ const viewBucket = (bucket: any) => {
                                 <td class="p-4 text-gray-600">{{ bucket.region }}</td>
                                 <td class="p-4 text-gray-600">{{ formatDate(bucket.created_at) }}</td>
                             </tr>
-                            <tr v-if="s3Store.buckets.length === 0">
-                                <td colspan="4" class="p-12 text-center text-gray-400 text-sm italic">No buckets found.
+                            <tr v-if="generalBuckets.length === 0">
+                                <td colspan="4" class="p-12 text-center text-gray-400 text-sm italic">
+                                    No general purpose buckets found.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <!-- Table (Directory) -->
+                    <table v-else class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr class="text-[11px] font-bold text-gray-600">
+                                <th class="w-10 p-4"></th>
+                                <th class="p-4 border-r border-gray-200">Name</th>
+                                <th class="p-4 border-r border-gray-200">Availability Zone</th>
+                                <th class="p-4">Creation date</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="bucket in directoryBuckets" :key="bucket.name"
+                                class="border-b border-gray-100 hover:bg-gray-50 text-[12px] group">
+                                <td class="p-4">
+                                    <input type="radio" name="bucket-selection" :value="bucket.name"
+                                        v-model="selectedBucketName"
+                                        class="w-4 h-4 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)] border-gray-300">
+                                </td>
+                                <td class="p-4"><span @click="viewBucket(bucket)"
+                                        class="text-[var(--aws-blue)] font-bold hover:underline cursor-pointer">{{
+                                            bucket.name }}</span></td>
+                                <td class="p-4 text-gray-600">{{ bucket.region }}</td>
+                                <!-- AZ is usually stored in region or separate field -->
+                                <td class="p-4 text-gray-600">{{ formatDate(bucket.created_at) }}</td>
+                            </tr>
+                            <tr v-if="directoryBuckets.length === 0">
+                                <td colspan="4" class="p-12 text-center text-gray-400 text-sm italic">
+                                    No directory buckets found.
                                 </td>
                             </tr>
                         </tbody>

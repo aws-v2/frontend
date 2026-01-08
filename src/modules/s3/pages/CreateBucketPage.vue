@@ -11,7 +11,7 @@ const s3Store = useS3Store()
 const toastStore = useToastStore()
 
 const bucketName = ref('')
-const region = ref('Nairobi (Kenya) ke-nbo-1')
+const region = ref('Nairobi (Kenya) ke-nbo-a')
 const bucketType = ref('General purpose')
 const objectOwnership = ref('ACLs disabled')
 const blockPublicAccess = ref(true)

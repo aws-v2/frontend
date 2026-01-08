@@ -3,13 +3,18 @@ import { useRouter } from 'vue-router'
 import { onMounted, ref, computed } from 'vue'
 import { useS3Store } from '../store/s3Store'
 import { useToastStore } from '@/shared/store/toastStore'
+import EmptyBucketModal from '../components/EmptyBucketModal.vue'
+import DeleteBucketModal from '../components/DeleteBucketModal.vue'
 
 const router = useRouter()
 const s3Store = useS3Store()
 const toastStore = useToastStore()
 
 const selectedBucketName = ref<string | null>(null)
+const selectedBucketId = ref<string | null>(null)
 const activeTab = ref('general')
+const showEmptyModal = ref(false)
+const showDeleteModal = ref(false)
 
 const generalBuckets = computed(() => s3Store.buckets.filter(b => b.bucket_type !== 'DIRECTORY'))
 const directoryBuckets = computed(() => s3Store.buckets.filter(b => b.bucket_type === 'DIRECTORY'))
@@ -28,20 +33,33 @@ const copyArn = () => {
 
 const refreshBuckets = async () => {
     selectedBucketName.value = null
+    selectedBucketId.value = null
     await s3Store.fetchBuckets()
     toastStore.addToast('Buckets refreshed', 'success')
 }
 
 const emptyBucket = () => {
     if (selectedBucketName.value) {
-        router.push(`/s3/buckets/${selectedBucketName.value}/empty`)
+        // Find the bucket ID
+        const bucket = s3Store.buckets.find(b => b.name === selectedBucketName.value)
+        if (bucket) selectedBucketId.value = bucket.bucket_id
+        showEmptyModal.value = true
     }
 }
 
 const deleteBucket = () => {
     if (selectedBucketName.value) {
-        router.push(`/s3/buckets/${selectedBucketName.value}/delete`)
+        // Find the bucket ID
+        const bucket = s3Store.buckets.find(b => b.name === selectedBucketName.value)
+        if (bucket) selectedBucketId.value = bucket.bucket_id
+        showDeleteModal.value = true
     }
+}
+
+const handleCleanupSuccess = () => {
+    selectedBucketName.value = null
+    selectedBucketId.value = null
+    s3Store.fetchBuckets()
 }
 
 const formatDate = (dateString: string) => {
@@ -294,5 +312,11 @@ const viewBucket = (bucket: any) => {
                 </div>
             </div>
         </div>
+
+        <!-- Modals -->
+        <EmptyBucketModal :isOpen="showEmptyModal" :bucketName="selectedBucketName || ''"
+            :bucketId="selectedBucketId || ''" @close="showEmptyModal = false" @success="handleCleanupSuccess" />
+        <DeleteBucketModal :isOpen="showDeleteModal" :bucketName="selectedBucketName || ''"
+            :bucketId="selectedBucketId || ''" @close="showDeleteModal = false" @success="handleCleanupSuccess" />
     </div>
 </template>

@@ -49,18 +49,6 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./pages/CreateAccessPointPage.vue'),
     meta: { requiresAuth: true },
   },
-  {
-    path: '/s3/buckets/:bucketName/empty',
-    name: 's3-empty-bucket',
-    component: () => import('./pages/EmptyBucketPage.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
-    path: '/s3/buckets/:bucketName/delete',
-    name: 's3-delete-bucket',
-    component: () => import('./pages/DeleteBucketPage.vue'),
-    meta: { requiresAuth: true },
-  },
 ]
 
 export default routes

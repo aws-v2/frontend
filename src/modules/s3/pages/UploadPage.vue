@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useToastStore } from '@/shared/store/toastStore'
+import apiClient from '@/shared/api/apiClient'
 
 const route = useRoute()
 const router = useRouter()
@@ -137,39 +138,44 @@ const removeFile = (index: number) => {
 const handleUpload = async () => {
     if (files.value.length === 0) return
 
-    const uploadPayload = {
-        bucketId: bucketName.value,
-        files: files.value.map(f => ({
-            name: f.name,
-            size: f.size,
-            type: f.type,
-            // In a real scenario, we might send FormData with the actual file objects
-            // fileObject: f.file 
-        })),
-        destinationSettings: {
-            versioningEnabled: isVersioningEnabled.value,
-        },
-        properties: {
-            storageClass: storageClass.value,
-            encryptionType: encryptionKeyType.value,
-            checksumFunction: checksumFunction.value
-        },
-        tags: tags.value,
-        metadata: metadataList.value
+    const formData = new FormData()
+
+    // Append files
+    files.value.forEach(f => {
+        formData.append('files', f.file)
+    })
+
+    // Append metadata and settings matching the required structure
+    formData.append('bucketId', bucketName.value)
+
+    formData.append('destinationSettings', JSON.stringify({
+        versioningEnabled: isVersioningEnabled.value,
+    }))
+
+    formData.append('properties', JSON.stringify({
+        storageClass: storageClass.value,
+        encryptionType: encryptionKeyType.value,
+        checksumFunction: checksumFunction.value
+    }))
+
+    formData.append('tags', JSON.stringify(tags.value))
+    formData.append('metadata', JSON.stringify(metadataList.value))
+
+    try {
+        toastStore.addToast('Uploading ' + files.value.length + ' files...', 'info')
+
+        await apiClient.post(`/api/v1/files/upload/${bucketName.value}`, formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        })
+
+        toastStore.addToast('Upload successful', 'success')
+        router.push(`/s3/buckets/${bucketName.value}?tab=objects`)
+    } catch (error) {
+        console.error('Upload failed:', error)
+        toastStore.addToast('Upload failed', 'error')
     }
-
-    console.group('🚀 MOCK UPLOAD API CALL')
-    console.log('Target Endpoint: POST /api/v1/s3/' + bucketName.value + '/upload')
-    console.log('Payload:', uploadPayload)
-    console.groupEnd()
-
-    toastStore.addToast('Uploading ' + files.value.length + ' files...', 'info')
-
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1500))
-
-    toastStore.addToast('Upload successful', 'success')
-    router.push(`/s3/buckets/${bucketName.value}?tab=objects`)
 }
 </script>
 

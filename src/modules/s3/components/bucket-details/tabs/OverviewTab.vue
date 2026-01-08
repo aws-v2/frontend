@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
+import { useS3Store, type S3Object } from '@/modules/s3/store/s3Store'
 import KenyanCostHeader from '../widgets/KenyanCostHeader.vue'
 import BucketPropertiesWidget from '../widgets/BucketPropertiesWidget.vue'
 import StorageMetricsWidget from '../widgets/StorageMetricsWidget.vue'
@@ -11,8 +12,42 @@ const props = defineProps<{
 }>()
 
 const router = useRouter()
+const s3Store = useS3Store()
 const searchQuery = ref('')
 const showActionsDropdown = ref(false)
+
+const formatSize = (bytes: number) => {
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+
+const formatDate = (dateString: string) => {
+    if (!dateString) return '-'
+    const date = new Date(dateString)
+    return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: true
+    })
+}
+
+const filteredFiles = computed(() => {
+    if (!searchQuery.value) return s3Store.files
+    return s3Store.files.filter((f: S3Object) =>
+        f.key.toLowerCase().includes(searchQuery.value.toLowerCase())
+    )
+})
+
+onMounted(() => {
+    s3Store.fetchFiles(props.bucketName)
+})
 </script>
 
 <template>
@@ -32,7 +67,7 @@ const showActionsDropdown = ref(false)
             <div class="p-4 border-b border-gray-200 space-y-4">
                 <div class="flex justify-between items-center">
                     <h2 class="text-lg font-bold text-gray-900 flex items-center gap-2">
-                        Objects (0)
+                        Objects ({{ s3Store.files.length }})
                         <button class="text-gray-400 hover:text-gray-900">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -211,8 +246,40 @@ const showActionsDropdown = ref(false)
                 </div>
             </div>
 
+            <!-- Table Content -->
+            <div v-if="s3Store.isLoading" class="p-12 text-center">
+                <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--aws-orange)]">
+                </div>
+                <p class="text-xs text-gray-500 mt-4">Loading objects...</p>
+            </div>
+
+            <div v-else-if="filteredFiles.length > 0">
+                <div v-for="file in filteredFiles" :key="file.object_id"
+                    class="border-b border-gray-200 flex text-[11px] text-gray-900 hover:bg-gray-50">
+                    <div class="w-10 p-2 border-r border-gray-200 flex justify-center items-center">
+                        <input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300">
+                    </div>
+                    <div class="flex-1 p-2 border-r border-gray-200 flex items-center gap-2 overflow-hidden">
+                        <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                        </svg>
+                        <span class="font-medium text-[var(--aws-blue)] hover:underline cursor-pointer truncate">{{
+                            file.key }}</span>
+                    </div>
+                    <div class="w-32 p-2 border-r border-gray-200 flex items-center">{{ file.type || 'Binary' }}
+                    </div>
+                    <div class="w-48 p-2 border-r border-gray-200 flex items-center">{{
+                        formatDate(file.last_modified) }}</div>
+                    <div class="w-32 p-2 border-r border-gray-200 flex items-center">{{ formatSize(file.size) }}
+                    </div>
+                    <div class="w-40 p-2 flex items-center">{{ file.storage_class || 'Standard' }}</div>
+                </div>
+            </div>
+
             <!-- Empty State -->
-            <div class="p-12 text-center">
+            <div v-else class="p-12 text-center">
                 <h3 class="text-sm font-bold text-gray-900 mb-1">No objects</h3>
                 <p class="text-xs text-gray-500 mb-6">You don't have any objects in this bucket.</p>
                 <button @click="router.push(`/s3/buckets/${bucketName}/upload`)"

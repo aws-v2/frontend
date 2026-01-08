@@ -26,7 +26,7 @@ const createBucket = () => {
 const copyArn = () => {
     if (!selectedBucketName.value) return
     // In a real app we'd get the ARN from the bucket object or construct it
-    const arn = `arn:aws:s3:::${selectedBucketName.value}`
+    const arn = `arn:serw:s3:::${selectedBucketName.value}`
     navigator.clipboard.writeText(arn)
     toastStore.addToast(`ARN for ${selectedBucketName.value} copied to clipboard`, 'success')
 }

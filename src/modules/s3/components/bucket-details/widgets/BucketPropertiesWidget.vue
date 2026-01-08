@@ -16,7 +16,7 @@ defineProps<{
             </div>
             <div>
                 <p class="text-xs text-gray-600 font-bold mb-1">Amazon Resource Name (ARN)</p>
-                <p class="text-xs text-gray-900 break-all">{{ arn || `arn:aws:s3:::${bucketName}` }}</p>
+                <p class="text-xs text-gray-900 break-all">{{ arn || `arn:serw:s3:::${bucketName}` }}</p>
             </div>
         </div>
     </div>

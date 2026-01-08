@@ -601,7 +601,7 @@ const handleSaveTags = () => {
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-gray-900 mb-2">Destination</label>
-                    <input type="text" v-model="newEventNotification.destination" placeholder="arn:aws:lambda:..."
+                    <input type="text" v-model="newEventNotification.destination" placeholder="arn:serw:lambda:..."
                         class="w-full px-3 py-1.5 text-sm border border-gray-400 rounded-sm outline-none">
                 </div>
             </div>

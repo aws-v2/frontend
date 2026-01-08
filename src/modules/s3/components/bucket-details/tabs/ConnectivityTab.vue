@@ -37,7 +37,7 @@ const policies = ref<{ id: number; content: string; name: string }[]>([
                     "Effect": "Allow",
                     "Principal": "*",
                     "Action": "s3:GetObject",
-                    "Resource": `arn:aws:s3:::${props.bucketName}/*`
+                    "Resource": `arn:serw:s3:::${props.bucketName}/*`
                 }
             ]
         }, null, 4)

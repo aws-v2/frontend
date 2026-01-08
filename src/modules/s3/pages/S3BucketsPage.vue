@@ -80,7 +80,7 @@ const viewBucket = (bucket: any) => {
         path: `/s3/buckets/${bucket.name}`,
         query: {
             region: regionCode,
-            tab: 'objects'
+            tab: 'overview'
         }
     })
 }

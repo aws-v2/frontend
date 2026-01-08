@@ -1,19 +1,36 @@
 <script setup lang="ts">
-defineProps<{
-    storageUsed: string
+const props = defineProps<{
+    totalSize: number
+    totalFiles?: number
     changePercent?: number
     usagePercent?: number
 }>()
+
+const formatSize = (bytes: number) => {
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
 </script>
 
 <template>
-    <div class="border border-gray-200 rounded-sm bg-white p-4 flex flex-col justify-between">
+    <div class="border border-gray-200 rounded-sm bg-white p-4 flex flex-col justify-between h-full">
         <div>
-            <h2 class="text-sm font-bold text-gray-900 mb-1">Storage Used</h2>
-            <p class="text-xs text-gray-500">Total bytes in standard storage</p>
+            <div class="flex justify-between items-start">
+                <div>
+                    <h2 class="text-sm font-bold text-gray-900 mb-1">Storage Used</h2>
+                    <p class="text-[10px] text-gray-500">Total bytes in standard storage</p>
+                </div>
+                <div v-if="totalFiles !== undefined" class="text-right">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Total objects</p>
+                    <p class="text-sm font-bold text-gray-900">{{ totalFiles }}</p>
+                </div>
+            </div>
         </div>
-        <div class="flex items-end gap-2 mt-4">
-            <span class="text-2xl font-bold text-gray-900">{{ storageUsed }}</span>
+        <div class="flex items-end gap-2 mt-4"> 
+            <span class="text-2xl font-bold text-gray-900">{{ formatSize(totalSize) }}</span>
             <span v-if="changePercent" class="text-xs font-bold mb-1"
                 :class="changePercent > 0 ? 'text-green-600' : 'text-red-600'">
                 {{ changePercent > 0 ? '▲' : '▼' }} {{ Math.abs(changePercent) }}%

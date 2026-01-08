@@ -72,6 +72,8 @@ const filteredFiles = computed(() => {
 
 onMounted(() => {
     s3Store.fetchFiles(props.bucketName)
+console.log(s3Store)
+
 })
 </script>
 
@@ -82,8 +84,10 @@ onMounted(() => {
 
         <!-- Widgets Grid -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <BucketPropertiesWidget :bucketName="bucketName" :region="region" />
-            <StorageMetricsWidget storageUsed="2.4 GB" :changePercent="2" :usagePercent="25" />
+            <BucketPropertiesWidget :bucketName="bucketName" :region="s3Store.currentBucket?.region || region"
+                :createdAt="s3Store.currentBucket?.created_at" />
+            <StorageMetricsWidget :totalSize="s3Store.currentBucketStats?.total_size_bytes || 0"
+                :totalFiles="s3Store.currentBucketStats?.total_files || 0" :changePercent="0" :usagePercent="0" />
         </div>
 
         <!-- Objects Section -->

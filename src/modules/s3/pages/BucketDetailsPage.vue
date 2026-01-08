@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useS3Store } from '../store/s3Store'
 import OverviewTab from '../components/bucket-details/tabs/OverviewTab.vue'
 import ConnectivityTab from '../components/bucket-details/tabs/ConnectivityTab.vue'
 import SettingsTab from '../components/bucket-details/tabs/SettingsTab.vue'
 
 const route = useRoute()
 const router = useRouter()
+const s3Store = useS3Store()
 
 const bucketName = computed(() => route.params.bucketName as string)
 const region = computed(() => (route.query.region as string) || 'eu-north-1')
@@ -14,6 +16,16 @@ const activeTab = computed({
     get: () => (route.query.tab as string) || 'overview',
     set: (tab) => router.push({ query: { ...route.query, tab } })
 })
+
+const fetchData = () => {
+    if (bucketName.value) {
+        s3Store.fetchBucket(bucketName.value)
+        s3Store.fetchBucketStats(bucketName.value)
+    }
+}
+
+onMounted(fetchData)
+watch(bucketName, fetchData)
 
 const tabs = ['Overview', 'Connectivity', 'Settings']
 </script>

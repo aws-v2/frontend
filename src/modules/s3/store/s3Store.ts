@@ -30,19 +30,52 @@ export interface S3Object {
   tags?: any[]
 }
 
+export interface BucketStats {
+  bucket_id: string
+  total_files: number
+  total_size: number
+}
+
 export const useS3Store = defineStore('s3', () => {
   const buckets = ref<Bucket[]>([])
   const files = ref<S3Object[]>([])
+  const currentBucket = ref<Bucket | null>(null)
+  const currentBucketStats = ref<BucketStats | null>(null)
   const isLoading = ref(false)
 
   const fetchBuckets = async () => {
     isLoading.value = true
     try {
       const response = await apiClient.get<{ count: number; buckets: Bucket[] }>('/api/v1/buckets')
-      buckets.value = response.data.buckets || [] // backend returns { count, buckets }
+      buckets.value = response.data.buckets || []
     } catch (error) {
       console.error('Failed to fetch buckets:', error)
-      // buckets.value = [] // Keep existing or clear?
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const fetchBucket = async (bucketId: string) => {
+    isLoading.value = true
+    try {
+      const response = await apiClient.get<Bucket>(`/api/v1/buckets/${bucketId}`)
+      currentBucket.value = response.data
+    } catch (error) {
+      console.error(`Failed to fetch bucket ${bucketId}:`, error)
+      currentBucket.value = null
+    } finally {
+      isLoading.value = false
+    }
+  }
+
+  const fetchBucketStats = async (bucketId: string) => {
+    isLoading.value = true
+    try {
+      const response = await apiClient.get<BucketStats>(`/api/v1/buckets/${bucketId}/stats`)
+      currentBucketStats.value = response.data
+    } catch (error) {
+      console.error(`Failed to fetch stats for bucket ${bucketId}:`, error)
+      currentBucketStats.value = null
     } finally {
       isLoading.value = false
     }
@@ -70,8 +103,12 @@ export const useS3Store = defineStore('s3', () => {
   return {
     buckets,
     files,
+    currentBucket,
+    currentBucketStats,
     isLoading,
     fetchBuckets,
+    fetchBucket,
+    fetchBucketStats,
     addBucket,
     fetchFiles,
   }

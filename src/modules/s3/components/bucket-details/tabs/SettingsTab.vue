@@ -127,16 +127,7 @@ import EmptyState from '../shared/EmptyState.vue'
                 </div>
             </div>
 
-            <!-- CloudTrail -->
-            <div class="border border-gray-200 rounded-sm bg-white">
-                <SectionHeader title="AWS CloudTrail data events" />
-                <div class="p-4">
-                    <p class="text-xs text-gray-600 mb-4">Configure CloudTrail to log data events.</p>
-                    <div class="p-8 text-center text-gray-600 border border-gray-300 rounded-sm bg-gray-50">
-                        <p class="text-sm font-bold mb-1">No data events configured</p>
-                    </div>
-                </div>
-            </div>
+
 
             <!-- Event Notifications -->
             <div class="border border-gray-200 rounded-sm bg-white">
@@ -144,23 +135,7 @@ import EmptyState from '../shared/EmptyState.vue'
                 <EmptyState title="No event notifications" message="" />
             </div>
 
-            <!-- EventBridge -->
-            <div class="border border-gray-200 rounded-sm bg-white">
-                <SectionHeader title="Amazon EventBridge" :showEdit="true" />
-                <div class="p-4">
-                    <h3 class="text-sm font-bold text-gray-900">Send notifications to Amazon EventBridge for all events
-                        in
-                        this bucket</h3>
-                    <p class="text-xs text-gray-900">On</p>
-                </div>
-            </div>
 
-            <!-- Inventory Configurations -->
-            <div class="border border-gray-200 rounded-sm bg-white">
-                <SectionHeader title="Inventory configurations" :showCreate="true"
-                    createLabel="Create inventory configuration" />
-                <EmptyState title="No configurations" message="" />
-            </div>
 
             <!-- Tags -->
             <div class="border border-gray-200 rounded-sm bg-white">

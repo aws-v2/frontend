@@ -15,6 +15,31 @@ const router = useRouter()
 const s3Store = useS3Store()
 const searchQuery = ref('')
 const showActionsDropdown = ref(false)
+const selectedFileIds = ref<string[]>([])
+
+const toggleSelectAll = () => {
+    if (selectedFileIds.value.length === s3Store.files.length) {
+        selectedFileIds.value = []
+    } else {
+        selectedFileIds.value = s3Store.files.map(f => f.key)
+    }
+}
+
+const toggleSelectOne = (id: string) => {
+    const index = selectedFileIds.value.indexOf(id)
+    if (index === -1) {
+        selectedFileIds.value.push(id)
+    } else {
+        selectedFileIds.value.splice(index, 1)
+    }
+}
+
+const isAllSelected = computed(() => {
+    return s3Store.files.length > 0 && selectedFileIds.value.length === s3Store.files.length
+})
+
+const isAnySelected = computed(() => selectedFileIds.value.length > 0)
+const isSingleSelected = computed(() => selectedFileIds.value.length === 1)
 
 const formatSize = (bytes: number) => {
     if (bytes === 0) return '0 B'
@@ -76,24 +101,29 @@ onMounted(() => {
                         </button>
                     </h2>
                     <div class="flex gap-2">
-                        <button
-                            class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-sm text-gray-400 cursor-not-allowed">
+                        <button :disabled="!isSingleSelected"
+                            :class="isSingleSelected ? 'text-gray-900 border-gray-300 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed border-gray-300'"
+                            class="px-3 py-1 text-xs font-bold border rounded-sm transition-colors">
                             Copy S3 URI
                         </button>
-                        <button
-                            class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-sm text-gray-400 cursor-not-allowed">
+                        <button :disabled="!isSingleSelected"
+                            :class="isSingleSelected ? 'text-gray-900 border-gray-300 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed border-gray-300'"
+                            class="px-3 py-1 text-xs font-bold border rounded-sm transition-colors">
                             Copy URL
                         </button>
-                        <button
-                            class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-sm text-gray-400 cursor-not-allowed">
+                        <button :disabled="!isAnySelected"
+                            :class="isAnySelected ? 'text-gray-900 border-gray-300 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed border-gray-300'"
+                            class="px-3 py-1 text-xs font-bold border rounded-sm transition-colors">
                             Download
                         </button>
-                        <button
-                            class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-sm text-gray-400 cursor-not-allowed">
+                        <button :disabled="!isSingleSelected"
+                            :class="isSingleSelected ? 'text-gray-900 border-gray-300 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed border-gray-300'"
+                            class="px-3 py-1 text-xs font-bold border rounded-sm transition-colors">
                             Open ↗
                         </button>
-                        <button
-                            class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-sm text-gray-400 cursor-not-allowed">
+                        <button :disabled="!isAnySelected"
+                            :class="isAnySelected ? 'text-gray-900 border-gray-300 hover:bg-gray-50' : 'text-gray-400 cursor-not-allowed border-gray-300'"
+                            class="px-3 py-1 text-xs font-bold border rounded-sm transition-colors">
                             Delete
                         </button>
 
@@ -196,9 +226,11 @@ onMounted(() => {
             </div>
 
             <!-- Table Header -->
-            <div class="bg-gray-50 border-b border-gray-200 flex text-[11px] font-bold text-gray-600">
+            <div
+                class="bg-gray-50 border-b border-gray-200 flex text-[11px] font-bold text-gray-600 uppercase tracking-wider">
                 <div class="w-10 p-2 border-r border-gray-200 flex justify-center">
-                    <input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300">
+                    <input type="checkbox" :checked="isAllSelected" @change="toggleSelectAll"
+                        class="w-3.5 h-3.5 rounded border-gray-300">
                 </div>
                 <div
                     class="flex-1 p-2 border-r border-gray-200 flex items-center justify-between cursor-pointer hover:bg-gray-100">
@@ -254,10 +286,12 @@ onMounted(() => {
             </div>
 
             <div v-else-if="filteredFiles.length > 0">
-                <div v-for="file in filteredFiles" :key="file.object_id"
-                    class="border-b border-gray-200 flex text-[11px] text-gray-900 hover:bg-gray-50">
+                <div v-for="file in filteredFiles" :key="file.key"
+                    :class="selectedFileIds.includes(file.key) ? 'bg-blue-50' : 'hover:bg-gray-50'"
+                    class="border-b border-gray-200 flex text-[11px] text-gray-900 transition-colors">
                     <div class="w-10 p-2 border-r border-gray-200 flex justify-center items-center">
-                        <input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300">
+                        <input type="checkbox" :checked="selectedFileIds.includes(file.key)"
+                            @change="toggleSelectOne(file.key)" class="w-3.5 h-3.5 rounded border-gray-300">
                     </div>
                     <div class="flex-1 p-2 border-r border-gray-200 flex items-center gap-2 overflow-hidden">
                         <svg class="w-4 h-4 text-gray-400 shrink-0" fill="none" stroke="currentColor"

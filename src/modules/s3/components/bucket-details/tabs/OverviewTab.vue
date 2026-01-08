@@ -131,6 +131,56 @@ const breadcrumbs = computed(() => {
     })
 })
 
+const contextualMetrics = computed(() => {
+    const rawFiles = s3Store.files
+    const prefix = props.prefix || ''
+
+    // If we are at root and have bucket stats, use them as base
+    if (!prefix && s3Store.currentBucketStats) {
+        // We still need to count folders if not provided by backend
+        const folders = new Set<string>()
+        rawFiles.forEach(f => {
+            const parts = f.key.split('/')
+            if (parts.length > 1) {
+                let curr = ''
+                for (let i = 0; i < parts.length - 1; i++) {
+                    curr += parts[i] + '/'
+                    folders.add(curr)
+                }
+            }
+        })
+        return {
+            totalSize: s3Store.currentBucketStats.total_size,
+            totalFiles: s3Store.currentBucketStats.total_files,
+            totalFolders: folders.size
+        }
+    }
+
+    // If in a folder, calculate from the objects starting with prefix
+    const folderFiles = rawFiles.filter(f => f.key.startsWith(prefix) && f.key !== prefix)
+    const totalSize = folderFiles.reduce((acc, f) => acc + (f.size || 0), 0)
+    const totalFiles = folderFiles.length
+
+    const subfolders = new Set<string>()
+    folderFiles.forEach(f => {
+        const relative = f.key.slice(prefix.length)
+        const parts = relative.split('/')
+        if (parts.length > 1) {
+            let curr = ''
+            for (let i = 0; i < parts.length - 1; i++) {
+                curr += parts[i] + '/'
+                subfolders.add(prefix + curr)
+            }
+        }
+    })
+
+    return {
+        totalSize,
+        totalFiles,
+        totalFolders: subfolders.size
+    }
+})
+
 watch(() => props.prefix, () => {
     selectedFileIds.value = []
 })
@@ -149,8 +199,8 @@ onMounted(() => {
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
             <BucketPropertiesWidget :bucketName="bucketName" :region="s3Store.currentBucket?.region || region"
                 :createdAt="s3Store.currentBucket?.created_at" />
-            <StorageMetricsWidget :totalSize="s3Store.currentBucketStats?.total_size || 0"
-                :totalFiles="s3Store.currentBucketStats?.total_files || 0" :changePercent="0" :usagePercent="0" />
+            <StorageMetricsWidget :totalSize="contextualMetrics.totalSize" :totalFiles="contextualMetrics.totalFiles"
+                :totalFolders="contextualMetrics.totalFolders" :changePercent="0" :usagePercent="0" />
         </div>
 
         <!-- Objects Section -->
@@ -400,7 +450,7 @@ onMounted(() => {
                         </span>
                     </div>
                     <div class="w-32 p-2 border-r border-gray-200 flex items-center">{{ (file as any).mime_type || '-'
-                    }}</div>
+                        }}</div>
                     <div class="w-48 p-2 border-r border-gray-200 flex items-center">{{ formatDate((file as
                         any).last_modified) }}
                     </div>

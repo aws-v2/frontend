@@ -172,9 +172,12 @@ export const useS3Store = defineStore('s3', () => {
         if (!relativeKey) return // It's the folder itself
 
         const parts = relativeKey.split('/')
+        const itemKey = parts[0]
+        if (itemKey === undefined) return
+
         if (parts.length === 1) {
           // It's a file or folder marker in this directory
-          items.set(parts[0], file)
+          items.set(itemKey, file)
         } else {
           // It's something deeper, so it should be represented by a folder
           const folderName = parts[0] + '/'

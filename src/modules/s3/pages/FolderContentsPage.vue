@@ -3,6 +3,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useS3Store } from '../store/s3Store'
+import KenyanCostHeader from '../components/bucket-details/widgets/KenyanCostHeader.vue'
+import StorageMetricsWidget from '../components/bucket-details/widgets/StorageMetricsWidget.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -49,6 +51,34 @@ const handleObjectClick = (item: any) => {
     }
 }
 
+const contextualMetrics = computed(() => {
+    const rawFiles = s3Store.files
+    const p = prefix.value
+
+    const folderFiles = rawFiles.filter(f => f.key.startsWith(p) && f.key !== p)
+    const totalSize = folderFiles.reduce((acc, f) => acc + (f.size || 0), 0)
+    const totalFiles = folderFiles.length
+
+    const subfolders = new Set<string>()
+    folderFiles.forEach(f => {
+        const relative = f.key.slice(p.length)
+        const parts = relative.split('/')
+        if (parts.length > 1) {
+            let curr = ''
+            for (let i = 0; i < parts.length - 1; i++) {
+                curr += parts[i] + '/'
+                subfolders.add(p + curr)
+            }
+        }
+    })
+
+    return {
+        totalSize,
+        totalFiles,
+        totalFolders: subfolders.size
+    }
+})
+
 onMounted(async () => {
     await s3Store.fetchFiles(bucketName.value, prefix.value)
 })
@@ -57,6 +87,22 @@ onMounted(async () => {
 <template>
     <div class="min-h-screen bg-gray-100 font-sans pb-24">
         <div class="p-8 px-10 space-y-6">
+            <!-- Kenyan Cost Header -->
+            <KenyanCostHeader :cost="145.50" :changePercent="-12" :dataSaverOn="true" @topUp="() => { }" />
+
+            <!-- Storage Metrics (Simplified for folder view) -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div
+                    class="border border-gray-200 rounded-sm bg-white p-4 flex flex-col justify-center h-full shadow-sm">
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Current Folder</p>
+                    <p class="text-lg font-bold text-gray-900 truncate">{{ folderName }}</p>
+                    <p class="text-[10px] text-[var(--aws-blue)] font-mono truncate">{{ prefix }}</p>
+                </div>
+                <StorageMetricsWidget :totalSize="contextualMetrics.totalSize"
+                    :totalFiles="contextualMetrics.totalFiles" :totalFolders="contextualMetrics.totalFolders"
+                    :changePercent="0" :usagePercent="0" />
+            </div>
+
             <!-- Header -->
             <div class="flex justify-between items-start">
                 <div>

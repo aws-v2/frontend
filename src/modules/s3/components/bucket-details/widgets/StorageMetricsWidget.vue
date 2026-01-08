@@ -2,6 +2,7 @@
 const props = defineProps<{
     totalSize: number
     totalFiles?: number
+    totalFolders?: number
     changePercent?: number
     usagePercent?: number
 }>()
@@ -16,7 +17,8 @@ const formatSize = (bytes: number) => {
 </script>
 
 <template>
-    <div class="border border-gray-200 rounded-sm bg-white p-4 flex flex-col justify-between h-full">
+    <div
+        class="border border-gray-200 rounded-sm bg-white p-4 flex flex-col justify-between h-full shadow-sm hover:shadow-md transition-shadow">
         <div>
             <div class="flex justify-between items-start">
                 <div>
@@ -24,15 +26,17 @@ const formatSize = (bytes: number) => {
                     <p class="text-[10px] text-gray-500">Total bytes in standard storage</p>
                 </div>
                 <div v-if="totalFiles !== undefined" class="text-right">
-                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Total objects</p>
-                    <p class="text-sm font-bold text-gray-900">{{ totalFiles }}</p>
+                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight">Bucket Content</p>
+                    <p class="text-[11px] font-bold text-gray-900">
+                        {{ totalFiles }} objects & {{ totalFolders || 0 }} folders
+                    </p>
                 </div>
             </div>
         </div>
-        <div class="flex items-end gap-2 mt-4"> 
+        <div class="flex items-end gap-2 mt-4">
             <span class="text-2xl font-bold text-gray-900">{{ formatSize(totalSize) }}</span>
             <span v-if="changePercent" class="text-xs font-bold mb-1"
-                :class="changePercent > 0 ? 'text-green-600' : 'text-red-600'">
+                :class="changePercent > 0 ? 'text-[var(--aws-green)]' : 'text-red-600'">
                 {{ changePercent > 0 ? '▲' : '▼' }} {{ Math.abs(changePercent) }}%
             </span>
         </div>

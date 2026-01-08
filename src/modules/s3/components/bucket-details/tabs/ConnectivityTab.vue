@@ -116,6 +116,30 @@ const handleSaveWebsite = () => {
     isEditWebsiteModalOpen.value = false
     // Note: Integration with backend API would happen here
 }
+
+// State for Block Public Access
+const isEditBlockPublicModalOpen = ref(false)
+const blockPublicAccess = reactive({
+    blockAll: true,
+    blockedAccessPoints: [] as string[]
+})
+const tempBlockPublicAccess = reactive({
+    blockAll: true,
+    blockedAccessPoints: [] as string[]
+})
+
+const mockAccessPoints = [
+    { name: 'finance-access-point' },
+    { name: 'marketing-data-ap' },
+    { name: 'internal-logs-ap' },
+    { name: 'customer-uploads-ap' }
+]
+
+const handleSaveBlockPublicAccess = () => {
+    blockPublicAccess.blockAll = tempBlockPublicAccess.blockAll
+    blockPublicAccess.blockedAccessPoints = [...tempBlockPublicAccess.blockedAccessPoints]
+    isEditBlockPublicModalOpen.value = false
+}
 </script>
 
 <template>
@@ -133,18 +157,39 @@ const handleSaveWebsite = () => {
         <div class="border border-gray-200 rounded-sm bg-white">
             <SectionHeader title="Block public access (bucket settings)"
                 description="Public access is granted to buckets and objects through access control lists (ACLs), bucket policies, access point policies, or all. In order to ensure that public access to this bucket and its objects is blocked, turn on Block all public access. These settings apply only to this bucket and its access points. <a href='#' class='text-[var(--aws-blue)] underline'>Learn more ↗</a>"
-                :showEdit="true" />
+                :showEdit="true"
+                @edit="isEditBlockPublicModalOpen = true; tempBlockPublicAccess.blockAll = blockPublicAccess.blockAll; tempBlockPublicAccess.blockedAccessPoints = [...blockPublicAccess.blockedAccessPoints]" />
             <div class="p-4 bg-gray-50">
                 <div class="border border-gray-300 rounded-sm bg-white p-4">
                     <h3 class="text-sm font-bold text-gray-900 mb-2">Block all public access</h3>
-                    <p class="text-xs text-gray-900 font-bold mb-4">On</p>
-                    <div class="flex items-center gap-1 cursor-pointer">
+                    <p class="text-xs text-gray-900 font-bold mb-4"
+                        :class="blockPublicAccess.blockAll ? 'text-gray-900' : 'text-blue-600'">
+                        {{ blockPublicAccess.blockAll ? 'On' : 'Off' }}
+                    </p>
+
+                    <div v-if="!blockPublicAccess.blockAll" class="space-y-4">
+                        <div v-if="blockPublicAccess.blockedAccessPoints.length > 0" class="pt-2">
+                            <h4 class="text-[10px] font-bold text-gray-500 uppercase mb-2">Blocked Access Points</h4>
+                            <div class="flex flex-wrap gap-2">
+                                <span v-for="ap in blockPublicAccess.blockedAccessPoints" :key="ap"
+                                    class="px-2 py-0.5 bg-red-50 text-red-700 border border-red-200 rounded-sm text-[10px] font-medium flex items-center gap-1.5">
+                                    <span class="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse"></span>
+                                    {{ ap }}
+                                </span>
+                            </div>
+                        </div>
+                        <div v-else
+                            class="text-[11px] text-gray-500 italic bg-gray-50 p-2 rounded-sm border border-dashed border-gray-300">
+                            No individual access points are currently blocked.
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-1 mt-4">
                         <svg class="w-3 h-3 text-[var(--aws-blue)]" fill="none" stroke="currentColor"
                             viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                         </svg>
-                        <span class="text-xs text-[var(--aws-blue)]">Individual Block Public Access settings for
-                            this
+                        <span class="text-xs text-[var(--aws-blue)]">Individual Block Public Access settings for this
                             bucket</span>
                     </div>
                 </div>
@@ -488,6 +533,85 @@ const handleSaveWebsite = () => {
                 </button>
                 <button @click="handleSaveCors" :disabled="!currentCorsJson.trim()"
                     class="px-6 py-1.5 font-bold bg-[var(--aws-orange)] text-white rounded-sm hover:opacity-90 shadow-sm text-xs transition-opacity disabled:opacity-50 disabled:cursor-not-allowed">
+                    Save changes
+                </button>
+            </div>
+        </div>
+    </div>
+    <!-- Edit Block Public Access Modal -->
+    <div v-if="isEditBlockPublicModalOpen"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm overflow-y-auto">
+        <div class="bg-white rounded-sm shadow-2xl w-full max-w-2xl flex flex-col my-8">
+            <div class="p-4 border-b border-gray-200">
+                <h2 class="text-xl font-bold text-gray-900">Edit Block public access (bucket settings)</h2>
+            </div>
+
+            <div class="p-6">
+                <div class="bg-amber-50 border border-amber-400 p-4 mb-6 flex gap-3">
+                    <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    <p class="text-[11px] text-amber-800 leading-relaxed font-medium">
+                        Blocking all public access provides a strong security boundary. Turning this off might expose
+                        your bucket's data if permissions are too broad.
+                    </p>
+                </div>
+
+                <div class="space-y-6">
+                    <label
+                        class="flex items-start gap-3 p-4 border rounded-sm bg-gray-50 cursor-pointer group hover:border-[var(--aws-blue)] transition-colors">
+                        <input type="checkbox" v-model="tempBlockPublicAccess.blockAll"
+                            class="mt-1 w-4 h-4 text-[var(--aws-blue)] rounded-sm border-gray-400">
+                        <div>
+                            <p class="text-sm font-bold text-gray-900">Block all public access</p>
+                            <p class="text-[11px] text-gray-500 leading-tight">Recommended. Turning this on will
+                                override any other bucket or access point policies that grant public access.</p>
+                        </div>
+                    </label>
+
+                    <div class="border-t pt-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider">Individual Access
+                                Points</h3>
+                            <span class="text-[10px] text-gray-500 font-medium" v-if="tempBlockPublicAccess.blockAll">
+                                Locked by "Block all"
+                            </span>
+                        </div>
+
+                        <div class="grid grid-cols-1 gap-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                            <div v-for="ap in mockAccessPoints" :key="ap.name"
+                                class="flex items-center justify-between p-3 border rounded-sm transition-all duration-200"
+                                :class="tempBlockPublicAccess.blockAll ? 'opacity-40 grayscale cursor-not-allowed bg-gray-100' : 'bg-white hover:border-[var(--aws-blue)] hover:shadow-sm'">
+                                <div class="flex items-center gap-3">
+                                    <input type="checkbox" :value="ap.name"
+                                        v-model="tempBlockPublicAccess.blockedAccessPoints"
+                                        :disabled="tempBlockPublicAccess.blockAll"
+                                        class="w-4 h-4 text-[var(--aws-blue)] rounded-sm border-gray-400 disabled:bg-gray-200">
+                                    <div>
+                                        <p class="text-xs font-bold"
+                                            :class="tempBlockPublicAccess.blockAll ? 'text-gray-500' : 'text-gray-900'">
+                                            {{ ap.name }}</p>
+                                        <div class="flex items-center gap-2 mt-0.5">
+                                            <span class="text-[9px] font-mono text-gray-400">Access Point</span>
+                                            <span v-if="tempBlockPublicAccess.blockedAccessPoints.includes(ap.name)"
+                                                class="text-[9px] text-red-600 font-bold uppercase">Blocked</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
+                <button @click="isEditBlockPublicModalOpen = false"
+                    class="px-4 py-1.5 font-bold text-[var(--aws-blue)] hover:bg-blue-50/50 rounded-sm transition-colors text-xs">
+                    Cancel
+                </button>
+                <button @click="handleSaveBlockPublicAccess"
+                    class="px-6 py-1.5 font-bold bg-[var(--aws-orange)] text-white rounded-sm hover:opacity-90 shadow-sm transition-opacity text-xs">
                     Save changes
                 </button>
             </div>

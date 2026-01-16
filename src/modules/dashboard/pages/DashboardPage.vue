@@ -1,8 +1,20 @@
 <script setup lang="ts">
 import BaseWidget from '@/shared/components/BaseWidget.vue'
 import { useToastStore } from '@/shared/store/toastStore'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 
 const toastStore = useToastStore()
+const authStore = useAuthStore()
+
+const getServiceLink = (service: string) => {
+    // If registration is complete, go to the service dashboard (e.g. S3), else go to setup
+    if (authStore.registrationComplete) {
+        if (service === 'S3') return '/s3'
+        // Other services can just go to dashboard for now or their respective routes as they are built
+        return '/dashboard'
+    }
+    return '/auth/complete-setup'
+}
 
 const triggerAction = (action: string) => {
     toastStore.addToast(`${action} action triggered.`, 'info')
@@ -42,7 +54,7 @@ const triggerAction = (action: string) => {
             <BaseWidget title="Recently visited" show-info class="lg:col-span-1">
                 <div class="p-4 space-y-4">
                     <router-link v-for="service in ['EC2', 'Lambda', 'S3', 'IAM']" :key="service"
-                        to="/auth/complete-setup"
+                        :to="getServiceLink(service)"
                         class="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors">
                         <div
                             class="w-8 h-8 bg-gray-200 dark:bg-gray-600 flex items-center justify-center font-bold text-[10px]">

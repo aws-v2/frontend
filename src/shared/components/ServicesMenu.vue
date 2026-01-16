@@ -16,7 +16,8 @@ const categories = [
     { id: 'all-serv', label: 'All services', items: [] },
     { id: 'compute', label: 'Compute', items: ['EC2', 'Lambda', 'Lightsail'] },
     { id: 'storage', label: 'Storage', items: ['S3', 'EFS', 'Glacier'] },
-    { id: 'databases', label: 'Data Base', items: ['RDS', 'DynamoDB', 'ElastiCache'] },
+    { id: 'databases', label: 'DataBase', items: ['RDS', 'DynamoDB', 'ElastiCache'] },
+    { id: 'containers', label: 'Containers', items: ['ECS', 'EKS', 'Fargate'] },
 ]
 
 const currentItems = (label: string) => {

@@ -1,0 +1,16 @@
+am goind to analyze your response, ask questions and answer yours, 
+
+
+in this point, 
+
+"  What Currently Happens
+
+  1. Handler receives only {name: "bucket-name"} (owner_id extracted from auth)
+  2. Service validates name, then:
+    - Creates bucket in MinIO (just name, no config)
+    - Saves minimal metadata to PostgreSQL (id, name, owner_id, timestamps)
+  3. MinIO gets a bare-bones bucket with defaults
+  4. PostgreSQL stores only 5 fields"
+
+you said "owner_id extracted from auth", this is my api client code i need you to update it to include the aunthentication details 
+

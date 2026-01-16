@@ -56,4 +56,16 @@ export default [
     component: () => import('./pages/AccountPlanPage.vue'),
     meta: { requiresAuth: true }
   },
+  {
+    path: '/auth/payment-method',
+    name: 'payment-method',
+    component: () => import('./pages/PaymentMethodPage.vue'),
+    meta: { requiresAuth: true }
+  },
+  {
+    path: '/auth/registration-success',
+    name: 'registration-success',
+    component: () => import('./pages/RegistrationSuccessPage.vue'),
+    meta: { requiresAuth: true }
+  },
 ]

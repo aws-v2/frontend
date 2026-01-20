@@ -8,6 +8,8 @@ const apiClient = axios.create({
   },
 })
 
+console.log(`[API Client] Initialized with profile: ${import.meta.env.VITE_APP_PROFILE}`)
+
 // Request Interceptor: Attach JWT token to every request
 apiClient.interceptors.request.use(
   (config) => {
@@ -20,7 +22,7 @@ apiClient.interceptors.request.use(
   },
   (error) => {
     return Promise.reject(error)
-  }
+  },
 )
 
 // Response Interceptor: Handle 401 Unauthorized (Global Logout/Redirect)
@@ -33,7 +35,7 @@ apiClient.interceptors.response.use(
       // Optional: Redirect to login or show toast
     }
     return Promise.reject(error)
-  }
+  },
 )
 
 export default apiClient

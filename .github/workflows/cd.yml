@@ -41,11 +41,11 @@ jobs:
         key: ${{ secrets.EC2_SSH_KEY }}
         passphrase: ${{ secrets.EC2_SSH_PASSPHRASE }}
         script: |
-          echo "${{ secrets.FRONTEND_SERVER_PROD_ENV }}" > /home/ubuntu/.frontend-server-prod.env
+          echo "${{ secrets.FRONTEND_SERVER_PROD_ENV }}" > /home/${{ secrets.EC2_USERNAME }}/.frontend-server-prod.env
           docker pull qarani/frontend-server:latest
           docker stop frontend-server || true
           docker rm frontend-server || true
-          docker run -d --name frontend-server --network mini-aws-network --env-file /home/ubuntu/.frontend-server-prod.env -p 5173:80 qarani/frontend-server:latest
+          docker run -d --name frontend-server --network mini-aws-network --env-file /home/${{ secrets.EC2_USERNAME }}/.frontend-server-prod.env -p 5173:80 qarani/frontend-server:latest
 
 
 

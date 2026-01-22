@@ -8,7 +8,7 @@ const apiClient = axios.create({
   },
 })
 
-console.log(`[API Client] Initialized with profile: ${import.meta.env.VITE_APP_PROFILE}`)
+console.log(`[API Client] Initialized with profile: ${import.meta.env.APP_PROFILE}`)
 
 // Request Interceptor: Attach JWT token to every request
 apiClient.interceptors.request.use(

@@ -2,7 +2,7 @@ import axios from 'axios'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 
 const isProd = import.meta.env.MODE === 'production'
-const defaultBaseUrl = isProd ? 'http://13.48.129.233' : 'http://localhost:8080'
+const defaultBaseUrl = isProd ? 'http://13.48.129.233:8080' : 'http://localhost:8080'
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || defaultBaseUrl,

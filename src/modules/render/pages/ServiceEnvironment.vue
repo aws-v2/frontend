@@ -120,7 +120,7 @@ const initialEnvVars = [
   { key: 'DEV_MAIL_PASSWORD', value: 'your-password', show: false },
   { key: 'DEV_MAIL_PORT', value: '2525', show: false },
   { key: 'DEV_MAIL_USERNAME', value: 'your-username', show: false },
-  { key: 'FRONTEND_URL', value: isProd ? 'http://13.48.129.233/' : 'http://localhost:3000', show: false },
+  { key: 'FRONTEND_URL', value: isProd ? 'http://13.48.129.233:8080/' : 'http://localhost:3000', show: false },
   { key: 'JWT_SECRET', value: 'your-super-secret-jwt-key', show: false },
   { key: 'NATI_FRIEND_API_KEY', value: 'nati-friend-api-key-12345', show: false },
 ]

@@ -11,7 +11,8 @@
         <div class="card-header">
           <div class="header-left">
             <h3>Environment Variables</h3>
-            <p>Set environment-specific config and secrets (such as API keys), then read those values from your code. <a href="#">Learn more</a>.</p>
+            <p>Set environment-specific config and secrets (such as API keys), then read those values from your code. <a
+                href="#">Learn more</a>.</p>
           </div>
           <div class="header-right">
             <template v-if="isEditing">
@@ -35,23 +36,13 @@
           <div class="table-body" :class="{ editing: isEditing }">
             <div v-for="(env, index) in envVars" :key="index" class="env-row">
               <div class="col-key">
-                <input 
-                  type="text" 
-                  v-model="env.key" 
-                  :placeholder="isEditing ? 'KEY' : ''"
-                  :readonly="!isEditing"
-                  class="env-input"
-                />
+                <input type="text" v-model="env.key" :placeholder="isEditing ? 'KEY' : ''" :readonly="!isEditing"
+                  class="env-input" />
               </div>
               <div class="col-value">
                 <div class="value-input-container">
-                  <input 
-                    :type="env.show ? 'text' : 'password'" 
-                    v-model="env.value"
-                    :placeholder="isEditing ? 'VALUE' : ''"
-                    :readonly="!isEditing"
-                    class="env-input"
-                  />
+                  <input :type="env.show ? 'text' : 'password'" v-model="env.value"
+                    :placeholder="isEditing ? 'VALUE' : ''" :readonly="!isEditing" class="env-input" />
                   <button v-if="!isEditing" class="btn-show" @click="env.show = !env.show">
                     {{ env.show ? '👁️' : '👁️‍🗨️' }}
                   </button>
@@ -62,7 +53,7 @@
               </div>
             </div>
           </div>
-          
+
           <div v-if="isEditing" class="table-footer">
             <button class="btn-add" @click="addEnvVar">+ Add Environment Variable</button>
             <button class="btn-add" @click="showEnvModal = true">📄 Add from .env</button>
@@ -81,7 +72,8 @@
         <div class="card-header">
           <div class="header-left">
             <h3>Secret Files</h3>
-            <p>Store plaintext files containing secret data (such as a .env file or a private key). Access during builds from your app's root, or from /etc/secrets/&lt;filename&gt;.</p>
+            <p>Store plaintext files containing secret data (such as a .env file or a private key). Access during builds
+              from your app's root, or from /etc/secrets/&lt;filename&gt;.</p>
           </div>
         </div>
         <div class="card-content">
@@ -96,7 +88,8 @@
         <div class="card-header">
           <div class="header-left">
             <h3>Linked Environment Groups</h3>
-            <p>Environment groups are collections of environment variables and secret files that you can share across multiple services.</p>
+            <p>Environment groups are collections of environment variables and secret files that you can share across
+              multiple services.</p>
           </div>
         </div>
         <div class="card-content">
@@ -107,11 +100,7 @@
     </section>
 
     <!-- Modals -->
-    <AddFromEnvModal 
-      v-if="showEnvModal" 
-      @close="showEnvModal = false" 
-      @add="handleEnvImport"
-    />
+    <AddFromEnvModal v-if="showEnvModal" @close="showEnvModal = false" @add="handleEnvImport" />
   </div>
 </template>
 
@@ -122,14 +111,16 @@ import AddFromEnvModal from '../components/AddFromEnvModal.vue'
 const isEditing = ref(false)
 const showEnvModal = ref(false)
 
+const isProd = import.meta.env.MODE === 'production'
+
 const initialEnvVars = [
   { key: 'ALCHEMY_URL', value: 'https://eth-mainnet.g.alchemy.com/v2/your-api-key', show: false },
-  { key: 'DATABASE_URL', value: 'postgresql://user:password@localhost:5432/db', show: false },
+  { key: 'DATABASE_URL', value: `postgresql://root:root@${isProd ? 'postgres' : 'localhost'}:5432/aws_cloud`, show: false },
   { key: 'DEV_MAIL_HOST', value: 'smtp.mailtrap.io', show: false },
   { key: 'DEV_MAIL_PASSWORD', value: 'your-password', show: false },
   { key: 'DEV_MAIL_PORT', value: '2525', show: false },
   { key: 'DEV_MAIL_USERNAME', value: 'your-username', show: false },
-  { key: 'FRONTEND_URL', value: 'http://localhost:3000', show: false },
+  { key: 'FRONTEND_URL', value: isProd ? 'http://api-gateway:8080' : 'http://localhost:3000', show: false },
   { key: 'JWT_SECRET', value: 'your-super-secret-jwt-key', show: false },
   { key: 'NATI_FRIEND_API_KEY', value: 'nati-friend-api-key-12345', show: false },
 ]
@@ -290,9 +281,17 @@ const handleEnvImport = (text: string) => {
   letter-spacing: 0.5px;
 }
 
-.col-key { flex: 1; }
-.col-value { flex: 2; }
-.col-actions { width: 40px; }
+.col-key {
+  flex: 1;
+}
+
+.col-value {
+  flex: 2;
+}
+
+.col-actions {
+  width: 40px;
+}
 
 .table-body {
   max-height: 500px;

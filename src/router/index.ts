@@ -4,21 +4,17 @@ import authRoutes from '@/modules/auth/routes'
 import dashboardRoutes from '@/modules/dashboard/routes'
 import landingRoutes from '@/modules/landing/routes'
 import s3Routes from '@/modules/s3/routes'
+import renderRoutes from '@/modules/render/routes'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    ...landingRoutes,
-    ...authRoutes,
-    ...dashboardRoutes,
-    ...s3Routes,
-  ],
+  routes: [...landingRoutes, ...authRoutes, ...dashboardRoutes, ...s3Routes, ...renderRoutes],
 })
 
 router.beforeEach((to, from, next) => {
   const authStore = useAuthStore()
-  const requiresAuth = to.matched.some(record => record.meta.requiresAuth)
-  const isPublicOnly = to.matched.some(record => record.meta.publicOnly)
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
+  const isPublicOnly = to.matched.some((record) => record.meta.publicOnly)
   const isMfaPage = to.name === 'mfa'
 
   if (isMfaPage && authStore.mfaRequired) {

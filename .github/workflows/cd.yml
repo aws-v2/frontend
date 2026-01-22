@@ -44,7 +44,7 @@ jobs:
           docker pull qarani/frontend-server:latest
           docker stop frontend-server || true
           docker rm frontend-server || true
-          docker run -d --name frontend-server --network mini-aws-network --env-file /home/runner/.frontend-server-prod.env -p 5173:5173 qarani/frontend-server:latest
+          docker run -d --name frontend-server --network mini-aws-network --env-file /home/runner/.frontend-server-prod.env -p 5173:80 qarani/frontend-server:latest
 
 
 

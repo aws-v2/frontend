@@ -190,13 +190,14 @@ const triggerLogin = () => {
 
             <!-- Menu items -->
             <div class="hidden md:flex items-center gap-10">
-                <a href="#ai" class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">AI</a>
-                <a href="#compute"
-                    class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Compute</a>
-                <a href="#gaming"
-                    class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Gaming</a>
-                <a href="#storage"
-                    class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Storage</a>
+                <router-link to="/sagemaker"
+                    class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">AI</router-link>
+                <router-link to="/compute"
+                    class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Compute</router-link>
+                <router-link to="/gaming"
+                    class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Gaming</router-link>
+                <router-link to="/s3"
+                    class="text-sm font-semibold text-gray-600 hover:text-blue-600 transition-colors">Storage</router-link>
             </div>
 
             <!-- CTA Buttons -->
@@ -282,334 +283,396 @@ const triggerLogin = () => {
             </div>
         </section>
 
-        <!-- Feature Sections -->
-        <div class="relative z-10 px-8 md:px-16 py-24 space-y-32 max-w-7xl mx-auto">
+        <!-- Dynamic Feature Sections -->
+        <div class="relative z-10 space-y-40 pb-32">
 
-            <!-- AI Section (Stargate) -->
-            <section id="ai" class="grid md:grid-cols-2 gap-16 items-center">
-                <div class="order-2 md:order-1">
-                    <div
-                        class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-600 text-xs font-bold uppercase tracking-wider mb-6">
-                        <span class="relative flex h-2 w-2">
-                            <span
-                                class="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
-                        </span>
-                        Next-Gen Intelligence
-                    </div>
-                    <h2 class="text-4xl md:text-5xl font-black text-gray-900 mb-6 leading-tight">
-                        Revolutionize your workflow with <span class="text-indigo-600">Stargate</span>
-                    </h2>
-                    <p class="text-lg text-gray-600 mb-8 leading-relaxed">
-                        Unleash the power of AI with Stargate, our advanced intelligence engine. From automated
-                        decision-making to predictive analytics, Stargate integrates seamlessly with your existing
-                        infrastructure to drive unprecedented efficiency.
-                    </p>
-                    <ul class="space-y-4 mb-10">
-                        <li class="flex items-center gap-3 text-gray-700 font-medium">
-                            <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                    d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            Real-time neural processing
-                        </li>
-                        <li class="flex items-center gap-3 text-gray-700 font-medium">
-                            <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                    d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            Adaptive learning models
-                        </li>
-                    </ul>
-                    <button
-                        class="px-8 py-3 bg-indigo-600 text-white font-bold rounded-xl hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-500/25">
-                        Explore Stargate
-                    </button>
+            <!-- Floating Background Elements (Decorative) -->
+            <div class="absolute inset-0 overflow-hidden pointer-events-none">
+                <div
+                    class="absolute top-[10%] left-[-5%] w-96 h-96 bg-blue-400/10 rounded-full blur-[120px] animate-pulse">
                 </div>
-                <div class="order-1 md:order-2 relative group">
-                    <div
-                        class="absolute -inset-4 bg-gradient-to-tr from-indigo-500 to-purple-500 rounded-3xl opacity-20 blur-2xl group-hover:opacity-30 transition-opacity">
-                    </div>
-                    <div class="relative bg-white p-8 rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-                        <!-- Simulated AI Visual -->
-                        <div class="aspect-video bg-indigo-50 rounded-2xl flex items-center justify-center">
-                            <svg class="w-32 h-32 text-indigo-600 animate-pulse" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                                    d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
-                                </path>
-                            </svg>
+                <div
+                    class="absolute top-[40%] right-[-5%] w-[30rem] h-[30rem] bg-indigo-400/10 rounded-full blur-[150px]">
+                </div>
+                <div class="absolute bottom-[20%] left-[10%] w-80 h-80 bg-emerald-400/5 rounded-full blur-[100px] animate-bounce"
+                    style="animation-duration: 10s"></div>
+            </div>
+
+            <!-- AI Section: Bento Reveal -->
+            <section id="ai" class="max-w-7xl mx-auto px-8 md:px-16">
+                <div class="flex flex-col lg:flex-row gap-16 items-center">
+                    <div class="lg:w-1/2">
+                        <div
+                            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600/10 text-indigo-600 text-[10px] font-black uppercase tracking-tighter mb-8 border border-indigo-200/50">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-600 animate-ping"></span>
+                            Neural Protocol Active
+                        </div>
+                        <h2 class="text-5xl md:text-7xl font-black text-gray-900 mb-8 leading-[1.1] tracking-tighter">
+                            The Mind of <span class="text-indigo-600 italic">Stargate</span>
+                        </h2>
+                        <p class="text-xl text-gray-500 mb-10 leading-relaxed font-medium">
+                            Beyond standard automation. Stargate is a living intelligence layer that learns, adapts, and
+                            evolves with your business logic.
+                        </p>
+                        <div class="flex flex-wrap gap-4">
+                            <button
+                                class="group relative px-8 py-4 bg-gray-900 text-white font-bold rounded-2xl overflow-hidden transition-all hover:pr-12">
+                                <span class="relative z-10 text-lg">Initialize AI</span>
+                                <svg class="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 opacity-0 group-hover:opacity-100 transition-all"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                        d="M17 8l4 4m0 0l-4 4m4-4H3"></path>
+                                </svg>
+                            </button>
                         </div>
                     </div>
-                </div>
-            </section>
 
-            <!-- Compute Section (Lambda, EC2) -->
-            <section id="compute" class="grid md:grid-cols-2 gap-16 items-center">
-                <div class="relative group">
-                    <div
-                        class="absolute -inset-4 bg-gradient-to-tr from-blue-500 to-cyan-500 rounded-3xl opacity-20 blur-2xl group-hover:opacity-30 transition-opacity">
-                    </div>
-                    <div
-                        class="relative bg-white p-8 rounded-3xl shadow-xl border border-gray-100 grid grid-cols-2 gap-4">
-                        <div class="p-6 bg-blue-50 rounded-2xl border border-blue-100">
-                            <div
-                                class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white mb-4">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <div class="lg:w-1/2 grid grid-cols-2 gap-4 relative">
+                        <!-- Bento Grid Items -->
+                        <div
+                            class="col-span-2 p-8 bg-white/40 backdrop-blur-xl border border-white/60 rounded-[2.5rem] shadow-2xl shadow-indigo-500/10 group hover:-translate-y-2 transition-all duration-500">
+                            <div class="flex items-center gap-4 mb-4">
+                                <div
+                                    class="w-12 h-12 bg-indigo-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-indigo-600/30">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z">
+                                        </path>
+                                    </svg>
+                                </div>
+                                <h3 class="text-2xl font-black text-gray-900">Predictive Core</h3>
+                            </div>
+                            <p class="text-gray-500 font-medium">Anticipate trends before they manifest with our
+                                adaptive neural network.</p>
+                        </div>
+                        <div
+                            class="p-6 bg-indigo-600 rounded-[2.5rem] text-white flex flex-col justify-end group hover:rotate-3 transition-all duration-500">
+                            <span class="text-4xl font-black mb-2">98%</span>
+                            <span class="text-xs font-bold uppercase tracking-widest opacity-80">Accuracy Rate</span>
+                        </div>
+                        <div
+                            class="p-6 bg-white border border-gray-100 rounded-[2.5rem] shadow-xl flex items-center justify-center group hover:-rotate-3 transition-all duration-500">
+                            <div class="w-16 h-16 rounded-full bg-indigo-50 flex items-center justify-center relative">
+                                <span
+                                    class="absolute inset-0 rounded-full border-2 border-dashed border-indigo-200 animate-spin"
+                                    style="animation-duration: 8s"></span>
+                                <svg class="w-8 h-8 text-indigo-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M13 10V3L4 14h7v7l9-11h-7z"></path>
                                 </svg>
                             </div>
-                            <h4 class="font-bold text-gray-900 mb-1">Lambda</h4>
-                            <p class="text-xs text-gray-500">Serverless compute</p>
-                        </div>
-                        <div class="p-6 bg-cyan-50 rounded-2xl border border-cyan-100">
-                            <div
-                                class="w-10 h-10 bg-cyan-600 rounded-lg flex items-center justify-center text-white mb-4">
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
-                                    </path>
-                                </svg>
-                            </div>
-                            <h4 class="font-bold text-gray-900 mb-1">EC2</h4>
-                            <p class="text-xs text-gray-500">Elastic servers</p>
-                        </div>
-                        <div
-                            class="col-span-2 p-6 bg-gray-50 rounded-2xl border border-gray-200 flex items-center justify-between">
-                            <div>
-                                <h4 class="font-bold text-gray-900 mb-1">Managed Servers</h4>
-                                <p class="text-xs text-gray-500">Zero-maintenance infrastructure</p>
-                            </div>
-                            <div class="flex -space-x-2">
-                                <div class="w-8 h-8 rounded-full bg-blue-100 border-2 border-white"></div>
-                                <div class="w-8 h-8 rounded-full bg-blue-200 border-2 border-white"></div>
-                                <div class="w-8 h-8 rounded-full bg-blue-300 border-2 border-white"></div>
-                            </div>
                         </div>
                     </div>
-                </div>
-                <div>
-                    <div
-                        class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 text-blue-600 text-xs font-bold uppercase tracking-wider mb-6">
-                        Scalable Infrastructure
-                    </div>
-                    <h2 class="text-4xl md:text-5xl font-black text-gray-900 mb-6 leading-tight">
-                        Power your apps with <span class="text-blue-600">Elastic Compute</span>
-                    </h2>
-                    <p class="text-lg text-gray-600 mb-8 leading-relaxed">
-                        Scale effortlessly from simple scripts to massive enterprise systems. With <b>Lambda</b> for
-                        event-driven logic and <b>EC2</b> for high-performance needs, our managed servers handle the
-                        heavy lifting while you focus on code.
-                    </p>
-                    <button
-                        class="px-8 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-all shadow-lg shadow-blue-500/25">
-                        Deploy Now
-                    </button>
                 </div>
             </section>
 
-            <!-- Storage Section (RDS, S3) -->
-            <section id="storage" class="grid md:grid-cols-2 gap-16 items-center">
-                <div class="order-2 md:order-1">
-                    <div
-                        class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-emerald-50 text-emerald-600 text-xs font-bold uppercase tracking-wider mb-6">
-                        Secure & Reliable
+            <!-- Compute Section: Terminal Hacker Style -->
+            <section id="compute" class="relative py-20 overflow-hidden">
+                <div class="max-w-7xl mx-auto px-8 md:px-16 flex flex-col lg:flex-row-reverse gap-20 items-center">
+                    <div class="lg:w-1/2">
+                        <div
+                            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-600/10 text-blue-600 text-[10px] font-black uppercase tracking-tighter mb-8 border border-blue-200/50">
+                            <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                            Instance: Ready
+                        </div>
+                        <h2 class="text-5xl md:text-7xl font-black text-gray-900 mb-8 leading-[1.1] tracking-tighter">
+                            Pure <span class="bg-blue-600 text-white px-4 rounded-lg">Performance</span>
+                        </h2>
+                        <div class="space-y-6 mb-12">
+                            <div class="flex gap-4 items-start">
+                                <div
+                                    class="mt-1 w-6 h-6 flex-shrink-0 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">
+                                    1</div>
+                                <p class="text-lg text-gray-600 font-medium"><b>Lambda Functions</b> for event-driven
+                                    magic.</p>
+                            </div>
+                            <div class="flex gap-4 items-start">
+                                <div
+                                    class="mt-1 w-6 h-6 flex-shrink-0 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">
+                                    2</div>
+                                <p class="text-lg text-gray-600 font-medium"><b>EC2 Instances</b> for raw, unbridled
+                                    power.</p>
+                            </div>
+                            <div class="flex gap-4 items-start">
+                                <div
+                                    class="mt-1 w-6 h-6 flex-shrink-0 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-sm font-bold">
+                                    3</div>
+                                <p class="text-lg text-gray-600 font-medium">Automatic scaling that breathes with your
+                                    traffic.</p>
+                            </div>
+                        </div>
+                        <router-link to="/lambda"
+                            class="inline-block px-8 py-4 bg-blue-600 text-white font-black rounded-2xl hover:bg-blue-700 transition-all shadow-2xl shadow-blue-600/30 transform hover:-translate-y-1">
+                            Deploy Now
+                        </router-link>
                     </div>
-                    <h2 class="text-4xl md:text-5xl font-black text-gray-900 mb-6 leading-tight">
-                        Built for <span class="text-emerald-600">Durability</span>
-                    </h2>
-                    <p class="text-lg text-gray-600 mb-8 leading-relaxed">
-                        Your data is your most valuable asset. Protect it with our redundant <b>S3</b> object storage
-                        and highly-available <b>RDS</b> database clusters. Experience 99.999999999% durability and
-                        lightning-fast retrieval.
-                    </p>
-                    <div class="grid grid-cols-2 gap-6 mb-10">
-                        <div class="flex items-start gap-3">
-                            <div class="p-2 bg-emerald-100 rounded-lg text-emerald-600">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+
+                    <div class="lg:w-1/2 w-full">
+                        <div
+                            class="relative bg-gray-900 rounded-[2.5rem] p-4 lg:p-8 shadow-[0_40px_100px_-20px_rgba(30,58,138,0.4)] transform lg:-rotate-2 border border-blue-500/20 group">
+                            <!-- Terminal Header -->
+                            <div class="flex items-center gap-2 mb-6 ml-2">
+                                <div class="w-3 h-3 rounded-full bg-red-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500"></div>
+                                <span class="ml-4 text-xs font-mono text-gray-500">serwin-cloud --deploy</span>
+                            </div>
+                            <!-- Terminal Content -->
+                            <div class="font-mono text-sm leading-relaxed space-y-2 mb-4">
+                                <p class="text-blue-400"># Initializing managed infrastructure...</p>
+                                <p class="text-white"><span class="text-emerald-400">✔</span> Lambda: handler.js
+                                    successfully deployed</p>
+                                <p class="text-white"><span class="text-emerald-400">✔</span> EC2-t3.large: Ready
+                                    (us-east-1)</p>
+                                <p class="text-white"><span class="text-emerald-400">✔</span> Memory: 16GB allocated</p>
+                                <div class="flex items-center gap-2 mt-4">
+                                    <span class="text-blue-400">$</span>
+                                    <span class="w-2 h-5 bg-blue-400 animate-pulse"></span>
+                                </div>
+                            </div>
+                            <!-- Floating Metric Card Over Terminal -->
+                            <div
+                                class="absolute -bottom-10 -right-6 md:-right-10 bg-white p-6 rounded-3xl shadow-2xl border border-gray-100 group-hover:translate-x-4 transition-transform">
+                                <div class="flex items-center gap-3">
+                                    <div class="p-2 bg-emerald-50 rounded-xl text-emerald-600">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M5 13l4 4L19 7"></path>
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                                            Uptime</div>
+                                        <div class="text-2xl font-black text-gray-900">99.99%</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Storage Section: 3D Stack -->
+            <section id="storage" class="max-w-7xl mx-auto px-8 md:px-16">
+                <div class="flex flex-col lg:flex-row gap-16 items-center">
+                    <div class="lg:w-1/2">
+                        <div
+                            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600/10 text-emerald-600 text-[10px] font-black uppercase tracking-tighter mb-8 border border-emerald-200/50">
+                            Immutable Data Layer
+                        </div>
+                        <h2 class="text-5xl md:text-7xl font-black text-gray-900 mb-8 leading-[1.1] tracking-tighter">
+                            Infinite <span class="text-emerald-600">Storage</span>
+                        </h2>
+                        <p class="text-xl text-gray-500 mb-10 leading-relaxed font-medium">
+                            Scale without limits. Whether it's the raw simplicity of <b>S3</b> or the robust complexity
+                            of <b>RDS</b>, we ensure your data is safe, fast, and always where you need it.
+                        </p>
+                        <div class="grid grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="text-lg font-black text-gray-900 mb-2">Relational Focus</h4>
+                                <p class="text-sm text-gray-500">Fully managed RDS with automated failover and zero-lag
+                                    indexing.</p>
+                            </div>
+                            <div>
+                                <h4 class="text-lg font-black text-gray-900 mb-2">Object Agnostic</h4>
+                                <p class="text-sm text-gray-500">S3 storage designed for high-concurrency access and
+                                    deep archiving.</p>
+                            </div>
+                        </div>
+                        <router-link to="/s3"
+                            class="inline-block mt-10 px-8 py-4 bg-emerald-600 text-white font-black rounded-2xl hover:bg-emerald-700 transition-all shadow-2xl shadow-emerald-600/30 transform hover:-translate-y-1">
+                            Start Storing
+                        </router-link>
+                    </div>
+
+                    <div class="lg:w-1/2 relative flex items-center justify-center h-[400px]">
+                        <!-- Isometric Stacked Cards -->
+                        <router-link to="/rds"
+                            class="absolute w-64 h-64 bg-emerald-600 rounded-[3rem] transform rotate-[30deg] -translate-x-10 -translate-y-10 shadow-2xl skew-y-12 transition-all hover:translate-y-[-2rem] group cursor-pointer">
+                            <div class="absolute top-8 left-8 text-white">
+                                <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4">
                                     </path>
                                 </svg>
+                                <span class="block mt-4 text-2xl font-black">RDS</span>
                             </div>
-                            <div>
-                                <h5 class="font-bold text-gray-900">RDS</h5>
-                                <p class="text-sm text-gray-500">Relational Databases</p>
-                            </div>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <div class="p-2 bg-teal-100 rounded-lg text-teal-600">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        </router-link>
+                        <router-link to="/s3"
+                            class="absolute w-64 h-64 bg-white border-2 border-emerald-100 rounded-[3rem] transform rotate-[30deg] shadow-2xl skew-y-12 translate-x-10 translate-y-10 flex items-center justify-center transition-all hover:translate-y-[2.5rem] cursor-pointer">
+                            <div class="text-emerald-600 text-center">
+                                <svg class="w-16 h-16 mx-auto mb-2" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.172-1.172a4 4 0 115.656 5.656L15 13">
                                     </path>
                                 </svg>
+                                <span class="text-xl font-black">S3 BUCKET</span>
                             </div>
-                            <div>
-                                <h5 class="font-bold text-gray-900">S3</h5>
-                                <p class="text-sm text-gray-500">Object Storage</p>
-                            </div>
-                        </div>
-                    </div>
-                    <button
-                        class="px-8 py-3 bg-emerald-600 text-white font-bold rounded-xl hover:bg-emerald-700 transition-all shadow-lg shadow-emerald-500/25">
-                        Start Storing
-                    </button>
-                </div>
-                <div class="order-1 md:order-2 relative group">
-                    <div
-                        class="absolute -inset-4 bg-gradient-to-tr from-emerald-500 to-teal-500 rounded-3xl opacity-20 blur-2xl group-hover:opacity-30 transition-opacity">
-                    </div>
-                    <div class="relative bg-white p-4 rounded-3xl shadow-xl border border-gray-100">
-                        <div
-                            class="bg-gray-900 rounded-2xl overflow-hidden p-6 aspect-square flex flex-col justify-center gap-4">
-                            <div class="h-1 lg:h-2 w-full bg-emerald-500/30 rounded-full overflow-hidden">
-                                <div class="h-full w-2/3 bg-emerald-500"></div>
-                            </div>
-                            <div class="h-1 lg:h-2 w-full bg-teal-500/30 rounded-full overflow-hidden">
-                                <div class="h-full w-1/2 bg-teal-500"></div>
-                            </div>
-                            <div class="h-1 lg:h-2 w-full bg-emerald-500/30 rounded-full overflow-hidden">
-                                <div class="h-full w-4/5 bg-emerald-500"></div>
-                            </div>
-                            <div class="mt-4 flex justify-between items-end">
-                                <div class="text-emerald-500 text-4xl lg:text-5xl font-black">99.9%</div>
-                                <div class="text-gray-500 text-xs">Availability SLA</div>
-                            </div>
-                        </div>
+                        </router-link>
                     </div>
                 </div>
             </section>
 
-            <!-- Gaming Section (GameLift, Stream) -->
-            <section id="gaming" class="grid md:grid-cols-2 gap-16 items-center">
-                <div class="relative group">
-                    <div
-                        class="absolute -inset-4 bg-gradient-to-tr from-rose-500 to-orange-500 rounded-3xl opacity-20 blur-2xl group-hover:opacity-30 transition-opacity">
+            <!-- Gaming Section: Cyberpunk Neon -->
+            <section id="gaming" class="max-w-7xl mx-auto px-8 md:px-16 pt-20">
+                <div
+                    class="relative bg-gray-900 rounded-[3rem] p-12 lg:p-24 overflow-hidden group shadow-[0_50px_100px_-30px_rgba(244,63,94,0.3)]">
+                    <!-- Background Design -->
+                    <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-rose-500/10 to-transparent">
                     </div>
-                    <div class="relative bg-white p-2 rounded-3xl shadow-xl border border-gray-100 overflow-hidden">
-                        <div class="aspect-video bg-gray-900 rounded-2xl flex items-center justify-center relative">
-                            <svg class="w-16 h-16 text-rose-500 animate-bounce" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z">
-                                </path>
-                            </svg>
+                    <div
+                        class="absolute -bottom-20 -right-20 w-80 h-80 bg-rose-500/20 rounded-full blur-[80px] group-hover:scale-125 transition-transform duration-1000">
+                    </div>
+                    <div class="absolute top-10 right-10 flex gap-2">
+                        <div class="w-1 h-8 bg-rose-500 animate-pulse"></div>
+                        <div class="w-1 h-12 bg-rose-500 animate-pulse" style="animation-delay: 0.2s"></div>
+                        <div class="w-1 h-6 bg-rose-500 animate-pulse" style="animation-delay: 0.4s"></div>
+                    </div>
+
+                    <div class="relative z-10 flex flex-col lg:flex-row gap-20 items-center">
+                        <div class="lg:w-3/5">
                             <div
-                                class="absolute bottom-4 left-4 right-4 flex justify-between items-center px-4 py-2 bg-white/10 backdrop-blur-md rounded-lg">
-                                <span class="text-white text-xs font-bold">Latency: 12ms</span>
-                                <span class="text-rose-400 text-xs font-bold">LIVE</span>
+                                class="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 text-rose-400 text-[10px] font-black uppercase tracking-tighter mb-8 border border-white/10">
+                                Low Latency Protocol v2.4
+                            </div>
+                            <h2 class="text-5xl md:text-7xl font-black text-white mb-8 leading-[1.1] tracking-tighter">
+                                Play Without <span
+                                    class="text-rose-500 underline decoration-4 underline-offset-8 decoration-rose-500/30">Limits</span>
+                            </h2>
+                            <p class="text-xl text-gray-400 mb-12 leading-relaxed">
+                                Forge massive multiplayer worlds with <b>GameLift</b> and broadcast every frame in 4K
+                                with <b>Gamelist Stream</b>. It's not just hosting; it's total control.
+                            </p>
+                            <div class="flex flex-col sm:flex-row gap-6">
+                                <button
+                                    class="px-10 py-5 bg-rose-600 text-white font-black rounded-2xl hover:bg-rose-700 transition-all shadow-xl shadow-rose-600/30 active:scale-95">
+                                    Launch Gamelift
+                                </button>
+                                <button
+                                    class="px-10 py-5 bg-white/5 text-white font-black rounded-2xl border border-white/10 hover:bg-white/10 transition-all">
+                                    View Stream Lab
+                                </button>
+                            </div>
+                        </div>
+                        <div class="lg:w-2/5 w-full flex justify-center lg:justify-end">
+                            <div
+                                class="relative w-full aspect-square max-w-[300px] border-2 border-rose-500/20 rounded-full p-8 flex items-center justify-center">
+                                <div class="absolute inset-0 border-2 border-rose-500/10 rounded-full scale-125 border-dashed animate-spin"
+                                    style="animation-duration: 15s"></div>
+                                <div
+                                    class="w-full h-full bg-rose-600 rounded-full flex items-center justify-center p-8 group-hover:scale-110 transition-transform duration-700 shadow-[0_0_60px_-10px_rgba(244,63,94,0.6)]">
+                                    <svg class="w-full h-full text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path
+                                            d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15V9.236a1 1 0 00-1.447-.894l-4 2a1 1 0 00-.553.894V17zM15.211 6.276a1 1 0 000-1.788l-4.764-2.382a1 1 0 00-.894 0L4.789 4.488a1 1 0 000 1.788l4.764 2.382a1 1 0 00.894 0l4.764-2.382zM4.447 8.342A1 1 0 003 9.236V15a1 1 0 00.553.894l4 2A1 1 0 009 17v-5.764a1 1 0 00-.553-.894l-4-2z">
+                                        </path>
+                                    </svg>
+                                </div>
                             </div>
                         </div>
                     </div>
-                </div>
-                <div>
-                    <div
-                        class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-rose-50 text-rose-600 text-xs font-bold uppercase tracking-wider mb-6">
-                        Level Up Your Infrastructure
-                    </div>
-                    <h2 class="text-4xl md:text-5xl font-black text-gray-900 mb-6 leading-tight">
-                        The ultimate <span class="text-rose-600">Gaming Experience</span>
-                    </h2>
-                    <p class="text-lg text-gray-600 mb-8 leading-relaxed">
-                        Scale your multiplayer matches with <b>GameLift</b>, ensuring low latency and high availability
-                        for players worldwide. Broadcast your gameplay with <b>Gamelist Stream</b>, our high-fidelity
-                        streaming solution.
-                    </p>
-                    <button
-                        class="px-8 py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 transition-all shadow-lg shadow-rose-500/25">
-                        Start Building
-                    </button>
                 </div>
             </section>
         </div>
 
-        <!-- Call to Action -->
-        <section class="relative z-10 px-8 py-24">
-            <div
-                class="max-w-4xl mx-auto bg-blue-600 rounded-[3rem] p-12 md:p-20 text-center shadow-2xl shadow-blue-500/40 relative overflow-hidden">
-                <div class="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full -mr-32 -mt-32 blur-3xl"></div>
-                <div class="absolute bottom-0 left-0 w-64 h-64 bg-blue-400/20 rounded-full -ml-32 -mb-32 blur-3xl">
+        <!-- Over-the-top Call to Action -->
+        <section class="relative z-10 px-8 py-32">
+            <div class="max-w-6xl mx-auto relative group">
+                <!-- Floating Decorative Background -->
+                <div
+                    class="absolute -inset-6 bg-gradient-to-r from-blue-600 via-indigo-600 to-rose-600 rounded-[4rem] opacity-20 blur-3xl group-hover:opacity-40 transition-opacity duration-1000">
                 </div>
 
-                <h2 class="text-4xl md:text-5xl font-black text-white mb-8 relative z-10">Ready to start your cloud
-                    journey?</h2>
-                <p class="text-blue-100 text-lg mb-12 max-w-2xl mx-auto relative z-10">Join thousands of developers and
-                    businesses building the future on Serwin Cloud.</p>
-                <div class="flex flex-col sm:flex-row items-center justify-center gap-6 relative z-10">
-                    <router-link to="/register"
-                        class="w-full sm:w-auto px-12 py-4 bg-white text-blue-600 font-black rounded-2xl hover:bg-blue-50 transition-all transform hover:scale-105">
-                        Create Free Account
-                    </router-link>
-                    <button
-                        class="w-full sm:w-auto px-12 py-4 bg-blue-700 text-white font-bold rounded-2xl hover:bg-blue-800 transition-all border border-blue-500">
-                        Contact Sales
-                    </button>
+                <div class="relative bg-gray-900 rounded-[4rem] p-12 md:p-24 text-center overflow-hidden">
+                    <div
+                        class="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/carbon-fibre.png')] opacity-10">
+                    </div>
+
+                    <h2
+                        class="text-5xl md:text-8xl font-black text-white mb-10 leading-tight relative z-10 tracking-tighter">
+                        Stop Dreaming.<br />Start <span
+                            class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400">Deploying.</span>
+                    </h2>
+                    <p class="text-gray-400 text-xl md:text-2xl mb-16 max-w-2xl mx-auto relative z-10">Get the
+                        infrastructure you deserve. Zero friction, infinite potential.</p>
+
+                    <div class="flex flex-col sm:flex-row items-center justify-center gap-8 relative z-10">
+                        <router-link to="/register"
+                            class="group w-full sm:w-auto px-12 py-6 bg-white text-gray-900 font-black text-xl rounded-3xl hover:bg-blue-600 hover:text-white transition-all transform hover:scale-105 shadow-2xl">
+                            Get Started Free
+                        </router-link>
+                        <button
+                            class="w-full sm:w-auto px-12 py-6 bg-gray-800 text-white font-black text-xl rounded-3xl border border-white/10 hover:bg-white/5 transition-all">
+                            Talk to Engineers
+                        </button>
+                    </div>
                 </div>
             </div>
         </section>
 
         <!-- Footer -->
-        <footer class="relative z-10 bg-white border-t border-gray-100 pt-20 pb-10">
+        <footer class="relative z-10 bg-white border-t border-gray-100 pt-24 pb-12">
             <div class="max-w-7xl mx-auto px-8 md:px-16">
-                <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-12 mb-20">
-                    <div class="col-span-2 lg:col-span-2">
-                        <div class="flex items-center gap-2 mb-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-16 mb-24">
+                    <div class="col-span-1 lg:col-span-2">
+                        <div class="flex items-center gap-3 mb-8">
                             <div
-                                class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                class="w-12 h-12 bg-blue-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-600/30">
+                                <svg class="w-7 h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                         d="M13 10V3L4 14h7v7l9-11h-7z" />
                                 </svg>
                             </div>
-                            <span class="text-2xl font-black text-gray-900 tracking-tight">Serwin</span>
+                            <span class="text-3xl font-black text-gray-900 tracking-tighter">Serwin</span>
                         </div>
-                        <p class="text-gray-500 leading-relaxed max-w-sm">
-                            The future of cloud computing, gaming, and AI. Built for developers, by developers.
+                        <p class="text-gray-500 text-lg leading-relaxed max-w-sm font-medium">
+                            Engineered for those who build the future. The definitive platform for AI, high-performance
+                            compute, and next-gen gaming.
                         </p>
                     </div>
                     <div>
-                        <h4 class="font-bold text-gray-900 mb-6">Product</h4>
-                        <ul class="space-y-4 text-sm text-gray-500">
-                            <li><a href="#ai" class="hover:text-blue-600 transition-colors">AI & ML</a></li>
-                            <li><a href="#compute" class="hover:text-blue-600 transition-colors">Compute</a></li>
-                            <li><a href="#storage" class="hover:text-blue-600 transition-colors">Storage</a></li>
-                            <li><a href="#gaming" class="hover:text-blue-600 transition-colors">Gaming</a></li>
+                        <h4 class="font-black text-gray-900 text-lg mb-8 uppercase tracking-widest">Solutions</h4>
+                        <ul class="space-y-5 text-gray-500 font-bold">
+                            <li><a href="#ai" class="hover:text-blue-600 transition-colors">AI Processing</a></li>
+                            <li><a href="#compute" class="hover:text-blue-600 transition-colors">Edge Compute</a></li>
+                            <li><a href="#storage" class="hover:text-blue-600 transition-colors">Data Flow</a></li>
+                            <li><a href="#gaming" class="hover:text-blue-600 transition-colors">Game Hosting</a></li>
                         </ul>
                     </div>
                     <div>
-                        <h4 class="font-bold text-gray-900 mb-6">Platform</h4>
-                        <ul class="space-y-4 text-sm text-gray-500">
-                            <li><a href="#" class="hover:text-blue-600 transition-colors">Documentation</a></li>
-                            <li><a href="#" class="hover:text-blue-600 transition-colors">API Reference</a></li>
-                            <li><a href="#" class="hover:text-blue-600 transition-colors">Security</a></li>
-                            <li><a href="#" class="hover:text-blue-600 transition-colors">Global Network</a></li>
+                        <h4 class="font-black text-gray-900 text-lg mb-8 uppercase tracking-widest">Developers</h4>
+                        <ul class="space-y-5 text-gray-500 font-bold">
+                            <li><a href="#" class="hover:text-blue-600 transition-colors">Open Documentation</a></li>
+                            <li><a href="#" class="hover:text-blue-600 transition-colors">System Status</a></li>
+                            <li><a href="#" class="hover:text-blue-600 transition-colors">API Keys</a></li>
+                            <li><a href="#" class="hover:text-blue-600 transition-colors">Global SDK</a></li>
                         </ul>
                     </div>
                     <div>
-                        <h4 class="font-bold text-gray-900 mb-6">Company</h4>
-                        <ul class="space-y-4 text-sm text-gray-500">
-                            <li><a href="#" class="hover:text-blue-600 transition-colors">About</a></li>
-                            <li><a href="#" class="hover:text-blue-600 transition-colors">Careers</a></li>
-                            <li><a href="#" class="hover:text-blue-600 transition-colors">Contact</a></li>
-                            <li><a href="#" class="hover:text-blue-600 transition-colors">Privacy</a></li>
+                        <h4 class="font-black text-gray-900 text-lg mb-8 uppercase tracking-widest">Inside</h4>
+                        <ul class="space-y-5 text-gray-500 font-bold">
+                            <li><a href="#" class="hover:text-blue-600 transition-colors">Our Vision</a></li>
+                            <li><a href="#" class="hover:text-blue-600 transition-colors">Engineering Blog</a></li>
+                            <li><a href="#" class="hover:text-blue-600 transition-colors">Privacy Guard</a></li>
+                            <li><a href="#" class="hover:text-blue-600 transition-colors">Security Audit</a></li>
                         </ul>
                     </div>
                 </div>
-                <div class="pt-10 border-t border-gray-100 flex flex-col md:row items-center justify-between gap-6">
-                    <p class="text-sm text-gray-400">© 2026 Serwin Cloud. All rights reserved.</p>
-                    <div class="flex items-center gap-6">
-                        <a href="#" class="text-gray-400 hover:text-blue-600 transition-colors">
-                            <span class="sr-only">Twitter</span>
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                <div
+                    class="pt-12 border-t border-gray-100 flex flex-col sm:flex-row items-center justify-between gap-8">
+                    <p class="text-gray-400 font-bold text-sm">© 2026 Serwin Cloud Systems Inc. All protocols reserved.
+                    </p>
+                    <div class="flex items-center gap-8">
+                        <a href="#" class="text-gray-400 hover:text-blue-600 transition-colors duration-300">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                                 <path
                                     d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.84 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z">
                                 </path>
                             </svg>
                         </a>
-                        <a href="#" class="text-gray-400 hover:text-blue-600 transition-colors">
-                            <span class="sr-only">GitHub</span>
-                            <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <a href="#" class="text-gray-400 hover:text-blue-600 transition-colors duration-300">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
                                 <path
                                     d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12">
                                 </path>

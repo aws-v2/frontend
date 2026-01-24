@@ -22,101 +22,105 @@ const handleLogout = () => {
         <ServicesMenu :is-open="isMenuOpen" @close="isMenuOpen = false" />
 
         <nav
-            class="sticky top-0 z-[100] h-12 bg-[var(--nav-bg)] text-[var(--nav-text)] flex items-center justify-between px-4 text-sm shadow-lg">
-        <!-- Left: Logo & Services -->
-        <div class="flex items-center gap-4">
-            <router-link to="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
-                <div
-                    class="w-8 h-8 bg-[var(--aws-orange)] flex items-center justify-center font-black text-white rounded-sm shadow-inner">
-                    S</div>
-                <span class="font-bold tracking-tight hidden md:block">Serwin</span>
-            </router-link>
+            class="sticky top-0 z-[100] h-16 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-6 flex items-center justify-between font-sans shadow-none">
+            <!-- Left: Branding & Core Navigation -->
+            <div class="flex items-center gap-8">
+                <router-link to="/" class="flex items-center gap-3 active:scale-95 transition-transform">
+                    <div class="w-10 h-10 bg-gray-900 flex items-center justify-center rounded-none">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2.5"
+                                d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <span class="text-2xl font-black text-gray-900 tracking-tighter uppercase italic">Serwin</span>
+                </router-link>
 
-            <div class="h-6 w-[1px] bg-gray-700 mx-1"></div>
+                <div class="h-8 w-[1px] bg-gray-100 mx-2 hidden md:block"></div>
 
-            <button @click="isMenuOpen = !isMenuOpen"
-                class="flex items-center gap-2 px-3 py-1.5 rounded transition-all group"
-                :class="isMenuOpen ? 'bg-gray-800 text-white' : 'hover:bg-gray-800 text-gray-300'">
-                <div class="grid grid-cols-3 gap-0.5 opacity-60 group-hover:opacity-100">
-                    <div v-for="i in 9" :key="i" class="w-0.5 h-0.5 bg-current rounded-full"></div>
-                </div>
-                <span class="font-bold text-[11px] uppercase tracking-wide">Services</span>
-            </button>
-
-            <!-- Search Bar -->
-            <div class="relative ml-4 hidden lg:block group">
-                <div class="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-                <input type="text" placeholder="Search"
-                    class="bg-[#2e343b] border border-gray-600 rounded-md py-1.5 pl-10 pr-20 w-80 text-[11px] focus:ring-1 focus:ring-[var(--aws-orange)] focus:outline-none transition-all placeholder-gray-500">
-                <div class="absolute inset-y-0 right-3 flex items-center pointer-events-none">
-                    <span class="text-[9px] text-gray-500 font-mono">[Alt+S]</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Right: Actions & User -->
-        <div class="flex items-center h-full">
-            <div class="flex items-center h-full mr-4 border-r border-gray-700 pr-4 gap-1">
-                <button title="Terminal" class="p-2 hover:bg-gray-800 rounded transition-colors group relative">
-                    <svg class="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                </button>
-                <button title="Notifications" class="p-2 hover:bg-gray-800 rounded transition-colors">
-                    <svg class="w-5 h-5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                    </svg>
-                </button>
-            </div>
-
-            <div v-if="authStore.isAuthenticated" class="flex items-center h-full">
-                <button
-                    class="px-3 h-full hover:bg-gray-800 text-[11px] font-bold flex items-center gap-2 transition-colors">
-                    <span>Europe (Stockholm)</span>
-                    <svg class="w-3 h-3 opacity-60" fill="currentColor" viewBox="0 0 20 20">
-                        <path
-                            d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                    </svg>
+                <button @click="isMenuOpen = !isMenuOpen"
+                    class="flex items-center gap-3 h-10 px-4 bg-gray-50 hover:bg-gray-900 hover:text-white transition-all duration-300 group rounded-none">
+                    <div class="flex flex-col gap-1">
+                        <div class="w-4 h-[2px] bg-current"></div>
+                        <div class="w-2 h-[2px] bg-current"></div>
+                    </div>
+                    <span class="font-black text-[10px] uppercase tracking-[0.2em]">Console</span>
                 </button>
 
-                <div class="relative group h-full">
-                    <button
-                        class="px-3 h-full bg-gray-800/30 hover:bg-gray-800 transition-colors flex flex-col justify-center items-end border-l border-gray-700">
-                        <span
-                            class="text-[9px] text-[var(--aws-orange)] font-bold leading-none mb-0.5">2805-6005-5441</span>
-                        <div class="flex items-center gap-1">
-                            <span class="font-bold text-[11px]">{{ authStore.email?.split('@')[0] }}</span>
-                            <svg class="w-3 h-3 opacity-60" fill="currentColor" viewBox="0 0 20 20">
-                                <path
-                                    d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" />
-                            </svg>
-                        </div>
-                    </button>
-                    <!-- Dropdown Menu -->
+                <!-- Search Field -->
+                <div class="relative hidden lg:block">
+                    <input type="text" placeholder="Protocol Search..."
+                        class="bg-gray-50 border-none px-6 py-2.5 w-64 text-[11px] font-bold focus:ring-2 focus:ring-gray-900 focus:bg-white focus:w-80 transition-all rounded-none placeholder-gray-400">
                     <div
-                        class="absolute right-0 top-12 w-56 bg-white dark:bg-[#1c2732] shadow-2xl border border-gray-200 dark:border-gray-700 hidden group-hover:block text-gray-800 dark:text-white py-2 z-[200]">
-                        <div class="px-4 py-2 border-b border-gray-100 dark:border-gray-700">
-                            <p class="text-[10px] text-gray-500 font-bold uppercase">Signed in as</p>
-                            <p class="text-xs font-bold truncate">{{ authStore.email }}</p>
-                        </div>
-                        <button @click="handleLogout"
-                            class="w-full text-left px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-700 text-xs mt-1">Sign
-                            out</button>
+                        class="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-gray-300 tracking-wider">
+                        CTRL+K
                     </div>
                 </div>
             </div>
-            <div v-else class="flex gap-4 px-4 items-center h-full">
-                <router-link to="/login" class="font-bold hover:text-[var(--aws-orange)] transition-colors text-xs">Sign
-                    In</router-link>
+
+            <!-- Right: Control Center -->
+            <div class="flex items-center">
+                <!-- Systems Icons -->
+                <div class="hidden md:flex items-center border-r border-gray-100 pr-6 mr-6 gap-2">
+                    <button title="System Monitoring"
+                        class="p-2.5 text-gray-400 hover:text-gray-900 hover:bg-gray-50 transition-all rounded-none">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                        </svg>
+                    </button>
+                    <button title="Alerts"
+                        class="p-2.5 text-gray-400 hover:text-gray-900 hover:bg-gray-50 transition-all rounded-none relative">
+                        <span class="absolute top-2 right-2 w-1.5 h-1.5 bg-emerald-500"></span>
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2"
+                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Profile & Region -->
+                <div v-if="authStore.isAuthenticated" class="flex items-center gap-1">
+                    <button
+                        class="px-4 py-2 hover:bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-gray-900 transition-colors hidden sm:block">
+                        NA-EAST-1
+                    </button>
+
+                    <div class="relative group h-16 flex items-center">
+                        <button
+                            class="pl-6 h-10 border-l border-gray-100 flex flex-col justify-center items-end group-hover:bg-gray-50 transition-all px-4">
+                            <span
+                                class="text-[9px] text-emerald-600 font-black leading-none mb-1 uppercase tracking-tighter">Verified
+                                Protocol</span>
+                            <div class="flex items-center gap-2">
+                                <span class="font-black text-xs uppercase tracking-tight text-gray-900">{{
+                                    authStore.email?.split('@')[0] }}</span>
+                                <div class="w-2 h-2 bg-gray-900"></div>
+                            </div>
+                        </button>
+                        <!-- Dropdown -->
+                        <div
+                            class="absolute right-0 top-16 w-64 bg-white border border-gray-100 shadow-none hidden group-hover:block transition-all z-[200]">
+                            <div class="p-6 border-b border-gray-50">
+                                <p class="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-2">
+                                    Authenticated User</p>
+                                <p class="text-sm font-black text-gray-900 truncate">{{ authStore.email }}</p>
+                            </div>
+                            <div class="p-2">
+                                <button @click="handleLogout"
+                                    class="w-full text-left px-4 py-3 hover:bg-gray-900 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors mb-1">
+                                    Terminate Session
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div v-else class="flex gap-4 px-4 items-center h-full">
+                    <router-link to="/login"
+                        class="px-6 py-2 bg-gray-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-colors">
+                        Login
+                    </router-link>
+                </div>
             </div>
-        </div>
-    </nav>
+        </nav>
     </template>
 </template>

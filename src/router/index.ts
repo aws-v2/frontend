@@ -7,10 +7,24 @@ import s3Routes from '@/modules/s3/routes'
 import renderRoutes from '@/modules/render/routes'
 import lambdaRoutes from '@/modules/lambda/routes'
 import rdsRoutes from '@/modules/rds/routes'
+import sagemakerRoutes from '@/modules/sagemaker/routes'
+import computeRoutes from '@/modules/compute/routes'
+import gameliftRoutes from '@/modules/gamelift/routes'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [...landingRoutes, ...authRoutes, ...dashboardRoutes, ...s3Routes, ...renderRoutes, ...lambdaRoutes, ...rdsRoutes],
+  routes: [
+    ...landingRoutes,
+    ...authRoutes,
+    ...dashboardRoutes,
+    ...s3Routes,
+    ...renderRoutes,
+    ...lambdaRoutes,
+    ...rdsRoutes,
+    ...sagemakerRoutes,
+    ...computeRoutes,
+    ...gameliftRoutes
+  ],
 })
 
 router.beforeEach((to, from, next) => {

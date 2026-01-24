@@ -5,10 +5,12 @@ import dashboardRoutes from '@/modules/dashboard/routes'
 import landingRoutes from '@/modules/landing/routes'
 import s3Routes from '@/modules/s3/routes'
 import renderRoutes from '@/modules/render/routes'
+import lambdaRoutes from '@/modules/lambda/routes'
+import rdsRoutes from '@/modules/rds/routes'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [...landingRoutes, ...authRoutes, ...dashboardRoutes, ...s3Routes, ...renderRoutes],
+  routes: [...landingRoutes, ...authRoutes, ...dashboardRoutes, ...s3Routes, ...renderRoutes, ...lambdaRoutes, ...rdsRoutes],
 })
 
 router.beforeEach((to, from, next) => {

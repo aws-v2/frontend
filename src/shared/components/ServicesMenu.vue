@@ -23,6 +23,16 @@ const categories = [
 const currentItems = (label: string) => {
     return categories.find(c => c.label === label)?.items || []
 }
+
+const getServiceRoute = (serviceName: string): string => {
+    const routes: Record<string, string> = {
+        'Lambda': '/lambda/functions',
+        'S3': '/s3/buckets',
+        'RDS': '/rds/databases',
+        // Add more service routes as they are implemented
+    }
+    return routes[serviceName] || '/auth/complete-setup'
+}
 </script>
 
 <template>
@@ -88,7 +98,7 @@ const currentItems = (label: string) => {
 
                     <div v-else class="grid grid-cols-1 gap-4">
                         <router-link v-for="item in currentItems(selectedCategory)" :key="item"
-                            to="/auth/complete-setup" @click="emit('close')"
+                            :to="getServiceRoute(item)" @click="emit('close')"
                             class="text-xs font-medium text-gray-400 hover:text-[var(--aws-blue)] cursor-pointer transition-colors flex items-center gap-2 group">
                             <div
                                 class="w-1.5 h-1.5 bg-gray-700 rounded-full group-hover:bg-[var(--aws-blue)] transition-colors">

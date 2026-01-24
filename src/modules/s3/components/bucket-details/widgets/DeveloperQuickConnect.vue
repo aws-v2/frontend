@@ -57,19 +57,18 @@ for obj in response.get('Contents', []):
         langColor: 'text-cyan-500',
         title: 'Amplify',
         fullTitle: 'Connect using AWS Amplify for Flutter',
-        code: `import 'package:amplify_flutter/amplify_flutter.dart';
-import 'package:amplify_storage_s3/amplify_storage_s3.dart';
-
-Future<void> listS3Objects() async {
-  try {
-    final result = await Amplify.Storage.list();
-    for (var item in result.items) {
-      print('Found item: \${item.key}');
-    }
-  } on StorageException catch (e) {
-    print('Error listing items: \${e.message}');
-  }
-}`
+        code: "import 'package:amplify_flutter/amplify_flutter.dart';\n" +
+              "import 'package:amplify_storage_s3/amplify_storage_s3.dart';\n\n" +
+              "Future<void> listS3Objects() async {\n" +
+              "  try {\n" +
+              "    final result = await Amplify.Storage.list();\n" +
+              "    for (var item in result.items) {\n" +
+              "      print('Found item: ${item.key}');\n" +
+              "    }\n" +
+              "  } on StorageException catch (e) {\n" +
+              "    print('Error listing items: ${e.message}');\n" +
+              "  }\n" +
+              "}"
     },
     {
         lang: 'Kotlin',

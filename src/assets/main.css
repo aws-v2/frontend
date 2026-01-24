@@ -18,7 +18,7 @@
     --aws-blue-hover: #005f9e;
   }
 
-  [data-theme='dark'] {
+  .dark {
     --bg-main: #1c2732;
     --bg-console: #0f172a;
     --nav-bg: #16191f;

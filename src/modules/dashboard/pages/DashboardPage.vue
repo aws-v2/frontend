@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import BaseWidget from '@/shared/components/BaseWidget.vue'
 import { useToastStore } from '@/shared/store/toastStore'
 import { useAuthStore } from '@/modules/auth/store/authStore'
@@ -6,11 +7,28 @@ import { useAuthStore } from '@/modules/auth/store/authStore'
 const toastStore = useToastStore()
 const authStore = useAuthStore()
 
+const recentlyVisitedServices = ['EC2', 'Lambda', 'S3', 'IAM', 'Render', 'RDS', 'Gamelift', 'Gamestream', 'Sagemaker']
+
+const chunkedServices = computed(() => {
+    const chunks = []
+    for (let i = 0; i < recentlyVisitedServices.length; i += 5) {
+        chunks.push(recentlyVisitedServices.slice(i, i + 5))
+    }
+    return chunks
+})
+
 const getServiceLink = (service: string) => {
     // If registration is complete, go to the service dashboard (e.g. S3), else go to setup
     if (authStore.registrationComplete) {
         if (service === 'S3') return '/s3'
-        // Other services can just go to dashboard for now or their respective routes as they are built
+        if (service === 'Lambda') return '/lambda'
+        if (service === 'Render') return '/render'
+        if (service === 'RDS') return '/rds'
+        // New services - link to themselves or fallback to dashboard if not yet implemented
+        if (['Gamelift', 'Gamestream', 'Sagemaker'].includes(service)) {
+            // return `/${service.toLowerCase()}` // Use this once routes exist
+            return '/dashboard'
+        }
         return '/dashboard'
     }
     return '/auth/complete-setup'
@@ -51,16 +69,18 @@ const triggerAction = (action: string) => {
             class="px-16 max-w-[100%] mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 items-start">
 
             <!-- Recently Visited -->
-            <BaseWidget title="Recently visited" show-info class="lg:col-span-1">
-                <div class="p-4 space-y-4">
-                    <router-link v-for="service in ['EC2', 'Lambda', 'S3', 'IAM']" :key="service"
-                        :to="getServiceLink(service)"
-                        class="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors">
-                        <div
-                            class="w-8 h-8 bg-gray-200 dark:bg-gray-600 flex items-center justify-center font-bold text-[10px]">
-                            {{ service[0] }}</div>
-                        <span class="text-xs font-medium">{{ service }}</span>
-                    </router-link>
+            <BaseWidget title="Recently visited" show-info
+                :class="chunkedServices.length > 1 ? 'lg:col-span-2' : 'lg:col-span-1'">
+                <div class="p-4 flex gap-8">
+                    <div v-for="(chunk, idx) in chunkedServices" :key="idx" class="flex-1 space-y-4">
+                        <router-link v-for="service in chunk" :key="service" :to="getServiceLink(service)"
+                            class="flex items-center gap-3 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer transition-colors">
+                            <div
+                                class="w-8 h-8 bg-gray-100 dark:bg-gray-600 flex items-center justify-center font-bold text-[10px] text-gray-500 dark:text-gray-300">
+                                {{ service[0] }}</div>
+                            <span class="text-xs font-bold text-gray-700 dark:text-gray-200">{{ service }}</span>
+                        </router-link>
+                    </div>
                 </div>
                 <template #footer>View all services</template>
             </BaseWidget>
@@ -87,12 +107,16 @@ const triggerAction = (action: string) => {
             <BaseWidget title="Cost and usage" show-info>
                 <div class="p-6 grid grid-cols-2 gap-4">
                     <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Current month</p>
-                        <p class="text-lg font-black text-gray-300">Unable to load</p>
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
+                            Current month
+                        </p>
+                        <p class="text-lg font-black text-gray-400 dark:text-gray-300">Unable to load</p>
                     </div>
                     <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Cost breakdown</p>
-                        <p class="text-lg font-black text-gray-300">Unable to load</p>
+                        <p class="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-tighter">
+                            Cost breakdown
+                        </p>
+                        <p class="text-lg font-black text-gray-400 dark:text-gray-300">Unable to load</p>
                     </div>
                 </div>
                 <template #footer>Go to Billing and Cost Management</template>
@@ -108,7 +132,7 @@ const triggerAction = (action: string) => {
                         </button>
                     </div>
                     <div class="p-6 space-y-4">
-                        <p class="text-xs font-medium text-gray-600 dark:text-gray-400 leading-relaxed">
+                        <p class="text-xs font-medium text-gray-700 dark:text-gray-400 leading-relaxed">
                             Automate large-scale server migrations to Serwin Cloud using templates.
                         </p>
                         <div class="text-[10px] font-bold text-[var(--aws-blue)]">Time to complete: 20 mins</div>

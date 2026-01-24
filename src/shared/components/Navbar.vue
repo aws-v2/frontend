@@ -1,12 +1,15 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import ServicesMenu from './ServicesMenu.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
+const route = useRoute()
 const isMenuOpen = ref(false)
+
+const isLandingPage = computed(() => route.path === '/')
 
 const handleLogout = () => {
     authStore.logout()
@@ -15,10 +18,11 @@ const handleLogout = () => {
 </script>
 
 <template>
-    <ServicesMenu :is-open="isMenuOpen" @close="isMenuOpen = false" />
+    <template v-if="!isLandingPage">
+        <ServicesMenu :is-open="isMenuOpen" @close="isMenuOpen = false" />
 
-    <nav
-        class="sticky top-0 z-[100] h-12 bg-[var(--nav-bg)] text-[var(--nav-text)] flex items-center justify-between px-4 text-sm shadow-lg">
+        <nav
+            class="sticky top-0 z-[100] h-12 bg-[var(--nav-bg)] text-[var(--nav-text)] flex items-center justify-between px-4 text-sm shadow-lg">
         <!-- Left: Logo & Services -->
         <div class="flex items-center gap-4">
             <router-link to="/" class="flex items-center gap-2 hover:opacity-80 transition-opacity">
@@ -114,4 +118,5 @@ const handleLogout = () => {
             </div>
         </div>
     </nav>
+    </template>
 </template>

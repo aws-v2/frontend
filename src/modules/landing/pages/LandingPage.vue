@@ -223,7 +223,7 @@ const triggerLogin = () => {
             </h1>
 
             <p class="text-lg md:text-xl text-gray-500 max-w-3xl mx-auto mb-2 leading-loose font-medium">
-                Empowering businesses and individuals with cutting-edge technology solutions.
+                Empowering businesses and individuals with cutting-edge technology solutions..
                 Serwin
             </p>
             <p class="text-lg md:text-xl text-gray-500 max-w-3xl mx-auto mb-12 leading-loose font-medium mb-10">

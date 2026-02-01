@@ -2,12 +2,21 @@
 import { ref, computed } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useRouter, useRoute } from 'vue-router'
-import ServicesMenu from './ServicesMenu.vue'
 
 const authStore = useAuthStore()
 const router = useRouter()
 const route = useRoute()
+
 const isMenuOpen = ref(false)
+
+// Determine the current vertical based on the route
+const currentVertical = computed(() => {
+    if (route.path.startsWith('/s3')) return { name: 'Storage', color: 'var(--color-storage)' }
+    if (route.path.startsWith('/compute')) return { name: 'Compute', color: 'var(--color-compute)' }
+    if (route.path.startsWith('/sagemaker')) return { name: 'AI', color: 'var(--color-ai)' }
+    if (route.path.startsWith('/gaming') || route.path.startsWith('/gamelift')) return { name: 'Gaming', color: 'var(--color-gaming)' }
+    return null
+})
 
 const isLandingPage = computed(() => route.path === '/')
 
@@ -15,112 +24,219 @@ const handleLogout = () => {
     authStore.logout()
     router.push('/login')
 }
+
+const toggleMenu = () => {
+    isMenuOpen.value = !isMenuOpen.value
+}
 </script>
 
 <template>
     <template v-if="!isLandingPage">
-        <ServicesMenu :is-open="isMenuOpen" @close="isMenuOpen = false" />
-
         <nav
-            class="sticky top-0 z-[100] h-16 bg-white/80 backdrop-blur-xl border-b border-gray-100 px-6 flex items-center justify-between font-sans shadow-none">
-            <!-- Left: Branding & Core Navigation -->
-            <div class="flex items-center gap-8">
-                <router-link to="/" class="flex items-center gap-3 active:scale-95 transition-transform">
-                    <div class="w-10 h-10 bg-gray-900 flex items-center justify-center rounded-none">
-                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2.5"
-                                d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                    </div>
-                    <span class="text-2xl font-black text-gray-900 tracking-tighter uppercase italic">Serwin</span>
+            class="sticky top-0 z-[100] h-20 bg-black text-white flex items-center justify-between px-10 font-mono border-b border-white/5">
+            <!-- Left: Branding & Context -->
+            <div class="flex items-center gap-10">
+                <router-link to="/dashboard" class="flex items-center gap-4 group">
+                    <div class="w-6 h-6 bg-white rotate-45 group-hover:scale-110 transition-transform"></div>
+                    <span class="text-xl font-black uppercase tracking-[0.2em] italic">Serwin</span>
                 </router-link>
 
-                <div class="h-8 w-[1px] bg-gray-100 mx-2 hidden md:block"></div>
-
-                <button @click="isMenuOpen = !isMenuOpen"
-                    class="flex items-center gap-3 h-10 px-4 bg-gray-50 hover:bg-gray-900 hover:text-white transition-all duration-300 group rounded-none">
-                    <div class="flex flex-col gap-1">
-                        <div class="w-4 h-[2px] bg-current"></div>
-                        <div class="w-2 h-[2px] bg-current"></div>
+                <div v-if="currentVertical" class="hidden md:flex items-center gap-4">
+                    <div class="h-4 w-px bg-white/20"></div>
+                    <div class="flex items-center gap-3">
+                        <div class="w-1.5 h-1.5" :style="{ backgroundColor: currentVertical.color }"></div>
+                        <span class="text-[10px] font-black uppercase tracking-[0.4em] text-white/70">{{
+                            currentVertical.name }}</span>
                     </div>
-                    <span class="font-black text-[10px] uppercase tracking-[0.2em]">Console</span>
+                </div>
+
+                <!-- Global Switcher Pulse -->
+                <button @click="toggleMenu"
+                    class="ml-6 flex items-center gap-4 h-11 px-6 bg-white/5 hover:bg-white/10 transition-all border border-white/5 uppercase group relative overflow-hidden">
+                    <div class="flex flex-col gap-1 w-4">
+                        <div class="w-full h-[1.5px] bg-white group-hover:bg-[#007AFF] transition-colors"></div>
+                        <div class="w-2/3 h-[1.5px] bg-white group-hover:w-full transition-all"></div>
+                        <div class="w-full h-[1.5px] bg-white"></div>
+                    </div>
+                    <span class="text-[9px] font-black tracking-[0.4em] whitespace-nowrap">Frontiers</span>
                 </button>
+            </div>
 
-                <!-- Search Field -->
-                <div class="relative hidden lg:block">
-                    <input type="text" placeholder="Protocol Search..."
-                        class="bg-gray-50 border-none px-6 py-2.5 w-64 text-[11px] font-bold focus:ring-2 focus:ring-gray-900 focus:bg-white focus:w-80 transition-all rounded-none placeholder-gray-400">
+            <!-- Center: Universal Search (Flat) -->
+            <div class="hidden lg:flex flex-1 max-w-xl mx-20">
+                <div class="w-full relative group">
+                    <input type="text" placeholder="SERWIN // SEARCH_PROTOCOL..."
+                        class="w-full bg-[#050505] border border-white/5 px-8 py-3 text-[10px] font-black tracking-[0.3em] text-white placeholder-white/10 focus:outline-none focus:border-white/20 focus:bg-[#0A0A0A] transition-all uppercase" />
                     <div
-                        class="absolute right-4 top-1/2 -translate-y-1/2 text-[9px] font-black text-gray-300 tracking-wider">
-                        CTRL+K
-                    </div>
+                        class="absolute right-6 top-1/2 -translate-y-1/2 text-[8px] font-black text-white/10 group-focus-within:text-white/40 transition-colors uppercase tracking-widest">
+                        [ ALT + K ]</div>
                 </div>
             </div>
 
-            <!-- Right: Control Center -->
-            <div class="flex items-center">
-                <!-- Systems Icons -->
-                <div class="hidden md:flex items-center border-r border-gray-100 pr-6 mr-6 gap-2">
-                    <button title="System Monitoring"
-                        class="p-2.5 text-gray-400 hover:text-gray-900 hover:bg-gray-50 transition-all rounded-none">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2"
-                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                        </svg>
-                    </button>
-                    <button title="Alerts"
-                        class="p-2.5 text-gray-400 hover:text-gray-900 hover:bg-gray-50 transition-all rounded-none relative">
-                        <span class="absolute top-2 right-2 w-1.5 h-1.5 bg-emerald-500"></span>
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2"
-                                d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                        </svg>
-                    </button>
-                </div>
+            <!-- Right: Identity & Services -->
+            <div class="flex items-center gap-8">
+                <div v-if="authStore.isAuthenticated" class="flex items-center gap-8">
+                    <!-- Metrics Summary -->
+                    <div class="hidden xl:flex items-center gap-12 border-r border-white/20 pr-12 leading-none">
+                        <div class="group cursor-crosshair">
+                            <div
+                                class="text-[8px] font-black text-white/60 uppercase tracking-[0.4em] mb-2 group-hover:text-emerald-500 transition-colors">
+                                Latency</div>
+                            <div class="text-[10px] font-black text-emerald-400 font-mono tracking-tighter">12MS //
+                                NOMINAL</div>
+                        </div>
+                        <div class="group cursor-crosshair">
+                            <div
+                                class="text-[8px] font-black text-white/60 uppercase tracking-[0.4em] mb-2 group-hover:text-[#007AFF] transition-colors">
+                                Nodes</div>
+                            <div class="text-[10px] font-black text-white font-mono tracking-tighter">04_ACTIVE</div>
+                        </div>
+                    </div>
 
-                <!-- Profile & Region -->
-                <div v-if="authStore.isAuthenticated" class="flex items-center gap-1">
-                    <button
-                        class="px-4 py-2 hover:bg-gray-50 text-[10px] font-black uppercase tracking-widest text-gray-500 hover:text-gray-900 transition-colors hidden sm:block">
-                        NA-EAST-1
-                    </button>
-
-                    <div class="relative group h-16 flex items-center">
-                        <button
-                            class="pl-6 h-10 border-l border-gray-100 flex flex-col justify-center items-end group-hover:bg-gray-50 transition-all px-4">
+                    <!-- Profile Context -->
+                    <div class="relative group h-20 flex items-center cursor-pointer">
+                        <div class="flex flex-col items-end">
                             <span
-                                class="text-[9px] text-emerald-600 font-black leading-none mb-1 uppercase tracking-tighter">Verified
-                                Protocol</span>
-                            <div class="flex items-center gap-2">
-                                <span class="font-black text-xs uppercase tracking-tight text-gray-900">{{
-                                    authStore.email?.split('@')[0] }}</span>
-                                <div class="w-2 h-2 bg-gray-900"></div>
+                                class="text-[8px] font-black text-white/50 uppercase tracking-[0.3em] mb-1">Session_0x1</span>
+                            <div class="flex items-center gap-3">
+                                <span
+                                    class="text-[11px] font-black uppercase tracking-widest text-white/80 group-hover:text-white transition-colors">{{
+                                        authStore.email?.split('@')[0] }}</span>
+                                <div
+                                    class="w-2.5 h-2.5 bg-white group-hover:bg-[#007AFF] group-hover:rotate-45 transition-all">
+                                </div>
                             </div>
-                        </button>
-                        <!-- Dropdown -->
+                        </div>
+
+                        <!-- Minimal Dropdown -->
                         <div
-                            class="absolute right-0 top-16 w-64 bg-white border border-gray-100 shadow-none hidden group-hover:block transition-all z-[200]">
-                            <div class="p-6 border-b border-gray-50">
-                                <p class="text-[9px] text-gray-400 font-black uppercase tracking-widest mb-2">
-                                    Authenticated User</p>
-                                <p class="text-sm font-black text-gray-900 truncate">{{ authStore.email }}</p>
+                            class="absolute right-0 top-20 w-72 bg-black border border-white/10 shadow-3xl hidden group-hover:block z-[200]">
+                            <div class="p-8 border-b border-white/5">
+                                <div class="text-[8px] font-black text-white/20 uppercase tracking-[0.5em] mb-4">
+                                    Operator_Registry</div>
+                                <div class="text-xs font-black truncate tracking-widest">{{ authStore.email }}</div>
                             </div>
-                            <div class="p-2">
+                            <div class="p-3">
+                                <button
+                                    class="w-full text-left px-5 py-4 hover:bg-white/5 text-[9px] font-black uppercase tracking-[0.4em] transition-colors">System_Core</button>
+                                <button
+                                    class="w-full text-left px-5 py-4 hover:bg-white/5 text-[9px] font-black uppercase tracking-[0.4em] transition-colors text-[#007AFF]">Security_Vault</button>
+                                <div class="h-px bg-white/5 my-3"></div>
                                 <button @click="handleLogout"
-                                    class="w-full text-left px-4 py-3 hover:bg-gray-900 hover:text-white text-[10px] font-black uppercase tracking-widest transition-colors mb-1">
-                                    Terminate Session
-                                </button>
+                                    class="w-full text-left px-5 py-4 hover:bg-red-600 text-[9px] font-black uppercase tracking-[0.4em] transition-colors uppercase">Terminate_Link</button>
                             </div>
                         </div>
                     </div>
                 </div>
-                <div v-else class="flex gap-4 px-4 items-center h-full">
+                <div v-else>
                     <router-link to="/login"
-                        class="px-6 py-2 bg-gray-900 text-white font-black text-[10px] uppercase tracking-widest hover:bg-emerald-600 transition-colors">
-                        Login
-                    </router-link>
+                        class="px-10 py-3 bg-white text-black font-black text-[10px] uppercase tracking-[0.4em] hover:bg-[#007AFF] hover:text-white transition-all">Auth_Connect</router-link>
                 </div>
             </div>
         </nav>
+
+        <!-- Global Global Switcher Overlay (Integrated Style) -->
+        <Transition name="fade">
+            <div v-if="isMenuOpen" class="fixed inset-0 z-[150] bg-black/95 backdrop-blur-xl px-10 pt-40"
+                @click="isMenuOpen = false">
+                <div class="max-w-7xl mx-auto">
+                    <div class="flex items-center gap-6 mb-16 opacity-30">
+                        <div class="w-px h-8 bg-white"></div>
+                        <div class="text-[11px] font-black text-white uppercase tracking-[0.8em]">Select_Active_Frontier
+                        </div>
+                    </div>
+
+                    <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-px bg-white/5 border border-white/5 shadow-3xl"
+                        @click.stop>
+
+                        <!-- Compute -->
+                        <router-link to="/lambda/functions" @click="isMenuOpen = false"
+                            class="bg-black p-12 aspect-square flex flex-col justify-between group hover:bg-white transition-all duration-700">
+                            <div class="text-white group-hover:text-black transition-colors"
+                                style="color: var(--color-compute)">
+                                <svg class="w-12 h-12 mb-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2.5"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                <h3 class="text-4xl font-black uppercase tracking-tighter">Compute</h3>
+                                <p
+                                    class="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-4 group-hover:text-black/40">
+                                    Atomic // Lambda // Bare_Metal</p>
+                            </div>
+                        </router-link>
+
+                        <!-- Storage -->
+                        <router-link to="/s3/buckets" @click="isMenuOpen = false"
+                            class="bg-black p-12 aspect-square flex flex-col justify-between group hover:bg-white transition-all duration-700">
+                            <div class="text-white group-hover:text-black transition-colors"
+                                style="color: var(--color-storage)">
+                                <svg class="w-12 h-12 mb-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2.5"
+                                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4" />
+                                </svg>
+                                <h3 class="text-4xl font-black uppercase tracking-tighter">Storage</h3>
+                                <p
+                                    class="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-4 group-hover:text-black/40">
+                                    Immutable // S3 // Relational</p>
+                            </div>
+                        </router-link>
+
+                        <!-- AI -->
+                        <router-link to="/sagemaker" @click="isMenuOpen = false"
+                            class="bg-black p-12 aspect-square flex flex-col justify-between group hover:bg-white transition-all duration-1000">
+                            <div class="text-white group-hover:text-black transition-colors"
+                                style="color: var(--color-ai)">
+                                <svg class="w-12 h-12 mb-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2.5"
+                                        d="M9.663 17h4.673M12 3v1" />
+                                </svg>
+                                <h3 class="text-4xl font-black uppercase tracking-tighter">Neural</h3>
+                                <p
+                                    class="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-4 group-hover:text-black/40">
+                                    Inference // Weights // clusters</p>
+                            </div>
+                        </router-link>
+
+                        <!-- Gaming -->
+                        <router-link to="/gaming" @click="isMenuOpen = false"
+                            class="bg-black p-12 aspect-square flex flex-col justify-between group hover:bg-white transition-all duration-700">
+                            <div class="text-white group-hover:text-black transition-colors"
+                                style="color: var(--color-gaming)">
+                                <svg class="w-12 h-12 mb-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="square" stroke-linejoin="miter" stroke-width="2.5"
+                                        d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15" />
+                                </svg>
+                                <h3 class="text-4xl font-black uppercase tracking-tighter">Gaming</h3>
+                                <p
+                                    class="text-[10px] font-bold text-white/30 uppercase tracking-widest mt-4 group-hover:text-black/40">
+                                    GameLift // Stream_Core // Edge</p>
+                            </div>
+                        </router-link>
+
+                    </div>
+
+                    <button @click="isMenuOpen = false"
+                        class="mt-20 text-[10px] font-black text-white/20 hover:text-white transition-colors uppercase tracking-[1em]">
+                        [ ESC ] Terminate Overlay
+                    </button>
+                </div>
+            </div>
+        </Transition>
     </template>
 </template>
+
+<style scoped>
+.fade-enter-active,
+.fade-leave-active {
+    transition: opacity 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.fade-enter-from,
+.fade-leave-to {
+    opacity: 0;
+}
+
+.shadow-3xl {
+    box-shadow: 0 0 100px rgba(0, 0, 0, 0.8);
+}
+</style>

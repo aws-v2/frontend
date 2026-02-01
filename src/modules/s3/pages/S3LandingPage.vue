@@ -12,130 +12,132 @@ onMounted(async () => {
         router.push('/s3/buckets')
     }
 })
-
-const createBucket = () => {
-    router.push('/s3/create-bucket')
-}
 </script>
 
 <template>
-    <div class="min-h-screen bg-white font-sans selection:bg-emerald-100 relative overflow-hidden">
-        <!-- Premium Ambient Background -->
-        <div class="absolute inset-0 pointer-events-none">
-            <div
-                class="absolute top-[10%] left-[-10%] w-[45rem] h-[45rem] bg-indigo-50/60 rounded-full blur-[120px] animate-pulse">
-            </div>
-            <div
-                class="absolute bottom-[20%] right-[-5%] w-[35rem] h-[35rem] bg-emerald-50/50 rounded-full blur-[100px]">
-            </div>
-        </div>
+    <div
+        class="min-h-screen bg-black text-white font-mono selection:bg-emerald-500 selection:text-black relative overflow-hidden">
+        <!-- Technical Grid Background -->
+        <div class="fixed inset-0 z-0 pointer-events-none opacity-20 technical-grid"></div>
 
         <div class="relative z-10">
             <!-- Hero Section: Storage Portfolio -->
-            <header class="max-w-7xl mx-auto px-8 md:px-16 pt-32 pb-24">
-                <div class="flex flex-col lg:flex-row gap-20 items-start">
+            <header class="max-w-7xl mx-auto px-10 pt-40 pb-24 border-x border-white/5">
+                <div class="flex flex-col lg:flex-row gap-24 items-start">
                     <div class="flex-1">
-                        <div
-                            class="inline-flex items-center gap-2 px-3 py-1 bg-emerald-600 text-white text-[9px] font-black uppercase tracking-[0.3em] mb-10">
-                            Unified Storage Layer
+                        <div class="inline-flex items-center gap-4 mb-12">
+                            <span class="w-1 h-8 bg-emerald-500"></span>
+                            <span class="text-[10px] font-bold uppercase tracking-[0.5em] text-emerald-500/60">Unified
+                                Storage Protocol</span>
                         </div>
                         <h1
-                            class="text-7xl md:text-9xl font-black text-gray-900 mb-10 leading-[0.85] tracking-tighter uppercase italic">
-                            Flux.<span class="text-emerald-500">Storage</span>
+                            class="text-7xl md:text-9xl font-black text-white mb-12 leading-[0.8] tracking-[0.02em] uppercase italic">
+                            Serwin.<span class="text-emerald-500">S3</span>
                         </h1>
-                        <p class="text-2xl text-gray-500 font-bold max-w-2xl leading-tight mb-12">
-                            A dual-engine storage architecture. Precision object buffers meeting robust relational state
-                            management.
+                        <p
+                            class="text-xl text-white/40 font-bold max-w-2xl leading-relaxed mb-16 uppercase tracking-widest">
+                            Immutable asset buffers. Engineered for 11 nines of durability with absolute zero-latency
+                            retrieval targets.
                         </p>
-                        <div class="flex flex-wrap gap-6 items-center">
+                        <div class="flex flex-wrap gap-8 items-center">
                             <router-link to="/s3/create-bucket"
-                                class="px-10 py-5 bg-gray-900 text-white font-black text-lg hover:bg-emerald-600 transition-all duration-300 rounded-none uppercase tracking-tighter active:scale-95">
-                                Initialize S3
+                                class="px-12 py-5 bg-white text-black font-black text-xs hover:bg-emerald-500 hover:text-black transition-all uppercase tracking-[0.2em] active:scale-95">
+                                Initialize Object Pool
                             </router-link>
                             <router-link to="/rds/create"
-                                class="px-10 py-5 border-4 border-gray-900 text-gray-900 font-black text-lg hover:bg-gray-900 hover:text-white transition-all duration-300 rounded-none uppercase tracking-tighter active:scale-95">
-                                Provision RDS
+                                class="px-12 py-5 border border-white/10 text-white font-black text-xs hover:bg-white hover:text-black transition-all uppercase tracking-[0.2em] active:scale-95">
+                                Provision DB Cluster
                             </router-link>
                         </div>
                     </div>
 
                     <!-- Bento Stats: Storage Ecosystem -->
-                    <div class="w-full lg:w-[480px] grid grid-cols-2 gap-4">
+                    <div
+                        class="w-full lg:w-[480px] grid grid-cols-2 gap-px bg-white/5 border border-white/5 shadow-2xl">
                         <div
-                            class="col-span-2 p-12 bg-gray-900 text-white flex flex-col justify-between aspect-video border-b-8 border-emerald-500">
+                            class="col-span-2 p-12 bg-black flex flex-col justify-between aspect-video relative overflow-hidden group">
+                            <div
+                                class="absolute top-0 right-0 w-32 h-[2px] bg-emerald-500 group-hover:w-full transition-all duration-700">
+                            </div>
                             <div class="flex justify-between items-start">
-                                <span class="text-5xl font-black italic tracking-tighter uppercase">99.99%</span>
-                                <svg class="w-8 h-8 text-emerald-500" fill="none" stroke="currentColor"
+                                <span
+                                    class="text-5xl font-black italic tracking-tighter uppercase text-emerald-500">99.99%</span>
+                                <svg class="w-8 h-8 text-white/20" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
                                     <path stroke-linecap="square" stroke-width="2.5"
-                                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
                                 </svg>
                             </div>
                             <div>
-                                <p class="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-2">
-                                    Relational Durability</p>
-                                <p class="text-xs font-bold text-gray-400 leading-relaxed uppercase">Multi-AZ automated
-                                    failover with synchronous replication for zero data loss in SQL workflows.</p>
+                                <p class="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-4">
+                                    Integrity_Metric</p>
+                                <p
+                                    class="text-[11px] font-bold text-white/30 leading-relaxed uppercase tracking-widest">
+                                    Multi-AZ automated failover with synchronous nodal replication.</p>
                             </div>
                         </div>
-                        <div class="p-8 bg-white border border-gray-100 flex flex-col justify-center gap-2">
-                            <span class="text-4xl font-black text-gray-900 tracking-tighter">Unlimited</span>
-                            <span class="text-[9px] font-black text-gray-400 uppercase tracking-widest">S3 Scalar
+                        <div class="p-10 bg-black flex flex-col justify-center gap-4 group">
+                            <span
+                                class="text-3xl font-black text-white tracking-tighter group-hover:text-emerald-400 transition-colors">UNLIMITED</span>
+                            <span class="text-[8px] font-black text-white/20 uppercase tracking-[0.4em]">Scalar
                                 Limit</span>
                         </div>
-                        <div class="p-8 bg-emerald-50 border border-emerald-100 flex flex-col justify-center gap-2">
-                            <span class="text-3xl font-black text-emerald-700 tracking-tighter italic">Low-ms</span>
+                        <div class="p-10 bg-[#050505] border-l border-white/5 flex flex-col justify-center gap-4 group">
                             <span
-                                class="text-[9px] font-black text-emerald-400 uppercase tracking-widest leading-none">RDS
-                                PROVISIONED IOPS</span>
+                                class="text-3xl font-black text-emerald-700 tracking-tighter italic group-hover:text-emerald-500 transition-colors">LOW_MS</span>
+                            <span
+                                class="text-[8px] font-black text-white/20 uppercase tracking-[0.4em]">PROVISIONED_IOPS</span>
                         </div>
                     </div>
                 </div>
             </header>
 
             <!-- Storage Architecture Options -->
-            <section
-                class="max-w-7xl mx-auto px-8 md:px-16 py-32 border-t border-gray-50 bg-gray-50/20 backdrop-blur-sm">
-                <div class="grid lg:grid-cols-2 gap-24">
-                    <!-- Object Storage Section (Flux.S3) -->
-                    <div class="space-y-12">
-                        <div class="flex items-center gap-4">
-                            <h2 class="text-3xl font-black text-gray-900 uppercase tracking-tighter">Flux.S3 Object</h2>
-                            <div class="flex-1 h-[2px] bg-emerald-600"></div>
+            <section class="max-w-7xl mx-auto px-10 py-40 border-x border-white/5 bg-[#050505] relative">
+                <div class="grid lg:grid-cols-2 gap-32">
+                    <!-- Object Storage Section -->
+                    <div class="space-y-16">
+                        <div class="flex items-center gap-6">
+                            <h2 class="text-3xl font-black text-white uppercase tracking-tight">S3 Object Hub</h2>
+                            <div class="flex-1 h-px bg-emerald-500/20"></div>
+                            <div class="w-2 h-2 bg-emerald-500 rotate-45"></div>
                         </div>
-                        <p class="text-lg text-gray-500 font-medium leading-relaxed">
-                            Static asset delivery and massive data lakes. Engineered for 11 nines of durability with
-                            global edge caching protocol.
+                        <p class="text-lg text-white/40 font-bold leading-relaxed uppercase tracking-widest">
+                            Managed data lakes. Engineered for 11 nines of durability with global edge caching protocol.
                         </p>
-                        <div class="grid gap-4">
-                            <div v-for="feat in ['Quantum Encryption', 'Object Versioning', 'Life-cycle Management']"
+                        <div class="grid gap-px bg-white/5 border border-white/5">
+                            <div v-for="feat in ['Quantum_Encryption', 'Nodal_Versioning', 'Life-cycle_Logic']"
                                 :key="feat"
-                                class="p-6 bg-white border border-gray-100 flex items-center gap-6 group hover:border-emerald-600 transition-all">
-                                <div class="w-2 h-2 bg-emerald-500"></div>
-                                <span class="text-sm font-black text-gray-900 uppercase tracking-widest">{{ feat
-                                    }}</span>
+                                class="p-8 bg-black flex items-center justify-between group hover:bg-white transition-all cursor-crosshair">
+                                <span
+                                    class="text-xs font-black uppercase tracking-[0.3em] text-white/40 group-hover:text-black">{{
+                                    feat }}</span>
+                                <div class="w-1.5 h-1.5 bg-emerald-500 group-hover:scale-[2] transition-transform">
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Relational Storage Section (Flux.RDS) -->
-                    <div class="space-y-12">
-                        <div class="flex items-center gap-4">
-                            <h2 class="text-3xl font-black text-gray-900 uppercase tracking-tighter">Flux.RDS Relational
-                            </h2>
-                            <div class="flex-1 h-[2px] bg-gray-900"></div>
+                    <!-- Relational Storage Section -->
+                    <div class="space-y-16">
+                        <div class="flex items-center gap-6">
+                            <h2 class="text-3xl font-black text-white uppercase tracking-tight">RDS Relational</h2>
+                            <div class="flex-1 h-px bg-white/10"></div>
+                            <div class="w-2 h-2 bg-white rotate-45"></div>
                         </div>
-                        <p class="text-lg text-gray-500 font-medium leading-relaxed">
-                            Managed SQL engines for transaction-heavy logic. Automated patching, scaling, and backups so
-                            you can focus on the schema.
+                        <p class="text-lg text-white/40 font-bold leading-relaxed uppercase tracking-widest">
+                            High-concurrency SQL engines. Automated patching and BACKUP orchestration for atomic state.
                         </p>
-                        <div class="grid gap-4">
-                            <div v-for="feat in ['Postgres & MySQL Engines', 'Read Replica Scaling', 'Transparent Encryption']"
+                        <div class="grid gap-px bg-white/5 border border-white/5">
+                            <div v-for="feat in ['Postgres_Engines', 'Replica_Scaling', 'Transparent_Shield']"
                                 :key="feat"
-                                class="p-6 bg-white border border-gray-100 flex items-center gap-6 group hover:border-gray-900 transition-all">
-                                <div class="w-2 h-2 bg-gray-900"></div>
-                                <span class="text-sm font-black text-gray-900 uppercase tracking-widest">{{ feat
-                                    }}</span>
+                                class="p-8 bg-black flex items-center justify-between group hover:bg-white transition-all cursor-crosshair">
+                                <span
+                                    class="text-xs font-black uppercase tracking-[0.3em] text-white/40 group-hover:text-black">{{
+                                    feat }}</span>
+                                <div
+                                    class="w-1.5 h-1.5 bg-white group-hover:bg-black group-hover:scale-[2] transition-transform">
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -143,25 +145,31 @@ const createBucket = () => {
             </section>
 
             <!-- Bottom Tactical Area -->
-            <section class="max-w-7xl mx-auto px-8 md:px-16 py-24">
+            <footer class="max-w-7xl mx-auto px-10 py-32 border-x border-white/5 bg-black">
                 <div
-                    class="bg-gray-900 p-16 text-white flex flex-col lg:flex-row justify-between items-center gap-12 relative overflow-hidden">
-                    <div class="absolute top-0 right-0 w-64 h-64 bg-emerald-500/5 blur-3xl rounded-full"></div>
-                    <div class="max-w-xl relative z-10">
-                        <h3 class="text-5xl font-black uppercase tracking-tighter mb-6">Ready to Scale?</h3>
-                        <p class="text-gray-400 font-bold uppercase tracking-widest text-sm">Provision your first node
-                            in less than 60 seconds with Zero configuration overhead.</p>
+                    class="bg-white p-20 text-black flex flex-col lg:flex-row justify-between items-center gap-16 relative overflow-hidden group">
+                    <div
+                        class="absolute inset-0 z-0 pointer-events-none opacity-5 group-hover:opacity-10 transition-opacity">
+                        <div class="w-full h-full"
+                            style="background-image: repeating-linear-gradient(45deg, #000 0, #000 1px, transparent 0, transparent 50%); background-size: 10px 10px;">
+                        </div>
                     </div>
-                    <div class="flex flex-col sm:flex-row gap-4 relative z-10">
+                    <div class="max-w-xl relative z-10">
+                        <h3 class="text-6xl font-black uppercase tracking-tighter mb-8 leading-none italic">
+                            Scale_Protocol_Alpha</h3>
+                        <p class="text-xs font-black uppercase tracking-[0.4em] opacity-40">Operational Readiness: 100%
+                            // Latency: Nominal</p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-px bg-black border border-black relative z-10 shadow-2xl">
                         <router-link to="/s3/create-bucket"
-                            class="px-10 py-5 bg-emerald-600 text-white font-black uppercase tracking-widest hover:bg-emerald-500 transition-colors text-center">Open
-                            S3 Console</router-link>
+                            class="px-12 py-8 bg-white hover:bg-emerald-500 transition-colors text-xs font-black uppercase tracking-[0.4em] border-r border-black">Initialize
+                            S3</router-link>
                         <router-link to="/rds/databases"
-                            class="px-10 py-5 bg-white text-gray-900 font-black uppercase tracking-widest hover:bg-gray-100 transition-colors text-center">Open
-                            RDS Console</router-link>
+                            class="px-12 py-8 bg-gray-100 hover:bg-black hover:text-white transition-colors text-xs font-black uppercase tracking-[0.4em]">RDS
+                            Command</router-link>
                     </div>
                 </div>
-            </section>
+            </footer>
         </div>
     </div>
 </template>

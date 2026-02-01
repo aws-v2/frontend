@@ -1,85 +1,70 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Roboto+Mono:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700;800&display=swap');
+@import './styles/tokens.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
-  :root {
-    --bg-main: #ffffff;
-    --bg-console: #f2f3f3;
-    --nav-bg: #16191f;
-    --nav-text: #ffffff;
-    --text-main: #232f3e;
-    --text-secondary: #545b64;
-    --border-main: #eaeded;
-    --aws-orange: #ec7211;
-    --aws-blue: #0073bb;
-    --aws-blue-hover: #005f9e;
-  }
-
-  .dark {
-    --bg-main: #1c2732;
-    --bg-console: #0f172a;
-    --nav-bg: #16191f;
-    --nav-text: #ffffff;
-    --text-main: #f1f5f9;
-    --text-secondary: #94a3b8;
-    --border-main: #303e4d;
-    --aws-orange: #ff9900;
-    --aws-blue: #3b82f6;
-    --aws-blue-hover: #60a5fa;
-  }
-
   body {
-    @apply bg-[var(--bg-console)] text-[var(--text-main)] antialiased;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    @apply bg-black text-white antialiased;
+    font-family: 'JetBrains Mono', monospace;
+  }
+
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 2px;
+    height: 2px;
+  }
+  ::-webkit-scrollbar-track {
+    @apply bg-black;
+  }
+  ::-webkit-scrollbar-thumb {
+    @apply bg-[#111] hover:bg-[#007AFF] transition-colors;
   }
 }
 
 @layer components {
-  /* Modern Card (replaces retro-box) */
+  /* Void Card - Technical & Flat */
   .aws-card {
-    @apply bg-[var(--bg-main)] border border-[var(--border-main)] shadow-sm transition-all duration-200;
+    @apply bg-[#050505] border border-white/5 p-8 transition-all duration-500 overflow-hidden relative;
+  }
+  .aws-card:hover {
+    @apply border-white/10;
   }
 
-  /* Modern Primary Button */
+  /* Atomic Primary Button */
   .btn-aws-primary {
-    @apply px-4 py-1.5 bg-[var(--aws-orange)] text-white font-bold text-sm rounded-sm hover:opacity-90 transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply px-8 py-3 bg-white text-black font-black text-[10px] uppercase tracking-[0.4em] hover:bg-[#007AFF] hover:text-white transition-all duration-300 active:scale-95 disabled:opacity-20 disabled:cursor-not-allowed;
   }
 
-  /* Modern Secondary Button */
+  /* Atomic Secondary Button */
   .btn-aws-secondary {
-    @apply px-4 py-1.5 bg-white dark:bg-gray-800 text-[var(--aws-blue)] border border-gray-300 dark:border-gray-600 font-bold text-sm rounded-sm hover:bg-gray-50 dark:hover:bg-gray-700 transition-all active:scale-[0.98];
+    @apply px-8 py-3 bg-black text-white border border-white/10 font-black text-[10px] uppercase tracking-[0.4em] hover:bg-white hover:text-black transition-all duration-300 active:scale-95;
   }
 
-  /* Modern Input */
+  /* Technical Input */
   .aws-input {
-    @apply w-full px-3 py-2 border border-gray-400 dark:border-gray-600 bg-white dark:bg-gray-900 text-gray-900 dark:text-white text-sm focus:outline-none focus:ring-1 focus:ring-[var(--aws-blue)] focus:border-[var(--aws-blue)] transition-all placeholder-gray-400;
+    @apply w-full bg-[#0A0A0A] border border-white/5 px-6 py-3 text-[11px] font-bold text-white placeholder-white/10 focus:outline-none focus:border-[#007AFF] focus:bg-black transition-all uppercase tracking-widest;
   }
 
   .aws-label {
-    @apply block text-xs font-bold text-gray-900 dark:text-gray-100 mb-1.5;
+    @apply block text-[9px] font-black text-white/30 uppercase tracking-[0.5em] mb-3;
   }
 
-  /* Global Scrollbar */
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
+  /* Auth Container & Card */
+  .auth-container {
+    @apply min-h-screen bg-black flex items-center justify-center p-10 relative overflow-hidden;
   }
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: transparent;
+  .auth-card {
+    @apply w-full max-w-md bg-[#050505] border border-white/10 p-12 relative z-10;
   }
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    @apply bg-gray-300 dark:bg-gray-700 rounded-full hover:bg-gray-400 dark:hover:bg-gray-600;
+  
+  /* Technical Grid for background sections */
+  .technical-grid {
+    background-image: 
+        linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 30px 30px;
   }
-}
-
-/* Auth Page specific modern styles */
-.auth-container {
-  @apply min-h-screen bg-gray-50 dark:bg-[#0f172a] flex items-center justify-center p-6;
-}
-
-.auth-card {
-  @apply w-full max-w-md bg-white dark:bg-[#1c2732] p-8 border border-gray-200 dark:border-gray-700 shadow-xl;
 }

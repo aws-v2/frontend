@@ -1,27 +1,27 @@
 <script setup lang="ts">
 import { RouterView } from 'vue-router'
-import Navbar from '@/shared/components/Navbar.vue'
-import ToastContainer from '@/shared/components/ToastContainer.vue'
 </script>
 
 <template>
-  <div class="min-h-screen bg-white transition-colors duration-150">
-    <Navbar />
-    <main class="flex-1">
+  <div class="auth-layout min-h-screen bg-gray-50 dark:bg-[#0f172a] flex items-center justify-center p-6">
+    <div class="w-full max-w-md">
       <router-view v-slot="{ Component }">
         <transition name="fade" mode="out-in">
           <component :is="Component" />
         </transition>
       </router-view>
-    </main>
-    <ToastContainer />
+      
+      <div class="mt-8 text-center text-[10px] text-gray-400 uppercase tracking-widest font-medium">
+        &copy; 2026 Serwin Technologies or its affiliates.
+      </div>
+    </div>
   </div>
 </template>
 
-<style>
+<style scoped>
 .fade-enter-active,
 .fade-leave-active {
-  transition: opacity 0.15s ease;
+  transition: opacity 0.2s ease;
 }
 
 .fade-enter-from,

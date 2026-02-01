@@ -21,23 +21,17 @@ const handleLogin = async (e: Event) => {
             email: email.value,
             password: password.value
         })
+        toastStore.addToast('SERWIN // AUTHENTICATION_SUCCESS', 'success')
 
-        console.log('Login successful, response data:', response)
-        toastStore.addToast('Successfully authenticated!', 'success')
-
-        // Conditional Redirection Logic
         if (!response.mfaEnabled) {
-            console.log('Redirecting to MFA Setup')
             router.push('/auth/mfa-setup')
         } else if (response.mfaRequired) {
-            console.log('Redirecting to MFA Challenge')
             router.push('/auth/mfa')
         } else {
-            console.log('Redirecting to Dashboard')
             router.push('/dashboard')
         }
     } catch (error: any) {
-        toastStore.addToast(error.response?.data?.message || 'Authentication failed', 'error')
+        toastStore.addToast(error.response?.data?.message || 'AUTH_FAILURE // ACCESS_DENIED', 'error')
     } finally {
         isLoading.value = false
     }
@@ -46,49 +40,63 @@ const handleLogin = async (e: Event) => {
 
 <template>
     <div class="auth-container">
-        <div class="w-full max-w-md">
-            <div class="auth-card space-y-6">
-                <div class="text-center">
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Sign in</h1>
-                    <p class="text-sm text-gray-500 mt-2">Access your Serwin Console</p>
+        <!-- Abstract Void Background Elements -->
+        <div class="absolute inset-0 z-0 pointer-events-none opacity-20 technical-grid"></div>
+        <div class="absolute top-0 right-0 w-[50vw] h-px bg-white/5"></div>
+        <div class="absolute top-0 left-0 h-[50vh] w-px bg-white/5"></div>
+
+        <div class="w-full max-w-md relative z-10">
+            <!-- Branding Header -->
+            <div class="flex flex-col items-center mb-16">
+                <router-link to="/" class="flex items-center gap-4 group">
+                    <div class="w-8 h-8 bg-white rotate-45 group-hover:scale-125 transition-transform duration-500">
+                    </div>
+                    <span class="text-3xl font-black uppercase tracking-[0.3em]">Serwin</span>
+                </router-link>
+                <div class="mt-4 text-[9px] font-black uppercase tracking-[0.6em] text-white/20">Protocol Access Node
+                </div>
+            </div>
+
+            <div class="auth-card space-y-10">
+                <div class="text-left border-l-2 border-[#007AFF] pl-6 py-2">
+                    <h1 class="text-2xl font-black uppercase tracking-tighter text-white">Identify Operator</h1>
+                    <p class="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em] mt-2 tracking-widest">
+                        Awaiting credentials...</p>
                 </div>
 
-                <form @submit="handleLogin" class="space-y-4">
-                    <div>
-                        <label class="aws-label">Email</label>
-                        <input v-model="email" type="email" class="aws-input" placeholder="user@example.com" required>
+                <form @submit="handleLogin" class="space-y-8">
+                    <div class="space-y-3">
+                        <label class="aws-label">Registry // Email</label>
+                        <input v-model="email" type="email" class="aws-input" placeholder="OPERATOR@SERWIN.IO" required>
                     </div>
 
-                    <div>
-                        <div class="flex justify-between items-center mb-1.5">
-                            <label class="aws-label mb-0">Password</label>
+                    <div class="space-y-3">
+                        <div class="flex justify-between items-center">
+                            <label class="aws-label mb-0">Security // Key</label>
                             <router-link to="/forgot-password"
-                                class="text-xs text-[var(--aws-blue)] hover:underline">Forgot password?</router-link>
+                                class="text-[9px] font-black text-white/60 uppercase tracking-[0.2em] hover:text-[#007AFF] transition-colors">Recover</router-link>
                         </div>
-                        <input v-model="password" type="password" class="aws-input" placeholder="Enter your password"
-                            required>
+                        <input v-model="password" type="password" class="aws-input" placeholder="••••••••" required>
                     </div>
 
-                    <button type="submit" :disabled="isLoading"
-                        class="btn-aws-primary w-full py-2.5 mt-2 flex items-center justify-center gap-2">
-                        <svg v-if="isLoading" class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                            </circle>
-                            <path class="opacity-75" fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                            </path>
-                        </svg>
-                        {{ isLoading ? 'Signing in...' : 'Sign In' }}
-                    </button>
+                    <div class="pt-4">
+                        <button type="submit" :disabled="isLoading"
+                            class="btn-aws-primary w-full flex items-center justify-center gap-4 py-4">
+                            <div v-if="isLoading"
+                                class="w-4 h-4 border-2 border-black border-t-transparent rounded-full animate-spin">
+                            </div>
+                            {{ isLoading ? 'Processing...' : 'Authorize_Access' }}
+                        </button>
+                    </div>
 
-                    <div class="relative py-4 flex items-center">
-                        <div class="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
-                        <span class="mx-4 text-xs text-gray-400 font-medium bg-white dark:bg-[#1c2732] px-2">OR</span>
-                        <div class="flex-grow border-t border-gray-200 dark:border-gray-700"></div>
+                    <div class="relative py-2 flex items-center">
+                        <div class="flex-grow h-px bg-white/5"></div>
+                        <span class="mx-6 text-[9px] font-black text-white/20 uppercase tracking-[0.5em]">OR</span>
+                        <div class="flex-grow h-px bg-white/5"></div>
                     </div>
 
                     <button type="button" @click="authStore.loginWithGoogle"
-                        class="w-full py-2 px-4 border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 text-sm font-bold flex items-center justify-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors rounded-sm shadow-sm">
+                        class="w-full py-4 border border-white/5 bg-[#0A0A0A] text-white font-black text-[10px] uppercase tracking-[0.3em] flex items-center justify-center gap-4 hover:border-white/20 transition-all">
                         <svg class="w-4 h-4" viewBox="0 0 24 24">
                             <path fill="currentColor"
                                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
@@ -99,21 +107,23 @@ const handleLogin = async (e: Event) => {
                             <path fill="currentColor"
                                 d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
                         </svg>
-                        Sign in with Google
+                        Cloud_Connect
                     </button>
                 </form>
 
-                <div class="pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        New to Serwin?
-                        <router-link to="/register" class="text-[var(--aws-blue)] font-bold hover:underline ml-1">Create
-                            an AWS account</router-link>
+                <div class="pt-10 border-t border-white/20 text-center">
+                    <p class="text-[10px] font-bold text-white/60 uppercase tracking-[0.2em]">
+                        No Registry Entry?
+                        <router-link to="/register"
+                            class="text-white hover:text-[#007AFF] transition-colors ml-2 underline underline-offset-4">Create
+                            Nodal Account</router-link>
                     </p>
                 </div>
             </div>
 
-            <div class="mt-8 text-center text-[10px] text-gray-400 uppercase tracking-widest font-medium">
-                &copy; 2026 Serwin Technologies or its affiliates.
+            <div class="mt-16 text-center">
+                <p class="text-[9px] text-white/20 uppercase tracking-[0.4em]">© 2026 SERWIN.PROTOCOL //
+                    SECURED_NODE_4109</p>
             </div>
         </div>
     </div>

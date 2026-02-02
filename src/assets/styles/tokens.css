@@ -1,0 +1,20 @@
+:root {
+  /* Brand Core - Serwin Void */
+  --serwin-blue: #007AFF;
+  --serwin-black: #000000;
+  --serwin-white: #FFFFFF;
+  
+  /* Vertical Anchors - Atomic Vibrant */
+  --color-compute: #00F5FF; /* Atomic Cyan */
+  --color-gaming: #FF0055;  /* Atomic Rose */
+  --color-ai: #7F00FF;      /* Atomic Violet */
+  --color-storage: #00FF88; /* Atomic Mint */
+
+  /* Surface Architecture (Void) */
+  --bg-void: #000000;
+  --bg-surface: #0A0A0A;
+  --text-primary: #FFFFFF;
+  --text-dim: #444444;
+  --border-subtle: #111111;
+  --border-strong: #222222;
+}

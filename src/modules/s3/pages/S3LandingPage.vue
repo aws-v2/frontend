@@ -12,144 +12,164 @@ onMounted(async () => {
         router.push('/s3/buckets')
     }
 })
-
-const createBucket = () => {
-    router.push('/s3/create-bucket')
-}
 </script>
 
 <template>
-    <div class="min-h-screen bg-white">
-        <!-- Hero Section -->
-        <div class="bg-[#16191f] text-white py-12 px-16 flex justify-between items-start">
-            <div class="max-w-2xl">
-                <p class="text-[10px] uppercase font-bold text-gray-400 tracking-widest mb-1">Storage</p>
-                <h1 class="text-3xl font-bold mb-4">Amazon S3</h1>
-                <p class="text-xl font-medium mb-6">Store and retrieve any amount of data from anywhere</p>
-                <p class="text-sm text-gray-400 leading-relaxed max-w-xl">
-                    Amazon S3 is an object storage service that offers industry-leading scalability, data availability,
-                    security, and performance.
-                </p>
-            </div>
+    <div
+        class="min-h-screen bg-black text-white font-mono selection:bg-emerald-500 selection:text-black relative overflow-hidden">
+        <!-- Technical Grid Background -->
+        <div class="fixed inset-0 z-0 pointer-events-none opacity-20 technical-grid"></div>
 
-            <!-- Create Bucket Card -->
-            <div class="w-80 bg-white rounded-lg p-6 shadow-xl border border-gray-200">
-                <h2 class="text-lg font-bold text-gray-900 mb-4">Create a bucket</h2>
-                <p class="text-xs text-gray-600 mb-6 leading-relaxed">
-                    Every object in S3 is stored in a bucket. To upload files and folders to S3, you'll need to create a
-                    bucket where the objects will be stored.
-                </p>
-                <button @click="createBucket"
-                    class="w-full py-2 bg-[var(--aws-orange)] text-white font-bold rounded-full hover:opacity-90 transition-opacity">
-                    Create bucket
-                </button>
-            </div>
-        </div>
+        <div class="relative z-10">
+            <!-- Hero Section: Storage Portfolio -->
+            <header class="max-w-7xl mx-auto px-10 pt-40 pb-24 border-x border-white/5">
+                <div class="flex flex-col lg:flex-row gap-24 items-start">
+                    <div class="flex-1">
+                        <div class="inline-flex items-center gap-4 mb-12">
+                            <span class="w-1 h-8 bg-emerald-500"></span>
+                            <span class="text-[10px] font-bold uppercase tracking-[0.5em] text-emerald-500/60">Unified
+                                Storage Protocol</span>
+                        </div>
+                        <h1
+                            class="text-7xl md:text-9xl font-black text-white mb-12 leading-[0.8] tracking-[0.02em] uppercase italic">
+                            Serwin.<span class="text-emerald-500">S3</span>
+                        </h1>
+                        <p
+                            class="text-xl text-white/40 font-bold max-w-2xl leading-relaxed mb-16 uppercase tracking-widest">
+                            Immutable asset buffers. Engineered for 11 nines of durability with absolute zero-latency
+                            retrieval targets.
+                        </p>
+                        <div class="flex flex-wrap gap-8 items-center">
+                            <router-link to="/s3/create-bucket"
+                                class="px-12 py-5 bg-white text-black font-black text-xs hover:bg-emerald-500 hover:text-black transition-all uppercase tracking-[0.2em] active:scale-95">
+                                Initialize Object Pool
+                            </router-link>
+                            <router-link to="/rds/create"
+                                class="px-12 py-5 border border-white/10 text-white font-black text-xs hover:bg-white hover:text-black transition-all uppercase tracking-[0.2em] active:scale-95">
+                                Provision DB Cluster
+                            </router-link>
+                        </div>
+                    </div>
 
-        <!-- Main Content -->
-        <div class="px-16 py-12 flex gap-12">
-            <!-- Left: Video/How it works -->
-            <div class="flex-1">
-                <h3 class="text-lg font-bold text-gray-900 mb-6">How it works</h3>
+                    <!-- Bento Stats: Storage Ecosystem -->
+                    <div
+                        class="w-full lg:w-[480px] grid grid-cols-2 gap-px bg-white/5 border border-white/5 shadow-2xl">
+                        <div
+                            class="col-span-2 p-12 bg-black flex flex-col justify-between aspect-video relative overflow-hidden group">
+                            <div
+                                class="absolute top-0 right-0 w-32 h-[2px] bg-emerald-500 group-hover:w-full transition-all duration-700">
+                            </div>
+                            <div class="flex justify-between items-start">
+                                <span
+                                    class="text-5xl font-black italic tracking-tighter uppercase text-emerald-500">99.99%</span>
+                                <svg class="w-8 h-8 text-white/20" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="square" stroke-width="2.5"
+                                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-emerald-500 uppercase tracking-[0.3em] mb-4">
+                                    Integrity_Metric</p>
+                                <p
+                                    class="text-[11px] font-bold text-white/30 leading-relaxed uppercase tracking-widest">
+                                    Multi-AZ automated failover with synchronous nodal replication.</p>
+                            </div>
+                        </div>
+                        <div class="p-10 bg-black flex flex-col justify-center gap-4 group">
+                            <span
+                                class="text-3xl font-black text-white tracking-tighter group-hover:text-emerald-400 transition-colors">UNLIMITED</span>
+                            <span class="text-[8px] font-black text-white/20 uppercase tracking-[0.4em]">Scalar
+                                Limit</span>
+                        </div>
+                        <div class="p-10 bg-[#050505] border-l border-white/5 flex flex-col justify-center gap-4 group">
+                            <span
+                                class="text-3xl font-black text-emerald-700 tracking-tighter italic group-hover:text-emerald-500 transition-colors">LOW_MS</span>
+                            <span
+                                class="text-[8px] font-black text-white/20 uppercase tracking-[0.4em]">PROVISIONED_IOPS</span>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Storage Architecture Options -->
+            <section class="max-w-7xl mx-auto px-10 py-40 border-x border-white/5 bg-[#050505] relative">
+                <div class="grid lg:grid-cols-2 gap-32">
+                    <!-- Object Storage Section -->
+                    <div class="space-y-16">
+                        <div class="flex items-center gap-6">
+                            <h2 class="text-3xl font-black text-white uppercase tracking-tight">S3 Object Hub</h2>
+                            <div class="flex-1 h-px bg-emerald-500/20"></div>
+                            <div class="w-2 h-2 bg-emerald-500 rotate-45"></div>
+                        </div>
+                        <p class="text-lg text-white/40 font-bold leading-relaxed uppercase tracking-widest">
+                            Managed data lakes. Engineered for 11 nines of durability with global edge caching protocol.
+                        </p>
+                        <div class="grid gap-px bg-white/5 border border-white/5">
+                            <div v-for="feat in ['Quantum_Encryption', 'Nodal_Versioning', 'Life-cycle_Logic']"
+                                :key="feat"
+                                class="p-8 bg-black flex items-center justify-between group hover:bg-white transition-all cursor-crosshair">
+                                <span
+                                    class="text-xs font-black uppercase tracking-[0.3em] text-white/40 group-hover:text-black">{{
+                                    feat }}</span>
+                                <div class="w-1.5 h-1.5 bg-emerald-500 group-hover:scale-[2] transition-transform">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Relational Storage Section -->
+                    <div class="space-y-16">
+                        <div class="flex items-center gap-6">
+                            <h2 class="text-3xl font-black text-white uppercase tracking-tight">RDS Relational</h2>
+                            <div class="flex-1 h-px bg-white/10"></div>
+                            <div class="w-2 h-2 bg-white rotate-45"></div>
+                        </div>
+                        <p class="text-lg text-white/40 font-bold leading-relaxed uppercase tracking-widest">
+                            High-concurrency SQL engines. Automated patching and BACKUP orchestration for atomic state.
+                        </p>
+                        <div class="grid gap-px bg-white/5 border border-white/5">
+                            <div v-for="feat in ['Postgres_Engines', 'Replica_Scaling', 'Transparent_Shield']"
+                                :key="feat"
+                                class="p-8 bg-black flex items-center justify-between group hover:bg-white transition-all cursor-crosshair">
+                                <span
+                                    class="text-xs font-black uppercase tracking-[0.3em] text-white/40 group-hover:text-black">{{
+                                    feat }}</span>
+                                <div
+                                    class="w-1.5 h-1.5 bg-white group-hover:bg-black group-hover:scale-[2] transition-transform">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Bottom Tactical Area -->
+            <footer class="max-w-7xl mx-auto px-10 py-32 border-x border-white/5 bg-black">
                 <div
-                    class="aspect-video bg-gray-100 border border-gray-200 flex flex-col items-center justify-center p-8 text-center grayscale opacity-60">
-                    <svg class="w-16 h-16 text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                            d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1"
-                            d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p class="text-sm text-gray-500 italic">Video: Introduction to Amazon S3</p>
-                </div>
-
-                <div class="mt-8 grid grid-cols-2 gap-8">
-                    <div>
-                        <h4 class="text-sm font-bold text-gray-900 mb-4">Data performance and durability</h4>
-                        <p class="text-xs text-gray-600 leading-relaxed mb-4">
-                            S3 is designed for 99.999999999% (11 9's) of durability, and stores data for millions of
-                            applications for companies all around the world.
-                        </p>
-                        <span class="text-xs text-[var(--aws-blue)] font-bold hover:underline cursor-pointer">Learn
-                            more</span>
+                    class="bg-white p-20 text-black flex flex-col lg:flex-row justify-between items-center gap-16 relative overflow-hidden group">
+                    <div
+                        class="absolute inset-0 z-0 pointer-events-none opacity-5 group-hover:opacity-10 transition-opacity">
+                        <div class="w-full h-full"
+                            style="background-image: repeating-linear-gradient(45deg, #000 0, #000 1px, transparent 0, transparent 50%); background-size: 10px 10px;">
+                        </div>
                     </div>
-                    <div>
-                        <h4 class="text-sm font-bold text-gray-900 mb-4">Security, compliance, and auditing</h4>
-                        <p class="text-xs text-gray-600 leading-relaxed mb-4">
-                            S3 supports security, compliance, and auditing with features like Amazon S3 Object Lock and
-                            account-level Block Public Access.
-                        </p>
-                        <span class="text-xs text-[var(--aws-blue)] font-bold hover:underline cursor-pointer">Learn
-                            more</span>
+                    <div class="max-w-xl relative z-10">
+                        <h3 class="text-6xl font-black uppercase tracking-tighter mb-8 leading-none italic">
+                            Scale_Protocol_Alpha</h3>
+                        <p class="text-xs font-black uppercase tracking-[0.4em] opacity-40">Operational Readiness: 100%
+                            // Latency: Nominal</p>
+                    </div>
+                    <div class="flex flex-col sm:flex-row gap-px bg-black border border-black relative z-10 shadow-2xl">
+                        <router-link to="/s3/create-bucket"
+                            class="px-12 py-8 bg-white hover:bg-emerald-500 transition-colors text-xs font-black uppercase tracking-[0.4em] border-r border-black">Initialize
+                            S3</router-link>
+                        <router-link to="/rds/databases"
+                            class="px-12 py-8 bg-gray-100 hover:bg-black hover:text-white transition-colors text-xs font-black uppercase tracking-[0.4em]">RDS
+                            Command</router-link>
                     </div>
                 </div>
-            </div>
-
-            <!-- Right Sidebars -->
-            <div class="w-80 space-y-6">
-                <!-- Pricing -->
-                <div class="border border-gray-200 rounded-sm p-6 overflow-hidden">
-                    <h3 class="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
-                        Pricing <svg class="w-3.5 h-3.5 opacity-40 hover:opacity-100 cursor-pointer" fill="currentColor"
-                            viewBox="0 0 20 20">
-                            <path
-                                d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
-                        </svg>
-                    </h3>
-                    <p class="text-xs text-gray-600 leading-relaxed mb-6">
-                        With S3, there are no minimum fees. You only pay for what you use. Prices are based on the
-                        location of your S3 bucket.
-                    </p>
-                    <div class="space-y-3">
-                        <span class="block text-xs text-[var(--aws-blue)] font-bold hover:underline cursor-pointer">View
-                            pricing details</span>
-                    </div>
-                </div>
-
-                <!-- Resources -->
-                <div class="border border-gray-200 rounded-sm p-6">
-                    <h3 class="text-sm font-bold text-gray-900 mb-4 flex items-center justify-between">
-                        Resources <svg class="w-4 h-4 opacity-40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                    </h3>
-                    <div class="space-y-3">
-                        <span v-for="res in ['User guide', 'API reference', 'FAQs', 'Discussion forums']" :key="res"
-                            class="block text-xs text-[var(--aws-blue)] font-bold hover:underline cursor-pointer flex items-center justify-between group">
-                            {{ res }}
-                            <svg class="w-3 h-3 opacity-0 group-hover:opacity-40" fill="currentColor"
-                                viewBox="0 0 20 20">
-                                <path
-                                    d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
-                            </svg>
-                        </span>
-                    </div>
-                </div>
-
-                <!-- Common Tasks -->
-                <div class="border border-gray-200 rounded-sm p-6">
-                    <h3 class="text-sm font-bold text-gray-900 mb-4 flex items-center justify-between">
-                        Common tasks <svg class="w-4 h-4 opacity-40" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg>
-                    </h3>
-                    <div class="space-y-3">
-                        <span
-                            v-for="task in ['Get started with S3', 'Create a bucket', 'Upload an object', 'Download an object', 'Host a static website']"
-                            :key="task"
-                            class="block text-xs text-[var(--aws-blue)] font-bold hover:underline cursor-pointer flex items-center justify-between group">
-                            {{ task }}
-                            <svg class="w-3 h-3 opacity-0 group-hover:opacity-40" fill="currentColor"
-                                viewBox="0 0 20 20">
-                                <path
-                                    d="M11 3a1 1 0 100 2h2.586l-6.293 6.293a1 1 0 101.414 1.414L15 6.414V9a1 1 0 102 0V4a1 1 0 00-1-1h-5z" />
-                            </svg>
-                        </span>
-                    </div>
-                </div>
-            </div>
+            </footer>
         </div>
     </div>
 </template>

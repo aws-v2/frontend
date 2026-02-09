@@ -16,37 +16,80 @@ const goToConsole = () => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-6 font-sans">
-        <div class="max-w-2xl w-full bg-white rounded-sm shadow-sm border border-gray-200 p-12 text-center">
-            <div class="w-20 h-20 bg-green-100 flex items-center justify-center rounded-full mx-auto mb-8">
-                <svg class="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
-                </svg>
+    <div class="min-h-screen bg-[#05080F] relative overflow-hidden font-sans flex items-center justify-center p-6">
+        <!-- Ambient Background -->
+        <div class="absolute inset-0 pointer-events-none">
+            <div
+                class="absolute top-[20%] left-[30%] w-[60vw] h-[60vw] bg-emerald-600/10 rounded-full blur-[120px] opacity-20">
             </div>
-
-            <h1 class="text-3xl font-black text-gray-900 mb-4">Congratulations!</h1>
-            <p class="text-lg text-gray-600 mb-8">
-                Your Serwin Web Services account has been successfully created. You now have access to the full suite of
-                Serwin services.
-            </p>
-
-            <div class="bg-blue-50 border-l-4 border-[var(--aws-blue)] p-6 mb-12 text-left">
-                <h3 class="font-bold text-[var(--aws-blue)] mb-2">What's next?</h3>
-                <ul class="text-sm text-gray-600 space-y-2">
-                    <li>• Explore the Management Console</li>
-                    <li>• Check your email for a welcome message and getting started guide</li>
-                    <li>• Visit the Documentation for tutorials and resources</li>
-                </ul>
+            <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03]">
             </div>
+        </div>
 
-            <button @click="goToConsole"
-                class="px-10 py-3 bg-[var(--aws-orange)] text-white font-bold text-lg hover:opacity-90 transition-opacity shadow-lg shadow-orange-500/20">
-                Go to the Management Console
-            </button>
+        <div class="relative z-10 w-full max-w-2xl">
+            <div class="glass-panel p-12 text-center rounded-3xl border-t border-t-white/10 relative overflow-hidden">
+                <!-- Top Highlight -->
+                <div
+                    class="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent">
+                </div>
 
-            <p class="mt-8 text-xs text-gray-400 uppercase tracking-widest font-medium">
-                &copy; 2026 Serwin Technologies or its affiliates.
-            </p>
+                <!-- Success Icon -->
+                <div
+                    class="inline-flex items-center justify-center w-24 h-24 rounded-full bg-emerald-500/10 mb-8 relative group">
+                    <div class="absolute inset-0 bg-emerald-500/20 rounded-full animate-ping opacity-20"></div>
+                    <div class="absolute inset-0 bg-emerald-500/10 rounded-full blur-xl"></div>
+                    <svg class="w-10 h-10 text-emerald-400 relative z-10" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7" />
+                    </svg>
+                </div>
+
+                <h1 class="text-4xl font-bold text-white mb-6 font-display">Welcome Aboard!</h1>
+                <p class="text-lg text-slate-400 mb-10 leading-relaxed max-w-lg mx-auto">
+                    Your Serwin Console account has been successfully provisioned. You now have full access to our
+                    global infrastructure.
+                </p>
+
+                <div
+                    class="bg-indigo-500/10 border border-indigo-500/20 p-6 rounded-xl text-left max-w-lg mx-auto mb-10">
+                    <h3 class="font-bold text-indigo-400 mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Immediate Actions
+                    </h3>
+                    <ul class="space-y-3">
+                        <li class="flex items-center gap-3 text-sm text-slate-300">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                            Access the Management Console
+                        </li>
+                        <li class="flex items-center gap-3 text-sm text-slate-300">
+                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500"></span>
+                            Review the Getting Started guide sent to your email
+                        </li>
+                    </ul>
+                </div>
+
+                <button @click="goToConsole"
+                    class="px-10 py-4 bg-indigo-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/20 hover:bg-indigo-500 transition-all hover:scale-105 active:scale-95 flex items-center gap-2 mx-auto">
+                    Launch Management Console
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                </button>
+
+                <p class="mt-8 text-[10px] text-slate-600 uppercase tracking-widest font-medium">
+                    &copy; 2026 Serwin Technologies. All systems nominal.
+                </p>
+            </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+.glass-panel {
+    @apply bg-[#0B0F19]/80 backdrop-blur-2xl border border-white/5 shadow-2xl;
+}
+</style>

@@ -5,7 +5,7 @@ const gameliftRoutes: RouteRecordRaw[] = [
         path: '/gaming',
         name: 'gaming-landing',
         component: () => import('./pages/GamingLandingPage.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: false }
     }
 ]
 

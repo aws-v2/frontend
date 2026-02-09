@@ -5,7 +5,7 @@ const routes: RouteRecordRaw[] = [
     path: '/s3',
     name: 's3-landing',
     component: () => import('./pages/S3LandingPage.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: false },
   },
   {
     path: '/s3/buckets',

@@ -1,529 +1,509 @@
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
-import { useToastStore } from '@/shared/store/toastStore'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
-const toastStore = useToastStore()
 const router = useRouter()
 
-const verticals = [
-    {
-        id: 'compute',
-        name: 'Atomic Compute',
-        tagline: 'RAW ELASTIC POWER.',
-        description: 'Scalable bare-metal and serverless execution environments with sub-ms cold starts.',
-        color: 'var(--color-compute)',
-        icon: 'M13 10V3L4 14h7v7l9-11h-7z',
-        specs: ['Nodal Execution', 'Lambda Flux', 'Fargate Core']
-    },
-    {
-        id: 'storage',
-        name: 'Hyper Storage',
-        tagline: 'IMMUTABLE DATA LAKES.',
-        description: 'Global object pools and managed relational state engineered for 11 nines of durability.',
-        color: 'var(--color-storage)',
-        icon: 'M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4',
-        specs: ['S3 Object Hub', 'RDS Relational', 'Quantum Crypt']
-    },
-    {
-        id: 'ai',
-        name: 'Neural Engine',
-        tagline: 'DEEP INFERENCE POOLS.',
-        description: 'Specialized GPU clusters for massive model hosting and real-time neural inference.',
-        color: 'var(--color-ai)',
-        icon: 'M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3',
-        specs: ['Stargate Inference', 'LLM Clusters', 'Weight Sharding']
-    },
-    {
-        id: 'gaming',
-        name: 'Matrix Gaming',
-        tagline: 'SUB-MS LATENCY EDGE.',
-        description: 'The foundation for real-time multiplayer worlds and high-fidelity 4K cloud streaming.',
-        color: 'var(--color-gaming)',
-        icon: 'M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15',
-        specs: ['Fleet Manager', 'Stream Protocol', 'Zero-Lag Shield']
-    }
-]
+// --- Hero State Management ---
+const activeTab = ref<'compute' | 'gaming' | 'storage'>('compute')
+const tabs = [
+    { id: 'compute', label: 'Compute', icon: 'cpu', color: 'text-blue-400', bg: 'bg-blue-500', desc: 'Elastic Bare-Metal' },
+    { id: 'gaming', label: 'Gaming', icon: 'gamepad', color: 'text-purple-400', bg: 'bg-purple-500', desc: 'Low-Latency Edge' },
+    { id: 'storage', label: 'Storage', icon: 'database', color: 'text-emerald-400', bg: 'bg-emerald-500', desc: 'Immutable Data' }
+] as const
 
-// Real-time Telemetry Data
-const telemetryPoints = ref<string>('')
-const nodalLoad = ref(12.42)
-const activeSignals = ref(4109)
+// Auto-rotate tabs every 5 seconds if user hasn't interacted
+let autoRotateInterval: any
+const pauseAutoRotate = ref(false)
 
-const generateTelemetry = () => {
-    let p = "0,80"
-    for (let i = 1; i <= 20; i++) {
-        const x = i * 20
-        const y = 30 + Math.random() * 50
-        p += ` ${x},${y}`
-    }
-    telemetryPoints.value = p
-    nodalLoad.value = +(12 + Math.random() * 5).toFixed(2)
-    activeSignals.value += Math.floor(Math.random() * 3) - 1
-}
-
-let ticker: any
 onMounted(() => {
-    generateTelemetry()
-    ticker = setInterval(generateTelemetry, 2000)
     window.scrollTo(0, 0)
+    startAutoRotate()
 })
 
 onUnmounted(() => {
-    clearInterval(ticker)
+    stopAutoRotate()
 })
+
+const startAutoRotate = () => {
+    autoRotateInterval = setInterval(() => {
+        if (pauseAutoRotate.value) return
+        const currentIndex = tabs.findIndex(t => t.id === activeTab.value)
+        const nextIndex = (currentIndex + 1) % tabs.length
+        activeTab.value = tabs[nextIndex].id  ?? 0
+    }, 5000)
+}
+
+const stopAutoRotate = () => {
+    clearInterval(autoRotateInterval)
+}
+
+const setTab = (id: typeof activeTab.value) => {
+    activeTab.value = id
+    pauseAutoRotate.value = true // User took control, stop auto-rotating
+}
 
 const handleJoin = () => {
     router.push('/register')
 }
+
+// --- Smooth Scroll ---
+const scrollTo = (id: string) => {
+    const el = document.getElementById(id)
+    if (el) el.scrollIntoView({ behavior: 'smooth' })
+}
+
+// --- Mouse Tilt Logic (Re-used) ---
+const heroRef = ref<HTMLElement | null>(null)
+const mouseX = ref(0)
+const mouseY = ref(0)
+
+const handleMouseMove = (e: MouseEvent) => {
+    if (!heroRef.value) return
+    const rect = heroRef.value.getBoundingClientRect()
+    // Calculate percentage from center (-1 to 1)
+    const x = (e.clientX - rect.left) / rect.width
+    const y = (e.clientY - rect.top) / rect.height
+    
+    mouseX.value = (x - 0.5) * 2
+    mouseY.value = (y - 0.5) * 2
+}
+
+const tiltStyle = computed(() => {
+    // Subtle tilt
+    return {
+        transform: `perspective(1000px) rotateX(${mouseY.value * -2}deg) rotateY(${mouseX.value * 2}deg)`,
+    }
+})
+
 </script>
 
 <template>
-    <div class="min-h-screen bg-black text-white font-mono selection:bg-white selection:text-black scroll-smooth">
-
-        <!-- Unique Architectural Grid (Fixed) -->
-        <div class="fixed inset-0 z-0 pointer-events-none opacity-40 overflow-hidden">
-            <!-- Render-style grid but with Serwin uniqueness -->
-            <div class="absolute inset-0 serwin-master-grid"></div>
-            <!-- Dynamic scanning pulse -->
-            <div class="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(0,122,255,0.02),transparent_70%)]">
-            </div>
-            <div class="absolute top-0 left-0 w-full h-[1.5px] bg-[#007AFF]/10 blur-sm scan-line"></div>
+    <div class="min-h-screen bg-[#05080F] text-slate-200 font-sans selection:bg-indigo-500/30 selection:text-indigo-200 overflow-x-hidden">
+        
+        <!-- Global Background Effects -->
+        <div class="fixed inset-0 z-0 pointer-events-none">
+            <!-- Noise -->
+            <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.04]"></div>
+            
+            <!-- Dynamic Orbs based on active tab -->
+            <div class="absolute top-[-10%] left-[-10%] w-[60%] h-[60%] rounded-full blur-[150px] transition-all duration-1000 ease-in-out opacity-20"
+                :class="{
+                    'bg-blue-600': activeTab === 'compute',
+                    'bg-purple-600': activeTab === 'gaming',
+                    'bg-emerald-600': activeTab === 'storage'
+                }"></div>
+                
+             <div class="absolute bottom-[-10%] right-[-10%] w-[60%] h-[60%] rounded-full blur-[150px] transition-all duration-1000 ease-in-out opacity-20"
+                :class="{
+                    'bg-cyan-600': activeTab === 'compute',
+                    'bg-pink-600': activeTab === 'gaming',
+                    'bg-teal-600': activeTab === 'storage'
+                }"></div>
         </div>
 
-        <!-- Section 1: Hero Monolith -->
-        <header class="relative min-h-screen flex items-center px-10 z-10 pt-20">
-            <!-- Nav Integration -->
-            <nav class="absolute top-0 left-0 w-full px-10 py-10 flex justify-between items-center bg-transparent">
-                <div class="flex items-center gap-4 group cursor-pointer" @click="router.push('/')">
-                    <div
-                        class="w-6 h-6 bg-white rotate-45 group-hover:rotate-[225deg] transition-transform duration-1000">
+        <!-- Navigation -->
+        <nav class="fixed top-0 left-0 w-full z-50 bg-[#05080F]/80 backdrop-blur-xl border-b border-white/5">
+            <div class="max-w-7xl mx-auto px-6 h-20 flex justify-between items-center">
+                <div class="flex items-center gap-3 cursor-pointer group" @click="router.push('/')">
+                    <div class="w-9 h-9 relative flex items-center justify-center bg-white/5 border border-white/10 rounded overflow-hidden">
+                        <div class="absolute inset-0 bg-gradient-to-tr from-indigo-500/20 to-purple-500/20 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <span class="font-bold font-display text-lg tracking-tight">S</span>
                     </div>
-                    <span class="text-2xl font-black uppercase tracking-[0.2em]">Serwin</span>
+                    <span class="text-lg font-bold tracking-tight text-white font-display">Serwin<span class="text-indigo-500">_Sys</span></span>
                 </div>
-                <div
-                    class="hidden lg:flex gap-16 items-center text-[10px] font-black uppercase tracking-[0.5em] text-white/70">
-                    <a href="#compute" class="hover:text-white transition-colors cursor-crosshair">Compute</a>
-                    <a href="#storage" class="hover:text-white transition-colors cursor-crosshair">Storage</a>
-                    <a href="#neural" class="hover:text-white transition-colors cursor-crosshair">Intelligence</a>
-                    <a href="#gaming" class="hover:text-white transition-colors cursor-crosshair">Gaming</a>
+                
+                <div class="hidden md:flex items-center p-1 bg-white/5 rounded-full border border-white/5 backdrop-blur-md">
+                    <router-link to="/compute" class="px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all text-slate-400 cursor-pointer">Compute</router-link>
+                    <router-link to="/gaming" class="px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all text-slate-400 cursor-pointer">Gaming</router-link>
+                    <router-link to="/s3" class="px-6 py-2 rounded-full text-xs font-bold uppercase tracking-wider hover:bg-white/10 hover:text-white transition-all text-slate-400 cursor-pointer">Storage</router-link>
                 </div>
-                <div class="flex gap-8 items-center">
-                    <router-link to="/login"
-                        class="text-[10px] font-black uppercase tracking-[0.4em] text-white/80 hover:text-white transition-colors">Auth</router-link>
-                    <router-link to="/register"
-                        class="px-8 py-3 bg-white text-black text-[10px] font-black uppercase tracking-[0.4em] hover:bg-[#007AFF] hover:text-white transition-all shadow-[0_0_50px_rgba(255,255,255,0.05)]">Initialize</router-link>
-                </div>
-            </nav>
-
-            <div class="max-w-7xl w-full">
-                <div class="inline-flex items-center gap-4 mb-12 px-6 py-2 border border-white/5 bg-white/[0.02]">
-                    <div class="w-1.5 h-1.5 bg-emerald-500 animate-pulse"></div>
-                    <span class="text-[9px] font-black uppercase tracking-[0.8em] text-white/70">Nodal_Status //
-                        Nominal_State</span>
-                </div>
-
-                <h1 class="text-7xl md:text-[12rem] font-black leading-[0.8] tracking-[0.02em] uppercase mb-12">
-                    <span class="block">The</span>
-                    <span class="block text-white/20 italic">Absolute</span>
-                    <span class="block">Protocol.</span>
-                </h1>
-
-                <div class="flex flex-col md:flex-row gap-24 items-start mt-24">
-                    <div class="flex flex-col gap-6">
-                        <button @click="handleJoin"
-                            class="group flex items-center gap-10 py-8 border-b border-white text-4xl font-black uppercase tracking-tighter hover:gap-16 transition-all duration-700">
-                            Provision Cluster
-                            <svg class="w-12 h-12 group-hover:translate-x-6 transition-transform" fill="none"
-                                stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="square" stroke-width="3" d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                            </svg>
-                        </button>
-                    </div>
-                    <p
-                        class="text-xl text-white/60 max-w-sm leading-relaxed uppercase tracking-widest font-black pt-4 italic">
-                        Serwin unifies mission-critical infrastructure into a singular atomic protocol. No
-                        fragmentation. Just raw, distributed velocity.
-                    </p>
+                
+                <div class="flex gap-4 items-center">
+                    <router-link to="/login" class="text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Login</router-link>
+                    <router-link to="/register" class="px-5 py-2 bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-indigo-50 transition-colors">
+                        Console
+                    </router-link>
                 </div>
             </div>
+        </nav>
 
-            <!-- Absolute Background Element (Warped Grid) -->
-            <div
-                class="absolute right-[5vw] bottom-[10vh] w-[40vw] h-[40vw] border-[0.5px] border-white/5 perspective-grid hidden lg:block">
+        <!-- Dynamic Hero Section -->
+        <header class="relative pt-40 pb-32 overflow-hidden min-h-screen flex items-center" ref="heroRef" @mousemove="handleMouseMove">
+            <div class="max-w-7xl mx-auto px-6 w-full grid grid-cols-1 lg:grid-cols-12 gap-16 items-center relative z-10">
+                
+                <!-- Left: Control Center -->
+                <div class="lg:col-span-5 space-y-10">
+                    <div class="space-y-4">
+                        <div class="inline-flex items-center gap-2 text-xs font-mono text-indigo-400">
+                            <span class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></span>
+                            SYSTEM_STATUS: ONLINE
+                        </div>
+                        <h1 class="text-6xl md:text-8xl font-bold text-white leading-[0.9] font-display">
+                            Build <br/>
+                            <span class="text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 to-white">Beyond.</span>
+                        </h1>
+                        <p class="text-lg text-slate-400 leading-relaxed max-w-md">
+                            The unified infrastructure protocol.
+                            High-density compute, low-latency gaming, and infinite storage in one atomic platform.
+                        </p>
+                    </div>
+
+                    <!-- Mode Switcher -->
+                    <div class="flex flex-col gap-2">
+                        <div v-for="tab in tabs" :key="tab.id" 
+                            @click="setTab(tab.id)"
+                            class="group cursor-pointer relative p-4 rounded-xl border transition-all duration-300 overflow-hidden"
+                            :class="activeTab === tab.id ? 'bg-white/5 border-white/10' : 'bg-transparent border-transparent opacity-50 hover:opacity-100'"
+                        >
+                            <!-- Progress Bar for Active Tab -->
+                            <div v-if="activeTab === tab.id && !pauseAutoRotate" class="absolute bottom-0 left-0 h-0.5 bg-white/20 w-full">
+                                <div class="h-full bg-indigo-500 w-full animate-progress origin-left"></div>
+                            </div>
+
+                            <div class="flex items-center justify-between relative z-10">
+                                <div class="flex items-center gap-4">
+                                    <div class="w-10 h-10 rounded-lg flex items-center justify-center transition-colors"
+                                        :class="activeTab === tab.id ? tab.bg + '/20 ' + tab.color : 'bg-white/5 text-slate-500'">
+                                        <!-- Icons -->
+                                        <svg v-if="tab.id === 'compute'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                                        <svg v-if="tab.id === 'gaming'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>
+                                        <svg v-if="tab.id === 'storage'" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 01-2 2v4a2 2 0 012 2h14a2 2 0 012-2v-4a2 2 0 01-2-2m-2-4h.01M17 16h.01" /></svg>
+                                    </div>
+                                    <div>
+                                        <h3 class="font-bold text-white text-lg font-display">{{ tab.label }}</h3>
+                                        <p class="text-xs text-slate-400 font-mono uppercase tracking-wider">{{ tab.desc }}</p>
+                                    </div>
+                                </div>
+                                <div class="w-2 h-2 rounded-full transition-colors" :class="activeTab === tab.id ? 'bg-white' : 'bg-transparent group-hover:bg-white/20'"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right: Visualizer -->
+                <div class="lg:col-span-7 h-[600px] relative perspective-1000" :style="tiltStyle">
+                    <!-- Base Container -->
+                    <div class="absolute inset-0 bg-[#0A0E18] rounded-3xl border border-white/10 shadow-2xl overflow-hidden flex flex-col transition-all duration-500">
+                        
+                        <!-- Header -->
+                        <div class="h-12 border-b border-white/5 flex items-center px-6 justify-between bg-white/[0.02]">
+                            <div class="flex gap-2">
+                                <div class="w-3 h-3 rounded-full bg-red-500/20"></div>
+                                <div class="w-3 h-3 rounded-full bg-yellow-500/20"></div>
+                                <div class="w-3 h-3 rounded-full bg-green-500/20"></div>
+                            </div>
+                            <div class="font-mono text-[10px] text-slate-500 uppercase tracking-widest">
+                                Visualize // {{ activeTab.toUpperCase() }}_REGION_1
+                            </div>
+                        </div>
+
+                        <!-- Content Area -->
+                        <div class="flex-1 relative p-8">
+                            
+                            <!-- COMPUTE VISUALIZATION -->
+                            <transition name="fade" mode="out-in">
+                                <div v-if="activeTab === 'compute'" key="compute" class="h-full flex flex-col">
+                                    <div class="grid grid-cols-4 gap-4 h-full">
+                                        <div v-for="i in 16" :key="i" class="bg-blue-500/5 border border-blue-500/10 rounded-lg relative overflow-hidden group hover:bg-blue-500/10 transition-colors">
+                                            <div class="absolute inset-x-0 bottom-0 h-1 bg-blue-500/50 group-hover:h-full transition-all duration-500 opacity-20"></div>
+                                            <div class="absolute top-2 left-2 text-[10px] font-mono text-blue-400 opactiy-50">NODE_{{ i < 10 ? '0'+i : i }}</div>
+                                            <div class="absolute bottom-2 right-2 flex gap-1">
+                                                <div class="w-1 h-3 bg-blue-500 animate-pulse" :style="{ animationDelay: i * 100 + 'ms' }"></div>
+                                                <div class="w-1 h-2 bg-blue-500/50"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="mt-8 flex justify-between items-center bg-blue-900/10 p-4 rounded-xl border border-blue-500/20">
+                                        <div class="text-xs font-mono text-blue-300">
+                                            <span class="block text-slate-500 mb-1">CLUSTER LOAD</span>
+                                            92.4% WARNING
+                                        </div>
+                                        <div class="text-3xl font-display font-bold text-white">142 TB/s</div>
+                                    </div>
+                                </div>
+
+                                <!-- GAMING VISUALIZATION -->
+                                <div v-else-if="activeTab === 'gaming'" key="gaming" class="h-full flex flex-col justify-center items-center relative">
+                                    <!-- Radar / Map Effect -->
+                                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none opacity-20">
+                                        <div class="w-[400px] h-[400px] border border-purple-500/30 rounded-full flex items-center justify-center">
+                                            <div class="w-[300px] h-[300px] border border-purple-500/30 rounded-full flex items-center justify-center">
+                                                <div class="w-[200px] h-[200px] border border-purple-500/30 rounded-full"></div>
+                                            </div>
+                                        </div>
+                                        <div class="absolute w-full h-[1px] bg-purple-500/30 top-1/2"></div>
+                                        <div class="absolute h-full w-[1px] bg-purple-500/30 left-1/2"></div>
+                                    </div>
+                                    
+                                    <div class="relative z-10 grid grid-cols-2 gap-8 w-full">
+                                        <div class="bg-purple-900/20 p-6 rounded-2xl border border-purple-500/30 backdrop-blur-sm">
+                                            <div class="text-xs text-purple-300 font-mono mb-2">LATENCY</div>
+                                            <div class="text-5xl font-mono text-white font-bold">12<span class="text-lg text-purple-400">ms</span></div>
+                                            <div class="w-full bg-purple-900/50 h-1 mt-4 rounded-full overflow-hidden">
+                                                <div class="h-full bg-purple-500 w-[12%]"></div>
+                                            </div>
+                                        </div>
+                                        <div class="bg-purple-900/20 p-6 rounded-2xl border border-purple-500/30 backdrop-blur-sm">
+                                            <div class="text-xs text-purple-300 font-mono mb-2">ACTIVE SESSIONS</div>
+                                            <div class="text-5xl font-mono text-white font-bold">8.4<span class="text-lg text-purple-400">M</span></div>
+                                            <div class="w-full bg-purple-900/50 h-1 mt-4 rounded-full overflow-hidden">
+                                                <div class="h-full bg-purple-500 w-[84%]"></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="absolute bottom-0 w-full p-4">
+                                        <div class="font-mono text-[10px] text-purple-400 text-center animate-pulse">Scanning Matchmaking Regions...</div>
+                                    </div>
+                                </div>
+
+                                <!-- STORAGE VISUALIZATION -->
+                                <div v-else-if="activeTab === 'storage'" key="storage" class="h-full flex flex-col relative overflow-hidden">
+                                     <div class="absolute inset-0 flex flex-col gap-1 opacity-50">
+                                        <div v-for="n in 20" :key="n" class="h-6 w-full flex gap-1">
+                                            <div v-for="m in 15" :key="m" class="h-full flex-1 bg-emerald-500/10 rounded-sm" :style="{ opacity: Math.random() > 0.5 ? 0.2 : 0.8 }"></div>
+                                        </div>
+                                     </div>
+                                     
+                                     <div class="relative z-10 bg-[#0A0E18]/90 backdrop-blur-sm flex-1 m-8 border border-emerald-500/20 rounded-xl p-8 flex flex-col justify-center text-center">
+                                        <div class="w-20 h-20 mx-auto bg-emerald-500/20 rounded-full flex items-center justify-center mb-6 border border-emerald-500/50 shadow-[0_0_30px_rgba(16,185,129,0.2)]">
+                                            <svg class="w-10 h-10 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                                        </div>
+                                        <h3 class="text-3xl font-bold text-white mb-2">Data Integrity Verified</h3>
+                                        <p class="text-emerald-400 font-mono text-sm">HASH: 0x7F2A...9B1C</p>
+                                        
+                                        <div class="mt-8 grid grid-cols-3 gap-4 text-center">
+                                            <div>
+                                                <div class="text-2xl font-bold text-white">49 PB</div>
+                                                <div class="text-[10px] text-slate-500 uppercase">US-EAST</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-2xl font-bold text-white">112 PB</div>
+                                                <div class="text-[10px] text-slate-500 uppercase">EU-WEST</div>
+                                            </div>
+                                            <div>
+                                                <div class="text-2xl font-bold text-white">88 PB</div>
+                                                <div class="text-[10px] text-slate-500 uppercase">AP-SOUTH</div>
+                                            </div>
+                                        </div>
+                                     </div>
+                                </div>
+                            </transition>
+                        </div>
+                    </div>
+                </div>
             </div>
         </header>
 
-        <!-- Section 2: Compute Details -->
-        <section id="compute" class="relative z-10 py-60 border-t border-white/5 bg-black/40">
-            <div class="px-10 grid lg:grid-cols-2 gap-32 items-start">
-                <div class="sticky top-40">
-                    <div
-                        class="text-[11px] font-black text-[#00F5FF] uppercase tracking-[0.8em] mb-10 underline underline-offset-[16px] decoration-1 decoration-white/10">
-                        Frontier_01</div>
-                    <h2 class="text-8xl font-black uppercase tracking-tighter mb-12 italic text-white/10">Compute</h2>
-                    <h3 class="text-5xl font-black uppercase tracking-tighter mb-12 leading-[0.9]">
-                        Atomic<br />Logic_Flow.</h3>
-                    <p
-                        class="text-lg text-white/60 uppercase tracking-widest leading-relaxed max-w-sm font-black italic">
-                        Run logic without architectural limits. From raw metallic power to serverless event-driven
-                        execution chains.
-                    </p>
-                </div>
-                <div class="space-y-40">
-                    <div v-for="(feat, i) in [
-                        { name: 'Nodal Execution', desc: 'Secure, resizable bare-metal compute. Optimized for intense server-side logic with automated orchestration.' },
-                        { name: 'Lambda Flux', desc: 'Event-driven serverless state. Pay only for the logic lifecycle. Sub-ms cold starts across the fiber edge.' },
-                        { name: 'Fargate Core', desc: 'Serverless containers. Zero management overhead. Absolute isolation for high-density microservices.' }
-                    ]" :key="feat.name" class="group">
-                        <div class="text-[10px] font-black text-[#00F5FF]/70 mb-8 tracking-[0.4em]">Integrated_Mod //
-                            0{{ i + 1 }}</div>
-                        <h4
-                            class="text-4xl font-black uppercase tracking-tighter mb-8 group-hover:pl-4 transition-all duration-500 border-l-4 border-transparent group-hover:border-[#00F5FF]">
-                            {{ feat.name }}</h4>
-                        <p class="text-[13px] font-black text-white/60 uppercase tracking-[0.2em] leading-loose">{{
-                            feat.desc }}</p>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 3: Storage Details -->
-        <section id="storage" class="relative z-10 py-60 bg-[#050505] border-y border-white/5">
-            <div class="px-10 grid lg:grid-cols-2 gap-40 items-center">
-                <div class="lg:order-2">
-                    <div
-                        class="text-[11px] font-black text-[#00FF88] uppercase tracking-[0.8em] mb-10 underline underline-offset-[16px] decoration-1 decoration-white/10">
-                        Frontier_02</div>
-                    <h2 class="text-8xl font-black uppercase tracking-tighter mb-12 italic text-white/10">Storage</h2>
-                    <h3 class="text-5xl font-black uppercase tracking-tighter mb-12 leading-[0.9]">
-                        Absolute<br />Integrity.</h3>
-                    <p
-                        class="text-lg text-white/60 uppercase tracking-widest leading-relaxed max-w-sm font-black italic">
-                        Immutable asset pools meeting high-concurrency relational state. Guaranteed 11 nines of nodal
-                        durability.
-                    </p>
-                    <button @click="handleJoin"
-                        class="mt-20 px-16 py-6 bg-[#00FF88] text-black font-black text-xs uppercase tracking-[0.4em] hover:bg-white transition-all shadow-[0_0_100px_rgba(0,255,136,0.1)]">Provision
-                        Storage Hub</button>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-px bg-white/5 border border-white/5 lg:order-1">
-                    <div v-for="sfeat in [
-                        { name: 'Bucket_S3', val: 'PB_Scale', desc: 'Global Object Data' },
-                        { name: 'Nodal_RDS', val: 'Low_Ms', desc: 'Relational State' },
-                        { name: 'Glacier_Void', val: 'Immutable', desc: 'Deep Archive' },
-                        { name: 'EFS_Fabric', val: 'Shared_IO', desc: 'Grid File Sys' }
-                    ]" :key="sfeat.name"
-                        class="bg-black p-12 aspect-square flex flex-col justify-between hover:bg-white hover:text-black transition-all duration-700 cursor-none group">
-                        <div
-                            class="text-[10px] font-black uppercase tracking-[0.5em] opacity-40 group-hover:opacity-100 transition-opacity">
-                            S.{{ sfeat.name.split('_')[1] }}</div>
-                        <div class="space-y-4">
-                            <div class="text-4xl font-black uppercase tracking-tighter italic">{{
-                                sfeat.name.split('_')[1] }}</div>
-                            <p
-                                class="text-[9px] font-black uppercase tracking-widest text-[#00FF88] group-hover:text-black">
-                                {{ sfeat.desc }}</p>
-                        </div>
-                        <div class="flex justify-between items-end">
-                            <span
-                                class="text-[10px] font-black uppercase tracking-[0.3em] opacity-60 group-hover:opacity-100">{{
-                                    sfeat.val }}</span>
-                            <div class="w-2 h-2 bg-[#00FF88] group-hover:rotate-45 transition-transform"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 4: Intelligence -->
-        <section id="neural" class="relative z-10 py-60 border-b border-white/5 bg-black/80">
-            <div class="max-w-7xl mx-auto px-10">
-                <div class="flex flex-col lg:flex-row justify-between items-end mb-40 gap-16">
-                    <div class="max-w-3xl">
-                        <div
-                            class="text-[11px] font-black text-[#7F00FF] uppercase tracking-[0.8em] mb-10 underline underline-offset-[16px] decoration-1 decoration-white/10">
-                            Frontier_03</div>
-                        <h2 class="text-9xl font-black uppercase tracking-[0.05em] leading-none mb-12">Neural<br />Hub.
-                        </h2>
-                    </div>
-                </div>
-
-                <div class="grid md:grid-cols-3 gap-px bg-white/5 border border-white/5">
-                    <div v-for="ai in [
-                        { name: 'Stargate Inference', spec: 'A100/H100 Clusters', dec: '01', desc: 'Real-time neural inference at the fiber terminal.' },
-                        { name: 'Weight Sharding', spec: 'Nodal Distribution', dec: '02', desc: 'Deep model sharding across elastic node groups.' },
-                        { name: 'Logic Training', spec: 'Quantized Compute', dec: '03', desc: 'Custom weights training on bare-metal fabric.' }
-                    ]" :key="ai.name"
-                        class="bg-black p-12 flex flex-col justify-between aspect-[3/4] group hover:bg-[#7F00FF] transition-all duration-1000 border border-transparent hover:border-white/20">
-                        <span
-                            class="text-8xl font-black text-white/[0.06] group-hover:text-white/20 transition-all font-mono italic">{{
-                                ai.dec }}</span>
-                        <div>
-                            <h4 class="text-3xl font-black uppercase tracking-tighter mb-6">{{ ai.name }}</h4>
-                            <p
-                                class="text-[11px] font-black text-white/50 uppercase tracking-[0.2em] group-hover:text-white leading-relaxed mb-6">
-                                {{ ai.desc }}</p>
-                            <div
-                                class="text-[10px] font-black text-[#7F00FF] uppercase tracking-[0.4em] group-hover:text-white">
-                                {{ ai.spec }}</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 5: Matrix Gaming -->
-        <section id="gaming" class="relative z-10 py-60 overflow-hidden bg-[#020202]">
-            <div class="px-10 flex flex-col items-center text-center">
-                <div
-                    class="text-[11px] font-black text-[#FF0055] uppercase tracking-[0.8em] mb-10 underline underline-offset-[16px] decoration-1 decoration-white/10">
-                    Frontier_04</div>
-                <h2 class="text-8xl md:text-[12rem] font-black uppercase tracking-tighter italic mb-16">Gaming.</h2>
-                <div
-                    class="max-w-5xl text-4xl font-black uppercase tracking-tight leading-none mb-32 underline underline-offset-[24px] decoration-[#FF0055]/30 decoration-8">
-                    The absolute foundation for real-time worlds and high-velocity streaming protocols.
-                </div>
-
-                <div class="grid lg:grid-cols-2 gap-px bg-white/5 border border-white/5 w-full">
-                    <div
-                        class="bg-black p-24 flex flex-col justify-between text-left group hover:bg-white transition-all duration-700 aspect-video">
-                        <h4 class="text-6xl font-black uppercase tracking-tighter italic mb-12 group-hover:text-black">
-                            Fleet_Manager</h4>
-                        <div>
-                            <p
-                                class="text-xl font-black uppercase tracking-widest leading-tight text-white/40 group-hover:text-black/60 mb-10">
-                                Secure, resizable game server fleets at the absolute edge of the fiber network.</p>
-                            <div class="h-px w-20 bg-[#FF0055] group-hover:w-full transition-all"></div>
-                        </div>
-                    </div>
-                    <div
-                        class="bg-black p-24 flex flex-col justify-between text-left group hover:bg-white transition-all duration-700 aspect-video">
-                        <h4 class="text-6xl font-black uppercase tracking-tighter italic mb-12 group-hover:text-black">
-                            Stream_Flux</h4>
-                        <div>
-                            <p
-                                class="text-xl font-black uppercase tracking-widest leading-tight text-white/40 group-hover:text-black/60 mb-10">
-                                Ultra-low latency streaming architecture delivering 4K/144 to any digital terminal.</p>
-                            <div class="h-px w-20 bg-[#FF0055] group-hover:w-full transition-all"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- Section 6: Telemetry Integrity -->
-        <section class="relative z-10 py-60 border-y border-white/5 bg-black">
-            <div class="px-10 grid lg:grid-cols-2 gap-40 items-center">
+        <!-- 1. COMPUTE DEEP DIVE -->
+        <section id="compute" class="py-32 relative border-t border-white/5 bg-[#080C14]">
+            <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-20 items-center">
                 <div>
-                    <h2 class="text-7xl font-black uppercase tracking-tight mb-16 leading-none italic">
-                        Universal<br />Telemetry.</h2>
-                    <p
-                        class="text-xl text-white/60 leading-relaxed uppercase tracking-widest max-w-xl font-black italic mb-20">
-                        Real-time nodal health visualization. Our protocol delivers 99.9% of global requests in under
-                        12ms.
-                    </p>
-                    <div class="grid grid-cols-2 gap-20">
-                        <div class="border-l-2 border-emerald-500 pl-10">
-                            <div class="text-6xl font-black mb-4 tracking-tighter text-emerald-500 italic">99.999%</div>
-                            <div class="text-[10px] font-black text-white/50 uppercase tracking-[0.6em]">Uptime Protocol
-                            </div>
-                        </div>
-                        <div class="border-l-2 border-blue-500 pl-10">
-                            <div class="text-6xl font-black mb-4 tracking-tighter text-blue-500 italic">11.4ms</div>
-                            <div class="text-[10px] font-black text-white/50 uppercase tracking-[0.6em]">Mean Latency
-                            </div>
-                        </div>
-                    </div>
+                     <div class="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center mb-8 border border-blue-600/40">
+                        <svg class="w-6 h-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" /></svg>
+                     </div>
+                     <h2 class="text-5xl font-bold text-white mb-6 font-display">Atomic Compute.</h2>
+                     <p class="text-lg text-slate-400 mb-8 leading-relaxed">
+                        Access raw, unbridled processing power. Our bare-metal instances strip away the hypervisor tax, giving your code direct access to the silicon.
+                     </p>
+                     
+                     <ul class="space-y-4 font-mono text-sm text-slate-300">
+                        <li class="flex items-center gap-3">
+                            <span class="text-blue-500">[✓]</span> Intel Xeon Cobalt Series
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="text-blue-500">[✓]</span> 100Gbps Network Fabric
+                        </li>
+                        <li class="flex items-center gap-3">
+                            <span class="text-blue-500">[✓]</span> Instant Provisioning API
+                        </li>
+                     </ul>
+
+                     <button @click="handleJoin" class="mt-10 px-8 py-4 bg-transparent border border-blue-500 text-blue-400 font-bold uppercase tracking-wider text-xs hover:bg-blue-500 hover:text-white transition-all">
+                        Configure Instance
+                     </button>
                 </div>
-
-                <!-- Realistic Technical Graph -->
-                <div
-                    class="relative aspect-video bg-[#050505] border border-white/5 p-12 flex flex-col justify-between group overflow-hidden shadow-3xl">
-                    <div class="absolute inset-0 pointer-events-none opacity-20">
-                        <div class="w-full h-full serwin-mini-grid"></div>
-                    </div>
-                    <div class="relative z-10 flex justify-between items-start">
-                        <div>
-                            <div
-                                class="text-[9px] font-black text-white/50 uppercase tracking-[0.8em] mb-4 underline underline-offset-8">
-                                Network_Throughput</div>
-                            <div
-                                class="text-xs font-black text-emerald-500 animate-pulse tracking-[0.2em] font-mono leading-none flex items-center gap-2">
-                                <span class="w-1.5 h-1.5 bg-emerald-500"></span>
-                                RAW_DATA_NOMINAL
+                <!-- Visual -->
+                <div class="relative aspect-square">
+                    <div class="absolute inset-0 bg-gradient-to-tr from-blue-500/10 to-transparent rounded-full blur-3xl"></div>
+                    <div class="relative z-10 bg-[#05080F] border border-blue-500/20 rounded-2xl p-1 shadow-2xl skew-y-3 hover:skew-y-0 transition-transform duration-700">
+                        <div class="bg-[#05080F] rounded-xl border border-white/5 p-6 h-full flex flex-col gap-4">
+                            <!-- Fake Terminal -->
+                            <div class="font-mono text-xs text-slate-500 mb-4 border-b border-white/5 pb-4">root@node-x1:~$ neofetch</div>
+                            <div class="flex gap-4">
+                                <div class="w-1/3 text-blue-500 font-mono text-[10px] leading-tight opacity-70">
+                                    {{`
+                                      /\\
+                                     /  \\
+                                    /    \\
+                                   /      \\
+                                  /________\\
+                                    `}}
+                                </div>
+                                <div class="text-xs text-slate-300 font-mono space-y-2">
+                                    <div><span class="text-blue-400">OS:</span> Serwin Linux 4.2</div>
+                                    <div><span class="text-blue-400">Kernel:</span> 6.8.9-atomic</div>
+                                    <div><span class="text-blue-400">Uptime:</span> 482 days</div>
+                                    <div><span class="text-blue-400">CPU:</span> 128 x Core i9</div>
+                                    <div><span class="text-blue-400">Memory:</span> 2TB DDR5</div>
+                                </div>
                             </div>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-[9px] font-black text-white/50 uppercase tracking-[0.8em] mb-4">
-                                Nodal_Stress</div>
-                            <div class="text-[14px] font-black text-[#007AFF] font-mono">{{ nodalLoad }}%</div>
-                        </div>
-                    </div>
-
-                    <svg viewBox="0 0 400 100" class="w-full h-40 mt-12">
-                        <polyline fill="none" stroke="#007AFF" stroke-width="3" stroke-linejoin="round"
-                            :points="telemetryPoints" class="transition-all duration-1000" />
-                        <polyline fill="none" stroke="#007AFF" stroke-width="12" stroke-linejoin="round"
-                            stroke-opacity="0.05" :points="telemetryPoints"
-                            class="blur-md transition-all duration-1000" />
-                    </svg>
-
-                    <div class="relative z-10 flex justify-between items-end border-t border-white/5 pt-8">
-                        <div class="text-[10px] font-black text-white/50 uppercase tracking-[0.6em] italic">
-                            SERWIN.ALGOR.FEED</div>
-                        <div class="flex gap-3">
-                            <div class="w-1.5 h-3 bg-white/30"></div>
-                            <div class="w-1.5 h-5 bg-[#007AFF]"></div>
-                            <div class="w-1.5 h-4 bg-white/30"></div>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Section 7: Connect Now (Dark Monolith) -->
-        <section class="py-60 bg-black text-white px-10 text-center relative overflow-hidden border-t border-white/5">
-            <!-- Background Nodal Grid -->
-            <div class="absolute inset-0 z-0 pointer-events-none opacity-5 serwin-master-grid scale-150 rotate-12">
+        <!-- 2. GAMING CENTER -->
+        <section id="gaming" class="py-32 relative bg-[#05080F]">
+            <div class="absolute inset-0 overflow-hidden">
+                <div class="absolute -right-[10%] top-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-purple-600/10 rounded-full blur-[120px]"></div>
             </div>
 
-            <div class="relative z-10 max-w-5xl mx-auto">
-                <div
-                    class="text-[11px] font-black uppercase tracking-[2em] mb-16 text-[#007AFF] italic leading-none animate-pulse">
-                    Awaiting Signal</div>
-                <h2 class="text-8xl md:text-[14rem] font-black uppercase tracking-tighter leading-[0.75] mb-24 italic">
-                    Connect<br /><span class="text-white/20">Infinite.</span></h2>
-                <div
-                    class="flex flex-col sm:flex-row gap-px bg-white/5 border border-white/5 shadow-[0_0_150px_rgba(0,0,0,1)]">
-                    <router-link to="/register"
-                        class="flex-1 px-16 py-12 bg-black hover:bg-white hover:text-black transition-all text-3xl font-black uppercase tracking-tighter border-r border-white/5 flex items-center justify-center gap-10 group">
-                        Initialize Node
-                        <svg class="w-8 h-8 group-hover:translate-x-4 transition-transform" fill="currentColor"
-                            viewBox="0 0 20 20">
-                            <path
-                                d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z" />
-                        </svg>
-                    </router-link>
-                    <button
-                        class="flex-1 px-16 py-12 bg-[#050505] hover:bg-[#007AFF] hover:text-white transition-all text-3xl font-black uppercase tracking-tighter">Talk
-                        to Engine</button>
+            <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-24 items-center relative z-10">
+                <div class="order-2 md:order-1 relative">
+                    <!-- Gaming Map Graphic -->
+                    <div class="aspect-video bg-[#0C0F19] rounded-2xl border border-purple-500/20 overflow-hidden relative group">
+                        <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.1]"></div>
+                        <!-- Animated Dots -->
+                        <div v-for="i in 5" :key="i" class="absolute w-2 h-2 bg-purple-400 rounded-full animate-ping" :style="{ left: Math.random()*80+10+'%', top: Math.random()*80+10+'%', animationDelay: i+'s' }"></div>
+                        <div class="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <h4 class="text-9xl font-black text-white/5 uppercase italic tracking-tighter">Velocity</h4>
+                        </div>
+                        <div class="absolute bottom-6 left-6 right-6 bg-purple-900/40 backdrop-blur-md p-4 rounded-xl border border-purple-500/30">
+                            <div class="flex justify-between items-center">
+                                <span class="text-xs font-bold text-white uppercase">US-CENTRAL Matchmaking</span>
+                                <span class="text-xs font-mono text-purple-300">12ms</span>
+                            </div>
+                            <div class="w-full bg-black/50 h-1 mt-3 rounded-full overflow-hidden">
+                                <div class="h-full bg-purple-500 w-full animate-scan-slow"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-1 md:order-2">
+                     <div class="w-12 h-12 bg-purple-600/20 rounded-lg flex items-center justify-center mb-8 border border-purple-600/40">
+                        <svg class="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z" /></svg>
+                     </div>
+                     <h2 class="text-5xl font-bold text-white mb-6 font-display">Gaming Edge.</h2>
+                     <p class="text-lg text-slate-400 mb-8 leading-relaxed">
+                        The backbone for the next generation of multiplayer experiences. Dedicated fiber lines to major ISPs ensure your players never miss a frame.
+                     </p>
+                     
+                     <div class="grid grid-cols-2 gap-6 mb-10">
+                        <div class="p-4 bg-purple-900/10 border border-purple-500/20 rounded-xl">
+                            <div class="text-3xl font-bold text-white mb-1">128</div>
+                            <div class="text-[10px] text-purple-400 uppercase tracking-wider">Tick Rate</div>
+                        </div>
+                        <div class="p-4 bg-purple-900/10 border border-purple-500/20 rounded-xl">
+                            <div class="text-3xl font-bold text-white mb-1">Global</div>
+                            <div class="text-[10px] text-purple-400 uppercase tracking-wider">Availability</div>
+                        </div>
+                     </div>
+
+                     <button @click="handleJoin" class="text-purple-400 font-bold uppercase tracking-wider text-xs hover:text-white transition-colors flex items-center gap-2">
+                        View Coverage Map <span class="text-xl">→</span>
+                     </button>
                 </div>
             </div>
         </section>
 
-        <!-- Void Footer -->
-        <footer class="py-24 px-10 border-t border-white/5 bg-black z-10 relative">
-            <div class="flex flex-col md:flex-row justify-between items-start gap-32">
-                <div class="max-w-md">
-                    <div class="flex items-center gap-4 mb-14">
-                        <div class="w-6 h-6 bg-white rotate-45"></div>
-                        <span class="text-3xl font-black uppercase tracking-widest italic">Serwin.Infarct</span>
-                    </div>
-                    <p class="text-sm font-black text-white/50 uppercase tracking-[0.4em] leading-loose mb-12">
-                        The definitive infrastructure protocol for high-density neural, elastic, and immersive
-                        operations. Global reach. Zero friction. Total velocity.
-                    </p>
-                    <div class="flex items-center gap-4 text-[#007AFF]">
-                        <div class="w-1.5 h-1.5 bg-[#007AFF] animate-ping"></div>
-                        <span class="text-[10px] font-black uppercase tracking-[1em] opacity-60">System_Active // {{
-                            activeSignals }}_Signals</span>
-                    </div>
+        <!-- 3. STORAGE ARCHIVE -->
+        <section id="storage" class="py-32 relative border-t border-white/5 bg-[#080C14] overflow-hidden">
+            <div class="max-w-7xl mx-auto px-6 grid md:grid-cols-2 gap-20 items-center">
+                <div>
+                     <div class="w-12 h-12 bg-emerald-600/20 rounded-lg flex items-center justify-center mb-8 border border-emerald-600/40">
+                        <svg class="w-6 h-6 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" /></svg>
+                     </div>
+                     <h2 class="text-5xl font-bold text-white mb-6 font-display">Infinite Storage.</h2>
+                     <p class="text-lg text-slate-400 mb-8 leading-relaxed">
+                        Data lakes that grow with you. From hot relational data to cold archival deep-storage, we ensure your bits are preserved for eternity.
+                     </p>
+                     
+                     <div class="bg-emerald-900/10 border border-emerald-500/10 rounded-xl p-6 relative overflow-hidden">
+                        <div class="flex items-center gap-4 mb-4">
+                            <div class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></div>
+                            <span class="text-xs font-mono text-emerald-400">REPLICATION_STATUS: SYNCED</span>
+                        </div>
+                        <div class="flex gap-1 h-20 items-end">
+                            <div v-for="n in 20" :key="n" class="flex-1 bg-emerald-500/20 rounded-t-sm transition-all hover:bg-emerald-400" :style="{ height: Math.random() * 100 + '%' }"></div>
+                        </div>
+                     </div>
                 </div>
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-24 flex-1 max-w-4xl">
-                    <div v-for="cat in [
-                        { name: 'Systems', links: ['Atomic Compute', 'Hyper Storage', 'Intelligence', 'Matrix Gaming'] },
-                        { name: 'Protocol', links: ['Fiber Edge', 'Auth Nodal', 'API Spec', 'SDK v2.4'] },
-                        { name: 'Company', links: ['Architecture', 'Engineering', 'Security', 'The_Void'] }
-                    ]" :key="cat.name">
-                        <h4
-                            class="text-[12px] font-black uppercase tracking-[0.8em] text-white/20 mb-12 italic decoration-1 underline underline-offset-8 decoration-white/5">
-                            {{ cat.name }}</h4>
-                        <ul class="flex flex-col gap-8">
-                            <li v-for="link in cat.links" :key="link"
-                                class="text-[11px] font-black uppercase tracking-[0.4em] text-white/50 hover:text-white cursor-pointer transition-colors">
-                                {{ link }}</li>
-                        </ul>
+
+                <!-- Abstract Storage Graphic -->
+                 <div class="relative h-[400px] w-full bg-[#05080F] border border-emerald-500/10 rounded-2xl p-8 grid grid-cols-4 gap-4 overflow-hidden">
+                    <div v-for="n in 32" :key="n" class="bg-emerald-500/5 rounded border border-emerald-500/10 flex items-center justify-center text-[8px] font-mono text-emerald-900/40 hover:bg-emerald-500 hover:text-black hover:scale-110 transition-all duration-300 cursor-none">
+                        0x{{ n }}F
                     </div>
                 </div>
             </div>
-            <div
-                class="mt-48 pt-16 border-t border-white/5 flex flex-col md:flex-row justify-between gap-16 items-center">
-                <div class="text-[10px] font-black uppercase tracking-[0.6em] text-white/20 italic">© 2026
-                    SERWIN.PROTOCOL // ENCRYPTED_TERMINAL_00x4A</div>
-                <div class="flex gap-16 items-center">
-                    <span
-                        class="text-[10px] font-black text-white/50 uppercase tracking-[1.2em] hover:text-white cursor-pointer transition-all">TWITTER</span>
-                    <span
-                        class="text-[10px] font-black text-white/50 uppercase tracking-[1.2em] hover:text-white cursor-pointer transition-all">GITHUB</span>
+        </section>
+
+        <!-- Footer -->
+        <footer class="bg-black border-t border-white/5 py-24">
+            <div class="max-w-7xl mx-auto px-6 text-center">
+                <h2 class="text-2xl font-bold text-white mb-8 font-display">Start Building Today</h2>
+                <button @click="handleJoin" class="px-12 py-4 bg-white text-black font-bold rounded-lg hover:scale-105 transition-transform">
+                    Create Account
+                </button>
+                <div class="mt-20 flex justify-center gap-12 text-sm text-slate-600 font-mono">
+                    <a href="#" class="hover:text-white transition-colors">COMPUTE_SLA</a>
+                    <a href="#" class="hover:text-white transition-colors">GAMING_SDK</a>
+                    <a href="#" class="hover:text-white transition-colors">STORAGE_API</a>
+                </div>
+                <div class="mt-12 text-xs text-slate-700">
+                    &copy; 2026 SERWIN SYSTEMS INC. ALL RIGHTS RESERVED.
                 </div>
             </div>
         </footer>
+
     </div>
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;700;800&family=JetBrains+Mono:wght@400;500&display=swap');
 
+.font-sans {
+    font-family: 'Inter', sans-serif;
+}
+.font-display {
+    font-family: 'Space Grotesk', sans-serif;
+}
 .font-mono {
     font-family: 'JetBrains Mono', monospace;
 }
 
-.serwin-master-grid {
-    background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
-    background-size: 60px 60px;
-}
-
-.serwin-mini-grid {
-    background-image:
-        linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
-    background-size: 30px 30px;
-}
-
-.scan-line {
-    animation: scan 20s linear infinite;
-}
-
-@keyframes scan {
-    0% {
-        transform: translateY(-100%);
-    }
-
-    100% {
-        transform: translateY(1000vh);
-    }
-}
-
-.perspective-grid {
+.perspective-1000 {
     perspective: 1000px;
-    transform: rotateX(60deg) rotateZ(45deg);
-    background-image:
-        linear-gradient(to right, rgba(0, 122, 255, 0.1) 1px, transparent 1px),
-        linear-gradient(to bottom, rgba(0, 122, 255, 0.1) 1px, transparent 1px);
-    background-size: 40px 40px;
 }
 
-/* Custom Scrollbar for Void Theme */
-::-webkit-scrollbar {
-    width: 2px;
+@keyframes progress {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+}
+.animate-progress {
+    animation: progress 5000s linear infinite; /* Adjusted in JS really, but CSS fallback */
+    animation: progress 5s linear;
 }
 
-::-webkit-scrollbar-track {
-    background: #000;
+@keyframes scan-slow {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+.animate-scan-slow {
+    animation: scan-slow 3s linear infinite;
 }
 
-::-webkit-scrollbar-thumb {
-    background: #111;
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
 }
 
-::-webkit-scrollbar-thumb:hover {
-    background: #007AFF;
-}
-
-.shadow-3xl {
-    box-shadow: 0 0 120px rgba(0, 0, 0, 1);
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 </style>

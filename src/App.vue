@@ -5,7 +5,7 @@ import ToastContainer from '@/shared/components/ToastContainer.vue'
 </script>
 
 <template>
-  <div class="min-h-screen bg-white transition-colors duration-150">
+  <div class="min-h-screen transition-colors duration-150">
     <Navbar />
     <main class="flex-1">
       <router-view v-slot="{ Component }">

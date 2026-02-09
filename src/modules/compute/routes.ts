@@ -5,7 +5,7 @@ const computeRoutes: RouteRecordRaw[] = [
         path: '/compute',
         name: 'compute-landing',
         component: () => import('./pages/ComputeLandingPage.vue'),
-        meta: { requiresAuth: true }
+        meta: { requiresAuth: false }
     }
 ]
 

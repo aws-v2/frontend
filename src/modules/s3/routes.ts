@@ -5,7 +5,7 @@ const routes: RouteRecordRaw[] = [
     path: '/s3',
     name: 's3-landing',
     component: () => import('./pages/S3LandingPage.vue'),
-    meta: { requiresAuth: false },
+    meta: { requiresAuth: false, hideNavbar: true },
   },
   {
     path: '/s3/buckets',
@@ -32,12 +32,6 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true },
   },
   {
-    path: '/s3/buckets/:bucketName/upload-status',
-    name: 's3-upload-status',
-    component: () => import('./pages/UploadStatusPage.vue'),
-    meta: { requiresAuth: true },
-  },
-  {
     path: '/s3/buckets/:bucketName/folder/:prefix+',
     name: 's3-folder-contents',
     component: () => import('./pages/FolderContentsPage.vue'),
@@ -61,6 +55,18 @@ const routes: RouteRecordRaw[] = [
     component: () => import('./pages/ObjectDetailsPage.vue'),
     meta: { requiresAuth: true },
   },
-]
+  {
+    path: '/s3/storage-lens',
+    name: 's3-storage-lens',
+    component: () => import('./pages/S3StorageLensPage.vue'),
+    meta: { requiresAuth: true },
+  },
+  {
+    path: '/s3/access-summary',
+    name: 's3-access-summary',
+    component: () => import('./pages/S3AccessSummaryPage.vue'),
+    meta: { requiresAuth: true },
+  },
+];
 
 export default routes

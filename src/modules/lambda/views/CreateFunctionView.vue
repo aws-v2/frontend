@@ -25,26 +25,38 @@ const createFunction = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-[var(--bg-console)] pb-20">
-    <!-- Breadcrumbs -->
-    <nav class="bg-white border-b border-gray-200 px-6 py-2 flex items-center gap-2 text-xs font-medium text-gray-500">
-        <a href="#" @click.prevent="router.push('/dashboard')" class="hover:text-[var(--aws-blue)] hover:underline uppercase tracking-wider text-[10px]">AWS</a>
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <a href="#" @click.prevent="cancel" class="hover:text-[var(--aws-blue)] hover:underline">Lambda</a>
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <a href="#" @click.prevent="cancel" class="hover:text-[var(--aws-blue)] hover:underline">Functions</a>
-        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span class="text-gray-900">Create function</span>
-    </nav>
+  <div class="min-h-screen bg-[#05080F] text-slate-200 pb-32 font-sans relative overflow-hidden">
+    <!-- Ambient background effects -->
+    <div class="absolute inset-0 pointer-events-none opacity-20">
+      <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-amber-600/20 rounded-full blur-[120px]"></div>
+      <div class="absolute bottom-1/4 left-0 w-[400px] h-[400px] bg-orange-600/10 rounded-full blur-[100px]"></div>
+      <div class="absolute bottom-0 right-10 w-[600px] h-[600px] bg-yellow-600/10 rounded-full blur-[150px]"></div>
+    </div>
 
-    <div class="px-8 py-6">
-      <div class="flex items-center gap-2 mb-2">
-        <h1 class="text-2xl font-bold text-gray-900 leading-tight">Create function</h1>
-        <span class="text-[var(--aws-blue)] cursor-help">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </span>
+    <div class="relative z-10 max-w-7xl mx-auto px-6 md:px-12 lg:px-16 py-8 space-y-8">
+      <!-- Breadcrumbs -->
+      <nav class="flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.2em] mb-4">
+        <a href="#" @click.prevent="router.push('/dashboard')" class="text-slate-500 hover:text-amber-400 transition-colors">AWS</a>
+        <span class="text-slate-700">/</span>
+        <a href="#" @click.prevent="cancel" class="text-slate-500 hover:text-amber-400 transition-colors">Lambda</a>
+        <span class="text-slate-700">/</span>
+        <a href="#" @click.prevent="cancel" class="text-slate-500 hover:text-amber-400 transition-colors">Functions</a>
+        <span class="text-slate-700">/</span>
+        <span class="text-slate-400">Create function</span>
+      </nav>
+
+      <!-- Header -->
+      <div class="flex items-center gap-4 mb-8">
+        <div class="w-12 h-12 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-3xl font-bold text-white tracking-tight">Create Function</h1>
+          <p class="text-xs text-slate-500 font-medium mt-1">Choose one of the following options to create your function.</p>
+        </div>
       </div>
-      <p class="text-xs text-gray-600 mb-8">Choose one of the following options to create your function.</p>
 
       <!-- Tabs Selector -->
       <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
@@ -52,40 +64,61 @@ const createFunction = () => {
           v-for="tab in tabs" 
           :key="tab.id"
           @click="activeTab = tab.id"
-          class="aws-card p-4 rounded-sm cursor-pointer transition-all border-2 flex gap-4"
-          :class="activeTab === tab.id ? 'border-[var(--aws-blue)] bg-blue-50/20' : 'border-gray-200 hover:border-gray-400'"
+          class="glass-panel rounded-2xl border cursor-pointer transition-all duration-300 p-6 flex gap-4 relative overflow-hidden group hover:border-amber-500/30"
+          :class="activeTab === tab.id ? 'border-amber-500/40 bg-amber-500/5' : 'border-white/10 hover:bg-white/[0.02]'"
         >
-          <div class="flex-shrink-0 mt-0.5">
+          <div class="absolute -top-10 -right-10 w-24 h-24 rounded-full blur-2xl transition-all duration-700"
+            :class="activeTab === tab.id ? 'bg-amber-500/10' : 'bg-amber-500/0 group-hover:bg-amber-500/5'"></div>
+          
+          <div class="flex-shrink-0 mt-0.5 relative z-10">
             <div 
-              class="w-4 h-4 rounded-full border flex items-center justify-center"
-              :class="activeTab === tab.id ? 'border-[var(--aws-blue)]' : 'border-gray-400'"
+              class="w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all"
+              :class="activeTab === tab.id ? 'border-amber-500 bg-amber-500/10' : 'border-slate-600 group-hover:border-slate-500'"
             >
-              <div v-if="activeTab === tab.id" class="w-2 h-2 rounded-full bg-[var(--aws-blue)]"></div>
+              <div v-if="activeTab === tab.id" class="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
             </div>
           </div>
-          <div>
-            <h4 class="text-xs font-bold text-gray-800">{{ tab.label }}</h4>
-            <p class="text-[10px] text-gray-500 leading-tight mt-1">{{ tab.sub }}</p>
+          <div class="relative z-10">
+            <h4 class="text-sm font-bold mb-1 transition-colors"
+              :class="activeTab === tab.id ? 'text-white' : 'text-slate-300 group-hover:text-white'">
+              {{ tab.label }}
+            </h4>
+            <p class="text-[11px] leading-relaxed transition-colors"
+              :class="activeTab === tab.id ? 'text-slate-400' : 'text-slate-500 group-hover:text-slate-400'">
+              {{ tab.sub }}
+            </p>
           </div>
         </div>
       </div>
 
       <!-- Active Tab Content -->
       <div class="transition-all duration-300">
-          <AuthorFromScratch v-if="activeTab === 'scratch'" />
-          <UseBlueprint v-else-if="activeTab === 'blueprint'" />
-          <ContainerImage v-else-if="activeTab === 'container'" />
+        <AuthorFromScratch v-if="activeTab === 'scratch'" />
+        <UseBlueprint v-else-if="activeTab === 'blueprint'" />
+        <ContainerImage v-else-if="activeTab === 'container'" />
       </div>
     </div>
 
     <!-- Footer Actions (Sticky) -->
-    <div class="fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-gray-200 flex items-center justify-end px-8 gap-4 z-50">
-        <button @click="cancel" class="text-xs font-bold text-[var(--aws-blue)] hover:underline">Cancel</button>
-        <button @click="createFunction" class="btn-aws-primary px-8">Create function</button>
+    <div class="fixed bottom-0 left-0 right-0 glass-panel border-t border-white/10 z-50 backdrop-blur-xl">
+      <div class="max-w-7xl mx-auto px-6 md:px-12 lg:px-16 py-4 flex items-center justify-end gap-4">
+        <button @click="cancel" 
+          class="px-8 py-3 bg-white/5 border border-white/10 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-white/10 transition-all active:scale-95 shadow-lg">
+          Cancel
+        </button>
+        <button @click="createFunction" 
+          class="px-10 py-3 bg-gradient-to-r from-amber-600 to-orange-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:shadow-[0_0_20px_rgba(251,191,36,0.3)] transition-all active:scale-95 shadow-xl">
+          Create Function
+        </button>
+      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-/* Ensure the radio button look matches AWS Console */
+.glass-panel {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+}
 </style>

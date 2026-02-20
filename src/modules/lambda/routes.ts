@@ -12,6 +12,12 @@ const lambdaRoutes: RouteRecordRaw[] = [
         name: 'lambda-create',
         component: () => import('./views/CreateFunctionView.vue'),
         meta: { requiresAuth: true }
+    },
+    {
+        path: '/lambda/functions/:id',
+        name: 'lambda-details',
+        component: () => import('./views/LambdaDetailsView.vue'),
+        meta: { requiresAuth: true }
     }
 ]
 

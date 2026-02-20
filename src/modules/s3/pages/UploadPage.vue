@@ -95,7 +95,7 @@ const formatSize = (bytes: number) => {
 }
 
 const addFiles = (fileList: FileList) => {
-    for (const file of fileList) {
+    Array.from(fileList).forEach(file => {
         // Simple duplicate check by name (can be improved)
         if (!files.value.some(f => f.name === file.name)) {
             files.value.push({
@@ -106,7 +106,7 @@ const addFiles = (fileList: FileList) => {
                 file: file
             })
         }
-    }
+    })
 }
 
 const onDrop = (e: DragEvent) => {
@@ -172,7 +172,12 @@ const handleUpload = async () => {
         toastStore.addToast('Uploading ' + files.value.length + ' files...', 'info')
         await s3Store.uploadFiles(bucketName.value, formData)
         toastStore.addToast('Upload successful', 'success')
-        router.push(`/s3/buckets/${bucketName.value}/upload-status`)
+        // Redirect back to bucket details with a query param to trigger the success modal
+        router.push({
+            name: 's3-bucket-details',
+            params: { bucketName: bucketName.value },
+            query: { showUploadSuccess: 'true' }
+        })
     } catch (error) {
         console.error('Upload failed:', error)
         toastStore.addToast('Upload failed', 'error')
@@ -181,29 +186,41 @@ const handleUpload = async () => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-white font-sans pb-24">
-        <!-- Breadcrumbs -->
-        <div class="h-10 border-b border-gray-200 bg-white flex items-center px-4 text-[11px] gap-2 text-gray-500">
-            <span @click="router.push('/s3')" class="hover:text-[var(--aws-blue)] hover:underline cursor-pointer">Amazon
-                S3</span>
-            <span>></span>
-            <span @click="router.push('/s3/buckets')"
-                class="hover:text-[var(--aws-blue)] hover:underline cursor-pointer">Buckets</span>
-            <span>></span>
-            <span @click="router.push(`/s3/buckets/${bucketName}`)"
-                class="hover:text-[var(--aws-blue)] hover:underline cursor-pointer">{{ bucketName }}</span>
-            <span>></span>
-            <span class="text-gray-900 font-bold">Upload</span>
+    <div
+        class="min-h-screen bg-white text-[#232f3e] pb-32 font-urbanist relative overflow-hidden selection:bg-[#ff9900]/30 selection:text-[#232f3e]">
+        <!-- Subtle Grid -->
+        <div
+            class="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]">
         </div>
 
-        <div class="max-w-7xl mx-auto p-8 px-10">
-            <div class="mb-6">
-                <h1 class="text-2xl font-bold text-gray-900 mb-1">Upload <span
-                        class="text-[10px] text-[var(--aws-blue)] hover:underline cursor-pointer uppercase font-bold tracking-tight align-middle">Info</span>
+        <!-- Breadcrumbs -->
+        <div
+            class="h-14 border-b border-[#eaeded] bg-[#fafafa] flex items-center px-12 text-[11px] gap-4 text-[#545b64] relative z-10 font-black uppercase tracking-[0.2em] italic">
+            <span @click="router.push('/s3')" class="hover:text-[#ff9900] cursor-pointer transition-colors">
+                Amazon S3
+            </span>
+            <span class="text-[#eaeded] not-italic text-lg mx-2">/</span>
+            <span @click="router.push('/s3/buckets')" class="hover:text-[#ff9900] cursor-pointer transition-colors">
+                Buckets
+            </span>
+            <span class="text-[#eaeded] not-italic text-lg mx-2">/</span>
+            <span @click="router.push(`/s3/buckets/${bucketName}`)"
+                class="hover:text-[#ff9900] cursor-pointer transition-colors underline decoration-[#ff9900]/20 underline-offset-4">
+                {{ bucketName }}
+            </span>
+            <span class="text-[#eaeded] not-italic text-lg mx-2">/</span>
+            <span class="text-[#232f3e] italic font-black">Upload</span>
+        </div>
+
+        <div class="max-w-6xl mx-auto p-12 px-8 md:px-16 relative z-10 pt-20">
+            <div class="mb-20 border-b border-[#eaeded] pb-12 text-center">
+                <h1 class="text-6xl font-black text-[#232f3e] mb-6 tracking-tighter uppercase italic">
+                    Upload: <span class="text-[#ff9900]">Deployment</span>
                 </h1>
-                <p class="text-xs text-gray-600">Add the files and folders you want to upload to S3. To upload a file
-                    larger than 160GB, use the AWS CLI, AWS SDKs or Amazon S3 REST API. <span
-                        class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn more ↗</span></p>
+                <p
+                    class="text-[15px] text-[#545b64] font-black leading-relaxed max-w-2xl mx-auto uppercase tracking-tight italic opacity-60">
+                    Stage your assets for cloud synchronization. Minimal latency, high availability.
+                </p>
             </div>
 
             <!-- Hidden Inputs -->
@@ -212,311 +229,418 @@ const handleUpload = async () => {
 
             <!-- Drag and Drop Zone -->
             <div @drop="onDrop" @dragover="onDragOver"
-                class="border-2 border-dashed border-gray-300 rounded-sm p-8 flex flex-col items-center justify-center bg-gray-50 mb-6 transition-colors hover:bg-gray-100 cursor-pointer">
-                <p class="text-sm text-gray-600 font-bold mb-1 pointer-events-none">Drag and drop files and folders you
-                    want to upload here,
-                    or choose Add files or Add folder.</p>
+                class="bg-white border text-[#232f3e] border-dashed border-[#eaeded] p-32 flex flex-col items-center justify-center mb-16 transition-all hover:border-[#ff9900] cursor-pointer group relative overflow-hidden italic">
+                <div
+                    class="w-16 h-16 bg-[#fafafa] border border-[#eaeded] flex items-center justify-center mb-6 text-[#545b64] group-hover:text-[#ff9900] group-hover:border-[#ff9900] transition-all">
+                    <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                </div>
+                <p
+                    class="text-lg font-black text-[#232f3e] mb-2 group-hover:text-[#ff9900] transition-colors uppercase tracking-widest">
+                    Drop Manifest Here
+                </p>
+                <p class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.4em] opacity-40">
+                    Secure channel deployment
+                </p>
             </div>
 
             <!-- Files and Folders Section -->
-            <section class="border border-gray-200 rounded-sm mb-6 overflow-hidden">
-                <div class="bg-white p-4 border-b border-gray-200 flex justify-between items-center">
+            <section class="bg-white border-2 border-[#232f3e] mb-16 overflow-hidden relative">
+                <div
+                    class="px-10 py-8 border-b border-[#eaeded] flex justify-between items-center bg-[#fafafa] italic relative z-10">
                     <div>
-                        <h2 class="text-lg font-bold text-gray-900">Files and folders ({{ files.length }})</h2>
-                        <p class="text-xs text-gray-600">All files and folders in this table will be uploaded.</p>
+                        <h2
+                            class="text-xl font-black text-[#232f3e] flex items-center gap-6 uppercase tracking-tighter">
+                            Manifest list
+                            <span
+                                class="text-[11px] bg-white border border-[#eaeded] text-[#ff9900] px-3 py-1 font-black not-italic">
+                                {{ files.length }} ITEMS
+                            </span>
+                        </h2>
                     </div>
-                    <div class="flex gap-2">
-                        <button
-                            class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-sm hover:bg-gray-50 text-gray-600 disabled:opacity-50 disabled:cursor-not-allowed">Remove</button>
+                    <div class="flex gap-4">
                         <button @click="triggerFileInput"
-                            class="px-3 py-1 text-xs font-bold border border-[var(--aws-blue)] text-[var(--aws-blue)] hover:bg-blue-50/10 rounded-sm">Add
-                            files</button>
+                            class="px-8 py-3 text-[10px] font-black uppercase tracking-widest bg-[#ff9900] text-white hover:bg-[#232f3e] transition-all">
+                            Add files
+                        </button>
                         <button @click="triggerFolderInput"
-                            class="px-3 py-1 text-xs font-bold border border-[var(--aws-blue)] text-[var(--aws-blue)] hover:bg-blue-50/10 rounded-sm">Add
-                            folder</button>
+                            class="px-8 py-3 text-[10px] font-black uppercase tracking-widest bg-white border border-[#232f3e] text-[#232f3e] hover:bg-[#fafafa] transition-all">
+                            Add folder
+                        </button>
                     </div>
                 </div>
-                <div class="p-4 bg-white">
-                    <div class="flex justify-between items-center border-b border-gray-200 pb-2 mb-2">
-                        <div class="relative w-96">
-                            <svg class="absolute left-3 top-2.5 w-3.5 h-3.5 text-gray-500" fill="none"
+                <div class="p-10 relative z-10 bg-white">
+                    <div class="flex justify-between items-center bg-[#fafafa] border border-[#eaeded] p-6 mb-8 italic">
+                        <div class="relative w-full max-w-sm">
+                            <svg class="absolute left-5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#545b64]" fill="none"
                                 stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
-                            <input type="text" placeholder="Find by name"
-                                class="w-full pl-9 pr-4 py-1.5 text-sm border border-gray-400 rounded-sm focus:ring-1 focus:ring-[var(--aws-blue)] outline-none">
-                        </div>
-                        <div class="flex items-center gap-4 text-xs text-gray-400">
-                            <div class="flex items-center gap-1">
-                                <span class="hover:text-gray-900 cursor-pointer">⟨</span>
-                                <span class="text-gray-900 font-bold">1</span>
-                                <span class="hover:text-gray-900 cursor-pointer">⟩</span>
-                            </div>
-                            <svg class="w-4 h-4 hover:text-gray-900 cursor-pointer" fill="currentColor"
-                                viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0L7.43 7.5l-4.73.61c-1.61.21-2.26 2.21-1.09 3.32l3.43 3.25-1.12 4.7c-.38 1.58 1.28 2.78 2.68 2.04L10 19.16l4.4 2.26c1.4.72 3.06-.48 2.68-2.04l-1.12-4.7 3.43-3.25c1.17-1.11.52-3.11-1.09-3.32l-4.73-.61-1.08-4.33z"
-                                    clip-rule="evenodd" />
-                            </svg>
+                            <input type="text" placeholder="Filter list..."
+                                class="w-full bg-white pl-12 pr-6 py-3 text-[11px] border border-[#eaeded] focus:border-[#ff9900] outline-none transition-all placeholder:text-[#eaeded] font-black text-[#232f3e] uppercase tracking-widest italic">
                         </div>
                     </div>
                     <!-- Table Header -->
-                    <div class="grid grid-cols-12 gap-4 text-xs font-bold text-gray-600 border-b border-gray-200 pb-2">
-                        <div class="col-span-1"><input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300">
-                        </div>
-                        <div class="col-span-5">Name</div>
-                        <div class="col-span-2">Folder</div>
-                        <div class="col-span-2">Type</div>
-                        <div class="col-span-2 text-right">Size</div>
+                    <div
+                        class="grid grid-cols-12 gap-6 text-[10px] font-black uppercase tracking-[0.3em] text-[#545b64] border-b border-[#eaeded] pb-4 px-6 italic opacity-50">
+                        <div class="col-span-1"></div>
+                        <div class="col-span-5">Identity</div>
+                        <div class="col-span-2">Origin</div>
+                        <div class="col-span-2">Key type</div>
+                        <div class="col-span-2 text-right">Magnitude</div>
                     </div>
                     <!-- Table Body -->
-                    <div v-if="files.length > 0">
+                    <div v-if="files.length > 0" class="divide-y-2 divide-[#eaeded]">
                         <div v-for="(file, index) in files" :key="index"
-                            class="grid grid-cols-12 gap-4 text-xs text-gray-900 border-b border-gray-100 hover:bg-gray-50 py-3 group items-center">
-                            <div class="col-span-1"><input type="checkbox" class="w-3.5 h-3.5 rounded border-gray-300">
+                            class="grid grid-cols-12 gap-6 text-[13px] text-[#232f3e] hover:bg-[#fafafa] py-6 px-6 group items-center transition-colors italic font-bold">
+                            <div class="col-span-1"><input type="checkbox"
+                                    class="w-5 h-5 border-2 border-[#eaeded] text-[#ff9900] focus:ring-[#ff9900]/20 checked:bg-[#ff9900]">
                             </div>
-                            <div class="col-span-5 font-medium truncate">{{ file.name }}</div>
-                            <div class="col-span-2 text-gray-500">{{ file.folder }}</div>
-                            <div class="col-span-2 text-gray-500 truncate">{{ file.type }}</div>
-                            <div class="col-span-2 text-right flex justify-end gap-2 items-center">
-                                <span>{{ file.size }}</span>
-                                <button @click="removeFile(index)"
-                                    class="text-red-500 hover:text-red-700 opacity-0 group-hover:opacity-100 transition-opacity">✕</button>
+                            <div class="col-span-11 grid grid-cols-11 gap-4 items-center">
+                                <div class="col-span-5 font-bold text-white truncate flex items-center gap-3">
+                                    <div
+                                        class="w-10 h-10 bg-[#fafafa] border-2 border-[#eaeded] flex items-center justify-center text-[#545b64] group-hover:text-[#ff9900] group-hover:border-[#ff9900] shrink-0 transition-all shadow-sm">
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    <span class="truncate uppercase">{{ file.name }}</span>
+                                </div>
+                                <div class="col-span-2 text-[#545b64] font-black uppercase tracking-tighter">{{
+                                    file.folder }}</div>
+                                <div class="col-span-2 text-[#545b64] font-black uppercase tracking-tighter truncate">{{
+                                    file.type }}</div>
+                                <div class="col-span-2 text-right flex justify-end gap-6 items-center">
+                                    <span
+                                        class="font-black text-[#232f3e] bg-[#fafafa] px-3 py-1.5 border-2 border-[#eaeded] text-[11px] uppercase tracking-tighter shadow-sm">{{
+                                            file.size }}</span>
+                                    <button @click="removeFile(index)"
+                                        class="w-10 h-10 border-2 border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all active:scale-90">
+                                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                                d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
                     <!-- Empty State -->
-                    <div v-else class="py-8 text-center text-xs text-gray-600">
-                        <p class="font-bold">No files or folders</p>
-                        <p class="text-gray-500">You have not chosen any files or folders to upload.</p>
+                    <div v-else
+                        class="py-32 text-center relative overflow-hidden bg-[#fafafa] border-2 border-dashed border-[#eaeded] italic shadow-inner">
+                        <div class="relative z-10 opacity-30 group">
+                            <svg class="w-20 h-20 mx-auto mb-6 text-[#545b64] transform group-hover:rotate-12 transition-transform duration-500"
+                                fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                    d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h6l2 2h6a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
+                            </svg>
+                            <p class="text-xl text-[#232f3e] font-black mb-1 uppercase tracking-tighter">No files or
+                                folders staged</p>
+                            <p class="text-[11px] text-[#545b64] font-black uppercase tracking-[0.3em]">Items you select
+                                for upload will appear here</p>
+                        </div>
                     </div>
                 </div>
             </section>
 
             <!-- Destination -->
-            <section class="border border-gray-200 rounded-sm mb-6 overflow-hidden">
-                <div class="bg-gray-50/50 px-6 py-3 border-b border-gray-200">
-                    <h2 class="text-lg font-bold text-gray-900">Destination <span
-                            class="text-[10px] text-[var(--aws-blue)] hover:underline cursor-pointer uppercase font-bold tracking-tight">Info</span>
+            <section class="bg-white border-2 border-[#232f3e] mb-16 overflow-hidden relative">
+                <div
+                    class="bg-[#fafafa] px-10 py-8 border-b border-[#eaeded] flex items-center justify-between italic z-10 relative">
+                    <h2 class="text-xl font-black text-[#232f3e] flex items-center gap-6 uppercase tracking-tighter">
+                        Target endpoint
                     </h2>
                 </div>
-                <div class="p-6 bg-white">
-                    <p class="text-xs text-[var(--aws-blue)] mb-4 font-mono">s3://{{ bucketName }}/{{ folderPath }} <svg
-                            class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                        </svg></p>
+                <div class="p-10 relative z-10 bg-white italic font-bold">
+                    <div
+                        class="flex items-center gap-6 mb-12 bg-[#fafafa] border border-[#eaeded] p-10 shadow-sm italic text-[#232f3e]">
+                        <div
+                            class="w-16 h-16 bg-white border border-[#232f3e] flex items-center justify-center text-[#ff9900] rotate-3 transition-transform">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                            </svg>
+                        </div>
+                        <p
+                            class="text-2xl text-[#ff9900] font-black tracking-tighter uppercase underline decoration-2 decoration-[#ff9900]/20 underline-offset-8">
+                            s3://{{ bucketName }}/{{ folderPath }}
+                        </p>
+                    </div>
 
-                    <div class="mb-6 max-w-xl">
-                        <label class="block text-xs font-bold text-gray-900 mb-1">Folder path (Optional)</label>
-                        <input v-model="folderPath" type="text" placeholder="e.g. documents/work/"
-                            class="w-full px-3 py-1.5 text-sm border border-gray-400 rounded-sm focus:ring-1 focus:ring-[var(--aws-blue)] outline-none">
-                        <p class="text-[10px] text-gray-500 mt-1">If specified, files will be uploaded into this folder
-                            structure.</p>
+                    <div class="mb-12 max-w-2xl">
+                        <label
+                            class="block text-[10px] font-black uppercase tracking-[0.4em] text-[#545b64] mb-4 opacity-40">Folder
+                            Path Override</label>
+                        <input v-model="folderPath" type="text" placeholder="e.g. cloud/assets/"
+                            class="w-full bg-[#fafafa] border border-[#eaeded] px-8 py-4 text-xl font-black italic uppercase tracking-tighter text-[#232f3e] focus:border-[#ff9900] outline-none transition-all placeholder:text-[#eaeded]">
                     </div>
 
                     <button @click="toggleSection('destination')"
-                        class="flex items-center gap-1 text-sm font-bold text-gray-900 focus:outline-none">
-                        <svg class="w-3 h-3 text-gray-600 transform transition-transform duration-200"
+                        class="flex items-center gap-4 text-[11px] font-black uppercase tracking-widest text-[#232f3e] hover:text-[#ff9900] transition-colors focus:outline-none bg-[#fafafa] border border-[#eaeded] px-8 py-3 italic">
+                        <svg class="w-4 h-4 text-[#ff9900] transform transition-transform duration-300"
                             :class="expandedSections.destination ? 'rotate-90' : ''" fill="currentColor"
                             viewBox="0 0 20 20">
                             <path fill-rule="evenodd"
                                 d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
                                 clip-rule="evenodd" />
                         </svg>
-                        Destination details
+                        Advanced attributes
                     </button>
-                    <div v-show="expandedSections.destination" class="mt-6 border-t border-gray-100 pt-6">
-                        <div class="grid grid-cols-3 gap-8">
+
+                    <div v-show="expandedSections.destination"
+                        class="mt-12 border-t-2 border-[#eaeded] pt-12 animate-in fade-in slide-in-from-top-4 duration-500 italic">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
                             <!-- Bucket Versioning -->
-                            <div>
-                                <h3 class="text-xs font-bold text-gray-900 mb-1">Bucket Versioning</h3>
-                                <p class="text-xs text-gray-600 mb-2 leading-relaxed">
-                                    When enabled, multiple variants of an object can be stored in the bucket to easily
-                                    recover from unintended user actions and application failures. <a href="#"
-                                        class="text-[var(--aws-blue)] hover:underline">Learn more <svg
-                                            class="w-3 h-3 inline" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                        </svg></a>
+                            <div
+                                class="bg-[#fafafa] border-2 border-[#eaeded] p-8 shadow-inner group/card hover:border-[#ff9900]/30 transition-colors">
+                                <h3 class="text-[12px] font-black uppercase tracking-[0.2em] text-[#545b64] mb-6">Bucket
+                                    Versioning</h3>
+                                <p
+                                    class="text-[13px] text-[#545b64] mb-8 leading-relaxed font-bold uppercase tracking-tight">
+                                    Enabling versioning allows you to preserve, retrieve, and restore every version of
+                                    every object stored in your bucket.
+                                    <span
+                                        class="text-[#ff9900] hover:underline cursor-pointer block mt-3 font-black">Learn
+                                        more
+                                        ↗</span>
                                 </p>
                                 <div v-if="!isVersioningEnabled"
-                                    class="flex items-center gap-1.5 text-xs text-amber-700 bg-amber-50 px-2 py-1 inline-block rounded-sm">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    class="flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-amber-500 bg-white border-2 border-amber-500/20 px-6 py-3 shadow-md w-fit">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
                                             d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                                     </svg>
-                                    <span class="font-bold">Disabled</span>
+                                    Disabled
                                 </div>
                                 <div v-else
-                                    class="flex items-center gap-1.5 text-xs text-green-700 bg-green-50 px-2 py-1 inline-block rounded-sm">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    class="flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-[#ff9900] bg-white border-2 border-[#ff9900]/20 px-6 py-3 shadow-md w-fit">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
                                             d="M5 13l4 4L19 7" />
                                     </svg>
-                                    <span class="font-bold">Enabled</span>
+                                    Enabled
                                 </div>
                             </div>
 
                             <!-- Default encryption type -->
-                            <div class="border-l border-gray-200 pl-8">
-                                <h3 class="text-xs font-bold text-gray-900 mb-1">Default encryption type</h3>
-                                <p class="text-xs text-gray-600 mb-2 leading-relaxed">
-                                    If an encryption type isn't specified, bucket settings for default encryption are
-                                    used to encrypt objects when storing them in Amazon S3. <a href="#"
-                                        class="text-[var(--aws-blue)] hover:underline">Learn more <svg
-                                            class="w-3 h-3 inline" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                        </svg></a>
+                            <div
+                                class="bg-[#fafafa] border-2 border-[#eaeded] p-8 shadow-inner group/card hover:border-[#ff9900]/30 transition-colors">
+                                <h3 class="text-[12px] font-black uppercase tracking-[0.2em] text-[#545b64] mb-6">
+                                    Default
+                                    encryption</h3>
+                                <p
+                                    class="text-[13px] text-[#545b64] mb-8 leading-relaxed font-bold uppercase tracking-tight">
+                                    Server-side encryption is automatically applied to new objects.
+                                    <span
+                                        class="text-[#ff9900] hover:underline cursor-pointer block mt-3 font-black">Learn
+                                        more
+                                        ↗</span>
                                 </p>
-                                <p class="text-xs text-gray-900 font-medium">Server-side encryption with Amazon S3
-                                    managed keys (SSE-S3)</p>
+                                <p
+                                    class="text-[12px] text-[#232f3e] font-black bg-white px-6 py-4 border-2 border-[#eaeded] shadow-md uppercase tracking-tighter italic">
+                                    Amazon S3 managed keys (SSE-S3)
+                                </p>
                             </div>
 
                             <!-- Object Lock -->
-                            <div class="border-l border-gray-200 pl-8">
-                                <h3 class="text-xs font-bold text-gray-900 mb-1">Object Lock</h3>
-                                <p class="text-xs text-gray-600 mb-2 leading-relaxed">
-                                    When enabled, objects in this bucket might be prevented from being deleted or
-                                    overwritten for a fixed amount of time or indefinitely. <a href="#"
-                                        class="text-[var(--aws-blue)] hover:underline">Learn more <svg
-                                            class="w-3 h-3 inline" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                        </svg></a>
+                            <div
+                                class="bg-[#fafafa] border-2 border-[#eaeded] p-8 shadow-inner group/card hover:border-[#ff9900]/30 transition-colors">
+                                <h3 class="text-[12px] font-black uppercase tracking-[0.2em] text-[#545b64] mb-6">Object
+                                    Lock</h3>
+                                <p
+                                    class="text-[13px] text-[#545b64] mb-8 leading-relaxed font-bold uppercase tracking-tight">
+                                    Prevent objects from being deleted or overwritten for a fixed amount of time.
+                                    <span
+                                        class="text-[#ff9900] hover:underline cursor-pointer block mt-3 font-black">Learn
+                                        more
+                                        ↗</span>
                                 </p>
-                                <p class="text-xs text-gray-900 font-medium">Disabled</p>
+                                <div
+                                    class="flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-[#545b64]/40 bg-white border-2 border-[#eaeded] px-6 py-3 shadow-sm w-fit grayscale">
+                                    Disabled
+                                </div>
                             </div>
                         </div>
 
                         <!-- Warning Alert -->
                         <div v-if="!isVersioningEnabled"
-                            class="mt-6 border border-amber-500 bg-[#fffbf0] rounded-sm p-4 flex justify-between items-center">
-                            <div class="flex items-start gap-3">
-                                <svg class="w-5 h-5 text-amber-500 shrink-0 mt-0.5" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
-                                <p class="text-xs text-gray-900 font-bold">
-                                    We recommend that you enable Bucket Versioning to help protect against
-                                    unintentionally overwriting or deleting objects. <a href="#"
-                                        class="text-[var(--aws-blue)] hover:underline font-normal">Learn more <svg
-                                            class="w-3 h-3 inline" fill="none" stroke="currentColor"
-                                            viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                        </svg></a>
-                                </p>
+                            class="mt-12 border-4 border-[#ff9900] bg-[#fafafa] p-10 flex flex-col md:flex-row justify-between items-center gap-10 shadow-xl relative overflow-hidden italic">
+                            <div
+                                class="absolute top-0 right-0 w-32 h-32 bg-[#ff9900]/5 rounded-full blur-3xl -mr-16 -mt-16">
+                            </div>
+                            <div class="flex items-start gap-8 relative z-10">
+                                <div
+                                    class="w-16 h-16 bg-white border-2 border-[#ff9900] text-[#ff9900] flex items-center justify-center shrink-0 shadow-lg rotate-3 group-hover:rotate-0 transition-transform">
+                                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+                                <div>
+                                    <p
+                                        class="text-2xl text-[#232f3e] font-black mb-2 uppercase tracking-tighter italic">
+                                        Protect your data with Versioning</p>
+                                    <p
+                                        class="text-[13px] text-[#545b64] font-bold leading-relaxed uppercase tracking-tight opacity-70">
+                                        Bucket Versioning helps protect against overwrite or deletion. It's an AWS best
+                                        practice for production data.
+                                        <span
+                                            class="text-[#ff9900] hover:underline cursor-pointer ml-2 font-black">Learn
+                                            more
+                                            ↗</span>
+                                    </p>
+                                </div>
                             </div>
                             <button @click="isVersioningEnabled = true"
-                                class="px-4 py-1.5 text-xs font-bold border border-gray-300 bg-white rounded-sm hover:bg-gray-50 shadow-sm whitespace-nowrap">Enable
-                                Bucket Versioning</button>
+                                class="px-10 py-4 text-[11px] font-black uppercase tracking-widest bg-[#232f3e] text-white hover:bg-[#ff9900] transition-all whitespace-nowrap shadow-2xl active:scale-95 z-10">
+                                Enable Versioning
+                            </button>
                         </div>
                     </div>
                 </div>
             </section>
 
             <!-- Permissions -->
-            <section class="border border-gray-200 rounded-sm mb-6 overflow-hidden">
+            <section class="bg-white border-4 border-[#232f3e] mb-12 overflow-hidden shadow-2xl relative">
                 <button @click="toggleSection('permissions')"
-                    class="w-full bg-white px-6 py-3 flex items-center gap-2 hover:bg-gray-50 focus:outline-none border-b border-gray-200">
-                    <svg class="w-3 h-3 text-gray-600 transform transition-transform duration-200"
+                    class="w-full bg-[#fafafa] px-10 py-8 flex items-center gap-6 hover:bg-white transition-all focus:outline-none border-b-2 border-[#eaeded] group italic">
+                    <svg class="w-5 h-5 text-[#ff9900] transform transition-transform duration-300 group-hover:scale-125"
                         :class="expandedSections.permissions ? 'rotate-90' : ''" fill="currentColor"
                         viewBox="0 0 20 20">
                         <path fill-rule="evenodd"
                             d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
                             clip-rule="evenodd" />
                     </svg>
-                    <h2 class="text-lg font-bold text-gray-900">Permissions</h2>
+                    <h2 class="text-2xl font-black text-[#232f3e] uppercase tracking-tighter">Permissions</h2>
                 </button>
-                <div v-show="expandedSections.permissions" class="p-6 bg-white">
-                    <p class="text-xs text-gray-600 mb-4">Grant public access and access to other AWS accounts.</p>
+                <div v-show="expandedSections.permissions"
+                    class="p-10 animate-in fade-in slide-in-from-top-4 duration-500 italic font-bold">
+                    <p class="text-[14px] text-[#545b64] mb-10 uppercase tracking-tight opacity-70">Grant public access
+                        and access to other Cloud identities.</p>
 
-                    <div class="border border-[var(--aws-blue)] bg-blue-50/10 p-4 rounded-sm flex items-start gap-3">
-                        <svg class="w-5 h-5 text-[var(--aws-blue)] shrink-0 mt-0.5" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p class="text-xs text-gray-600 leading-relaxed">
-                            This bucket has the <a href="#" class="text-[var(--aws-blue)] underline">bucket owner
-                                enforced</a> setting applied for Object Ownership. Use bucket policies to control
-                            access. <a href="#" class="text-[var(--aws-blue)] underline">Learn more <svg
-                                    class="w-3 h-3 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                                </svg></a>
+                    <div
+                        class="border-4 border-[#eaeded] bg-[#fafafa] p-10 flex items-start gap-8 shadow-inner relative overflow-hidden group/notice">
+                        <div
+                            class="absolute top-0 right-0 w-32 h-32 bg-[#232f3e]/[0.02] rounded-full blur-3xl -mr-16 -mt-16 group-hover/notice:bg-[#ff9900]/[0.05] transition-colors">
+                        </div>
+                        <div
+                            class="w-14 h-14 bg-white border-2 border-[#232f3e] text-[#ff9900] flex items-center justify-center shrink-0 shadow-lg rotate-3 group-hover/notice:rotate-0 transition-transform">
+                            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                        </div>
+                        <p
+                            class="text-[15px] text-[#232f3e] leading-relaxed uppercase tracking-tight relative z-10 pt-2">
+                            This bucket has the <span
+                                class="text-[#ff9900] hover:underline cursor-pointer font-black italic underline-offset-4 decoration-2 decoration-[#ff9900]/30">bucket
+                                owner
+                                enforced</span> setting applied for object ownership.
+                            Use <span
+                                class="text-[#ff9900] hover:underline cursor-pointer font-black italic underline-offset-4 decoration-2 decoration-[#ff9900]/30">storage
+                                policies</span> to control access.
+                            <span
+                                class="text-[#ff9900] hover:underline cursor-pointer block mt-4 font-black">Documentation
+                                ↗</span>
                         </p>
                     </div>
                 </div>
             </section>
 
             <!-- Properties -->
-            <section class="border border-gray-200 rounded-sm mb-6 overflow-hidden">
+            <section class="bg-white border-4 border-[#232f3e] mb-12 overflow-hidden shadow-2xl relative">
                 <button @click="toggleSection('properties')"
-                    class="w-full bg-white px-6 py-3 flex items-center gap-2 hover:bg-gray-50 focus:outline-none border-b border-gray-200">
-                    <svg class="w-3 h-3 text-gray-600 transform transition-transform duration-200"
+                    class="w-full bg-[#fafafa] px-10 py-8 flex items-center gap-6 hover:bg-white transition-all focus:outline-none border-b-2 border-[#eaeded] group italic">
+                    <svg class="w-5 h-5 text-[#ff9900] transform transition-transform duration-300 group-hover:scale-125"
                         :class="expandedSections.properties ? 'rotate-90' : ''" fill="currentColor" viewBox="0 0 20 20">
                         <path fill-rule="evenodd"
                             d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
                             clip-rule="evenodd" />
                     </svg>
-                    <h2 class="text-lg font-bold text-gray-900">Properties</h2>
+                    <h2 class="text-2xl font-black text-[#232f3e] uppercase tracking-tighter">Properties</h2>
                 </button>
-                <div v-show="expandedSections.properties" class="p-6 bg-white space-y-8">
-                    <p class="text-xs text-gray-600 -mt-2">Specify storage class, encryption settings, tags, and more.
-                    </p>
+                <div v-show="expandedSections.properties"
+                    class="p-10 space-y-16 animate-in fade-in slide-in-from-top-4 duration-500 italic font-bold">
+                    <p class="text-[14px] text-[#545b64] -mt-6 uppercase tracking-tight opacity-70">Specify storage
+                        class, encryption settings,
+                        tags, and deployment metadata.</p>
 
                     <!-- Storage Class -->
-                    <div class="border border-gray-200 rounded-sm p-4">
-                        <h3 class="text-sm font-bold text-gray-900 mb-1 flex gap-1">Storage class <span
-                                class="text-[10px] text-[var(--aws-blue)] hover:underline cursor-pointer uppercase font-bold tracking-tight align-middle">Info</span>
+                    <div
+                        class="bg-[#fafafa] border-4 border-[#eaeded] p-10 relative overflow-hidden group shadow-inner">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-br from-[#ff9900]/[0.02] to-[#232f3e]/[0.02] opacity-0 group-hover:opacity-100 transition-opacity">
+                        </div>
+                        <h3
+                            class="text-2xl font-black text-[#232f3e] mb-4 flex items-center gap-6 uppercase tracking-tighter">
+                            Storage class
+                            <span
+                                class="text-[12px] text-[#ff9900] bg-white border-2 border-[#eaeded] px-4 py-1 uppercase font-black tracking-widest not-italic">
+                                Tiering
+                            </span>
                         </h3>
-                        <p class="text-xs text-gray-600 mb-4">Amazon S3 offers a range of storage classes designed for
-                            different use cases. <span
-                                class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn more ↗</span> or see
-                            <span class="text-[var(--aws-blue)] hover:underline cursor-pointer">Amazon S3 pricing
+                        <p
+                            class="text-[13px] text-[#545b64] mb-10 font-bold max-w-2xl uppercase tracking-tight opacity-80">
+                            Amazon S3 offers a range of storage classes designed for different use cases.
+                            <span
+                                class="text-[#ff9900] hover:underline cursor-pointer font-black ml-2 uppercase">Pricing
                                 ↗</span>
                         </p>
 
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-left border-collapse min-w-[800px]">
+                        <div class="overflow-x-auto -mx-10 px-10">
+                            <table class="w-full text-left border-collapse min-w-[1200px]">
                                 <thead>
-                                    <tr class="text-[10px] uppercase font-bold text-gray-500 border-b border-gray-200">
-                                        <th class="p-2 w-8"></th>
-                                        <th class="p-2 border-r border-gray-200">Storage class</th>
-                                        <th class="p-2 border-r border-gray-200 w-1/3">Designed for</th>
-                                        <th class="p-2 border-r border-gray-200">Bucket type</th>
-                                        <th class="p-2 border-r border-gray-200">Availability Zones</th>
-                                        <th class="p-2 border-r border-gray-200">Min storage duration</th>
-                                        <th class="p-2 border-r border-gray-200">Min billable object size</th>
-                                        <th class="p-2 border-r border-gray-200">Monitoring and auto-tiering fees</th>
-                                        <th class="p-2">Retrieval fees</th>
+                                    <tr
+                                        class="text-[11px] uppercase font-black tracking-[0.2em] text-[#545b64] border-b-2 border-[#eaeded]">
+                                        <th class="p-6 w-16"></th>
+                                        <th class="p-6 border-r-2 border-[#eaeded]">Storage class</th>
+                                        <th class="p-6 border-r-2 border-[#eaeded] w-1/4">Designed for</th>
+                                        <th class="p-6 border-r-2 border-[#eaeded]">Bucket type</th>
+                                        <th class="p-6 border-r-2 border-[#eaeded]">Zones</th>
+                                        <th class="p-6 border-r-2 border-[#eaeded]">Min duration</th>
+                                        <th class="p-6 border-r-2 border-[#eaeded]">Min size</th>
+                                        <th class="p-6 border-r-2 border-[#eaeded]">Fees</th>
+                                        <th class="p-6">Retrieval</th>
                                     </tr>
                                 </thead>
-                                <tbody>
+                                <tbody class="divide-y-2 divide-[#eaeded]">
                                     <tr v-for="cls in storageClasses" :key="cls.id"
-                                        class="border-b border-gray-100 last:border-0 hover:bg-gray-50 text-xs cursor-pointer group"
-                                        :class="storageClass === cls.id ? 'bg-blue-50/20' : ''"
+                                        class="hover:bg-white text-[13px] cursor-pointer group/row transition-colors"
+                                        :class="storageClass === cls.id ? 'bg-white' : ''"
                                         @click="storageClass = cls.id">
-                                        <td class="p-3 text-center vertical-top">
-                                            <input type="radio" :checked="storageClass === cls.id"
-                                                class="w-4 h-4 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)] border-gray-300 shadow-sm mt-0.5">
+                                        <td class="p-6 text-center">
+                                            <div class="relative flex items-center justify-center">
+                                                <input type="radio" :checked="storageClass === cls.id"
+                                                    class="w-6 h-6 appearance-none border-2 border-[#eaeded] checked:border-[#ff9900] checked:bg-[#ff9900]/10 transition-all cursor-pointer">
+                                                <div v-if="storageClass === cls.id"
+                                                    class="absolute w-2.5 h-2.5 bg-[#ff9900]"></div>
+                                            </div>
                                         </td>
-                                        <td class="p-3 font-bold text-gray-900 align-top">{{ cls.name }}</td>
-                                        <td class="p-3 text-gray-600 align-top">{{ cls.designedFor }}</td>
-                                        <td class="p-3 text-gray-600 align-top">General purpose</td>
-                                        <td class="p-3 text-gray-600 align-top">{{ cls.zones }}</td>
-                                        <td class="p-3 text-gray-600 align-top">{{ cls.minDuration }}</td>
-                                        <td class="p-3 text-gray-600 align-top">{{ cls.minSize }}</td>
-                                        <td class="p-3 text-gray-600 align-top">{{ cls.fees }}</td>
-                                        <td class="p-3 text-gray-600 align-top">-</td>
+                                        <td
+                                            class="p-6 font-black text-[#232f3e] group-hover/row:text-[#ff9900] transition-colors uppercase tracking-tighter">
+                                            {{ cls.name }}</td>
+                                        <td
+                                            class="p-6 text-[#545b64] font-bold leading-relaxed uppercase tracking-tight">
+                                            {{ cls.designedFor }}
+                                        </td>
+                                        <td
+                                            class="p-6 text-[#545b64] font-bold whitespace-nowrap uppercase tracking-widest opacity-60">
+                                            General
+                                        </td>
+                                        <td class="p-6 text-[#545b64] font-bold uppercase tracking-widest opacity-60">{{
+                                            cls.zones }}</td>
+                                        <td class="p-6 text-[#545b64] font-bold uppercase tracking-widest opacity-60">{{
+                                            cls.minDuration }}</td>
+                                        <td class="p-6 text-[#545b64] font-bold uppercase tracking-widest opacity-60">{{
+                                            cls.minSize }}</td>
+                                        <td class="p-6 text-[#545b64] font-bold uppercase tracking-widest opacity-60">{{
+                                            cls.fees }}</td>
+                                        <td class="p-6 text-[#545b64] font-bold uppercase tracking-widest opacity-40">-
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -524,181 +648,308 @@ const handleUpload = async () => {
                     </div>
 
                     <!-- Server-side encryption -->
-                    <div class="border border-gray-200 rounded-sm p-4">
-                        <h3 class="text-sm font-bold text-gray-900 mb-1 flex gap-1">Server-side encryption <span
-                                class="text-[10px] text-[var(--aws-blue)] hover:underline cursor-pointer uppercase font-bold tracking-tight align-middle">Info</span>
+                    <div
+                        class="bg-white border-4 border-[#eaeded] p-10 relative overflow-hidden group shadow-md italic">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-br from-[#232f3e]/[0.02] to-[#ff9900]/[0.02] opacity-0 group-hover:opacity-100 transition-opacity">
+                        </div>
+                        <h3
+                            class="text-2xl font-black text-[#232f3e] mb-2 flex items-center gap-6 uppercase tracking-tighter">
+                            Server-side encryption
+                            <span
+                                class="text-[12px] text-[#ff9900] bg-white border-2 border-[#eaeded] px-4 py-1 uppercase font-black tracking-widest not-italic">
+                                Security
+                            </span>
                         </h3>
-                        <p class="text-xs text-gray-600 mb-4">Server-side encryption protects data at rest.</p>
+                        <p class="text-[14px] text-[#545b64] mb-10 font-bold uppercase tracking-tight opacity-70">
+                            Server-side encryption protects data at
+                            rest by encrypting it before it's saved to disk.</p>
 
-                        <div class="space-y-3">
-                            <h4 class="text-xs font-bold text-gray-900">Server-side encryption</h4>
-
-                            <label class="flex items-start gap-2 cursor-pointer">
-                                <input type="radio" value="None" v-model="encryptionKeyType"
-                                    class="w-4 h-4 mt-0.5 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)] border-gray-300">
-                                <div>
-                                    <span class="text-sm font-medium text-gray-900">Don't specify an encryption
-                                        key</span>
-                                    <p class="text-xs text-gray-600">The bucket settings for default encryption are used
-                                        to encrypt objects when storing them in Amazon S3.</p>
+                        <div class="space-y-8">
+                            <label class="flex items-start gap-6 cursor-pointer group/opt">
+                                <div class="relative flex items-center justify-center mt-1">
+                                    <input type="radio" value="None" v-model="encryptionKeyType"
+                                        class="w-6 h-6 appearance-none border-2 border-[#eaeded] checked:border-[#ff9900] checked:bg-[#ff9900]/10 transition-all cursor-pointer">
+                                    <div v-if="encryptionKeyType === 'None'" class="absolute w-2.5 h-2.5 bg-[#ff9900]">
+                                    </div>
+                                </div>
+                                <div class="flex-1">
+                                    <span
+                                        class="text-lg font-black text-[#232f3e] group-hover/opt:text-[#ff9900] transition-colors uppercase tracking-tighter">Don't
+                                        specify an encryption key</span>
+                                    <p
+                                        class="text-[12px] text-[#545b64] font-black uppercase tracking-widest opacity-60">
+                                        Use the bucket's default
+                                        encryption settings.</p>
                                 </div>
                             </label>
 
-                            <label class="flex items-start gap-2 cursor-pointer">
-                                <input type="radio" value="Specify" v-model="encryptionKeyType"
-                                    class="w-4 h-4 mt-0.5 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)] border-gray-300">
-                                <div>
-                                    <span class="text-sm font-medium text-gray-900">Specify an encryption key</span>
-                                    <p class="text-xs text-gray-600">The specified encryption key is used to encrypt
-                                        objects before storing them in Amazon S3.</p>
+                            <label class="flex items-start gap-6 cursor-pointer group/opt">
+                                <div class="relative flex items-center justify-center mt-1">
+                                    <input type="radio" value="Specify" v-model="encryptionKeyType"
+                                        class="w-6 h-6 appearance-none border-2 border-[#eaeded] checked:border-[#ff9900] checked:bg-[#ff9900]/10 transition-all cursor-pointer">
+                                    <div v-if="encryptionKeyType === 'Specify'"
+                                        class="absolute w-2.5 h-2.5 bg-[#ff9900]"></div>
+                                </div>
+                                <div class="flex-1">
+                                    <span
+                                        class="text-lg font-black text-[#232f3e] group-hover/opt:text-[#ff9900] transition-colors uppercase tracking-tighter">Specify
+                                        an encryption key</span>
+                                    <p
+                                        class="text-[12px] text-[#545b64] font-black uppercase tracking-widest opacity-60">
+                                        Explicitly choose the key used to
+                                        encrypt these objects.</p>
                                 </div>
                             </label>
 
                             <div v-if="encryptionKeyType === 'Specify'"
-                                class="mt-4 border border-yellow-400 bg-yellow-50 rounded-sm p-3 flex gap-2">
-                                <svg class="w-5 h-5 text-yellow-600 shrink-0" fill="none" stroke="currentColor"
-                                    viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                                </svg>
-                                <p class="text-xs text-gray-900">If your bucket policy requires objects to be encrypted
-                                    with a specific encryption key, you must specify the same encryption key when you
-                                    upload objects. Otherwise, uploads will fail.</p>
+                                class="mt-10 border-4 border-amber-500/20 bg-[#fafafa] p-8 flex gap-8 animate-in fade-in zoom-in-95 duration-300 italic shadow-inner">
+                                <div
+                                    class="w-12 h-12 bg-white border-2 border-amber-500/20 flex items-center justify-center text-amber-500 shrink-0 rotate-6 transition-transform hover:rotate-0 shadow-sm">
+                                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                                    </svg>
+                                </div>
+                                <p
+                                    class="text-[13px] text-[#545b64] font-bold leading-relaxed uppercase tracking-tight pt-1">
+                                    If your bucket policy requires a specific key, you must provide it here. Otherwise,
+                                    the upload will be rejected by the server.
+                                </p>
                             </div>
                         </div>
                     </div>
 
                     <!-- Checksums -->
-                    <div class="border border-gray-200 rounded-sm p-4">
-                        <h3 class="text-sm font-bold text-gray-900 mb-1">Checksums</h3>
-                        <p class="text-xs text-gray-600 mb-3">Checksums are used for data integrity verification of new
-                            objects. <span class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn more
+                    <div
+                        class="bg-white border-4 border-[#eaeded] p-10 relative overflow-hidden group shadow-md italic">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-br from-[#232f3e]/[0.02] to-[#ff9900]/[0.02] opacity-0 group-hover:opacity-100 transition-opacity">
+                        </div>
+                        <h3
+                            class="text-2xl font-black text-[#232f3e] mb-4 flex items-center gap-6 uppercase tracking-tighter">
+                            Checksums
+                        </h3>
+                        <p class="text-[14px] text-[#545b64] mb-10 font-bold uppercase tracking-tight opacity-70">Verify
+                            data integrity during the upload
+                            process. <span
+                                class="text-[#ff9900] hover:underline cursor-pointer font-black ml-2">Documentation
                                 ↗</span></p>
 
-                        <label class="block mb-1 text-xs font-bold text-gray-900">Checksum function</label>
-                        <p class="text-xs text-gray-600 mb-2">Checksum functions are used to calculate the checksum
-                            value. For objects smaller than 16 MB, only the full object checksum type is supported, for
-                            all checksum algorithms.</p>
-                        <select v-model="checksumFunction"
-                            class="w-full max-w-xl border border-gray-400 rounded-sm px-3 py-1.5 text-sm focus:ring-1 focus:ring-[var(--aws-blue)] outline-none bg-white">
-                            <option>CRC64NVME (recommended)</option>
-                            <option>CRC32</option>
-                            <option>CRC32C</option>
-                            <option>SHA-1</option>
-                            <option>SHA-256</option>
-                        </select>
+                        <div class="max-w-3xl">
+                            <label
+                                class="block text-[11px] font-black uppercase tracking-[0.3em] text-[#545b64] mb-4 px-1">Checksum
+                                function</label>
+                            <div class="relative">
+                                <select v-model="checksumFunction"
+                                    class="w-full bg-[#fafafa] border-2 border-[#eaeded] pl-8 pr-16 py-5 text-xl font-black italic uppercase tracking-tighter text-[#232f3e] focus:border-[#ff9900] outline-none transition-all appearance-none cursor-pointer shadow-inner">
+                                    <option class="bg-white">CRC64NVME (recommended)</option>
+                                    <option class="bg-white">CRC32</option>
+                                    <option class="bg-white">CRC32C</option>
+                                    <option class="bg-white">SHA-1</option>
+                                    <option class="bg-white">SHA-256</option>
+                                </select>
+                                <svg class="absolute right-6 top-1/2 -translate-y-1/2 w-6 h-6 text-[#ff9900] pointer-events-none"
+                                    fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                        d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
 
-                        <div class="mt-4 border border-[var(--aws-blue)] bg-blue-50/10 rounded-sm p-3 flex gap-2">
-                            <svg class="w-5 h-5 text-[var(--aws-blue)] shrink-0" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                            <p class="text-xs text-gray-900">You can provide a precalculated value when uploading a
-                                single object and use the full object checksum type. To use precalculated values with
-                                multiple objects, use the AWS CLI, AWS SDKs, or Amazon S3 REST API.</p>
+                        <div
+                            class="mt-10 border-4 border-[#eaeded] bg-[#fafafa] p-8 flex gap-8 shadow-inner animate-in fade-in slide-in-from-left-4 duration-500">
+                            <div
+                                class="w-14 h-14 bg-white border-2 border-[#eaeded] flex items-center justify-center text-[#ff9900] shrink-0 shadow-md rotate-3 group-hover:rotate-0 transition-transform">
+                                <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <p
+                                class="text-[14px] text-[#545b64] font-bold leading-relaxed uppercase tracking-tight pt-2">
+                                You can provide precalculated values for single objects. For batch operations, use the
+                                <span
+                                    class="text-[#232f3e] font-black italic underline-offset-4 decoration-2 decoration-[#232f3e]/20 underline">Cloud
+                                    CLI</span> or <span
+                                    class="text-[#ff9900] font-black italic underline-offset-4 decoration-2 decoration-[#ff9900]/20 underline">System
+                                    SDKs</span>.
+                            </p>
                         </div>
                     </div>
 
                     <!-- Tags -->
-                    <div class="border border-gray-200 rounded-sm p-4">
-                        <h3 class="text-sm font-bold text-gray-900 mb-1 flex gap-1">Tags - optional</h3>
-                        <p class="text-xs text-gray-600 mb-3">You can use object tags to analyze, manage, and specify
-                            permissions for objects. <span
-                                class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn more ↗</span></p>
+                    <div
+                        class="bg-white border-4 border-[#eaeded] p-10 relative overflow-hidden group shadow-md italic">
+                        <div
+                            class="absolute inset-0 bg-gradient-to-br from-[#ff9900]/[0.02] to-[#232f3e]/[0.02] opacity-0 group-hover:opacity-100 transition-opacity">
+                        </div>
+                        <h3
+                            class="text-2xl font-black text-[#232f3e] mb-4 flex items-center gap-6 uppercase tracking-tighter">
+                            Tags
+                            <span
+                                class="text-[12px] text-[#ff9900] bg-white border-2 border-[#eaeded] px-4 py-1 uppercase font-black tracking-widest not-italic">Meta</span>
+                        </h3>
+                        <p class="text-[14px] text-[#545b64] mb-10 font-bold uppercase tracking-tight opacity-70">Use
+                            object tags to analyze, manage, and
+                            specify permissions for objects. <span
+                                class="text-[#ff9900] hover:underline cursor-pointer font-black ml-2">Documentation
+                                ↗</span>
+                        </p>
 
-                        <div v-if="tags.length > 0" class="mb-4 space-y-4">
-                            <div v-for="(tag, index) in tags" :key="index" class="flex items-end gap-4">
-                                <div class="flex-1">
-                                    <label class="block text-xs font-bold text-gray-900 mb-1">Key</label>
-                                    <input v-model="tag.key" type="text" placeholder="Key"
-                                        class="w-full border border-gray-400 rounded-sm px-3 py-1.5 text-sm focus:ring-1 focus:ring-[var(--aws-blue)] outline-none bg-white">
+                        <div v-if="tags.length > 0" class="space-y-6 mb-10">
+                            <div v-for="(tag, index) in tags" :key="index"
+                                class="flex flex-col md:flex-row items-end gap-10 bg-[#fafafa] border border-[#eaeded] p-10 italic">
+                                <div class="flex-1 w-full">
+                                    <label
+                                        class="block text-[10px] font-black uppercase tracking-[0.3em] text-[#545b64] mb-4 opacity-40">Key</label>
+                                    <input v-model="tag.key" type="text" placeholder="e.g. Project"
+                                        class="w-full bg-white border border-[#eaeded] px-6 py-4 text-lg font-black italic uppercase tracking-tighter text-[#232f3e] focus:border-[#ff9900] outline-none transition-all placeholder:text-[#eaeded]">
                                 </div>
-                                <div class="flex-1">
-                                    <label class="block text-xs font-bold text-gray-900 mb-1">Value - optional</label>
-                                    <input v-model="tag.value" type="text" placeholder="Value"
-                                        class="w-full border border-gray-400 rounded-sm px-3 py-1.5 text-sm focus:ring-1 focus:ring-[var(--aws-blue)] outline-none bg-white">
+                                <div class="flex-1 w-full">
+                                    <label
+                                        class="block text-[10px] font-black uppercase tracking-[0.3em] text-[#545b64] mb-4 opacity-40">Value
+                                        (Optional)</label>
+                                    <input v-model="tag.value" type="text" placeholder="e.g. S3-Research"
+                                        class="w-full bg-white border border-[#eaeded] px-6 py-4 text-lg font-black italic uppercase tracking-tighter text-[#232f3e] focus:border-[#ff9900] outline-none transition-all placeholder:text-[#eaeded]">
                                 </div>
                                 <button @click="removeTag(index)"
-                                    class="px-3 py-1.5 text-xs font-bold border border-gray-300 rounded-sm hover:bg-gray-50 text-[var(--aws-blue)] mb-[1px]">Remove</button>
+                                    class="w-16 h-16 border border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all bg-white mb-1">
+                                    <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
                             </div>
                         </div>
-                        <div v-else class="mb-4">
-                            <p class="text-xs text-gray-500 italic">No tags associated with this resource.</p>
+                        <div v-else
+                            class="mb-10 p-12 border border-dashed border-[#eaeded] text-center bg-[#fafafa] italic">
+                            <p class="text-[14px] text-[#232f3e] font-black uppercase tracking-widest opacity-30">No
+                                tags
+                                defined</p>
                         </div>
 
                         <button @click="addTag"
-                            class="px-4 py-1.5 text-xs font-bold border border-gray-300 rounded-sm hover:bg-gray-50 text-[var(--aws-blue)]">Add
-                            tag</button>
-                    </div>
+                            class="px-10 py-4 text-[11px] font-black uppercase tracking-[0.2em] text-[#232f3e] hover:text-[#ff9900] transition-colors focus:outline-none bg-[#fafafa] border border-[#eaeded] italic flex items-center gap-4">
+                            + Add Tag Attributes
+                        </button>
 
-                    <!-- Metadata -->
-                    <div class="border border-gray-200 rounded-sm p-4">
-                        <h3 class="text-sm font-bold text-gray-900 mb-1 flex gap-1">Metadata - optional</h3>
-                        <p class="text-xs text-gray-600 mb-3">Metadata is optional information provided as a name-value
-                            (key-value) pair. <span class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn
-                                more ↗</span></p>
+                        <!-- Metadata -->
+                        <div
+                            class="bg-white border text-[#232f3e] border-[#eaeded] p-10 relative overflow-hidden group italic">
+                            <h3
+                                class="text-xl font-black text-[#232f3e] mb-2 flex items-center gap-6 uppercase tracking-tighter">
+                                Metadata Engine
+                            </h3>
+                            <p class="text-[11px] text-[#545b64] mb-10 font-black uppercase tracking-widest opacity-40">
+                                System and user defined fields</p>
 
-                        <div v-if="metadataList.length > 0" class="mb-4 space-y-4">
-                            <div class="grid grid-cols-12 gap-4 text-xs font-bold text-gray-900 mb-1"
-                                v-if="metadataList.length > 0">
-                                <div class="col-span-3">Type</div>
-                                <div class="col-span-4">Key</div>
-                                <div class="col-span-4">Value</div>
-                                <div class="col-span-1"></div>
+                            <div v-if="metadataList.length > 0" class="mb-10 space-y-8">
+                                <div v-for="(meta, index) in metadataList" :key="index"
+                                    class="grid grid-cols-12 gap-8 items-end bg-[#fafafa] border border-[#eaeded] p-10 italic">
+                                    <div class="col-span-3">
+                                        <select v-model="meta.type"
+                                            class="w-full bg-white border border-[#eaeded] px-6 py-4 text-[11px] font-black italic uppercase tracking-widest text-[#232f3e] focus:border-[#ff9900] outline-none">
+                                            <option>System defined</option>
+                                            <option>User defined</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-span-4">
+                                        <input v-if="meta.type === 'User defined'" v-model="meta.key" type="text"
+                                            placeholder="x-amz-meta-key"
+                                            class="w-full bg-white border border-[#eaeded] px-6 py-4 text-[11px] font-black italic uppercase tracking-widest text-[#232f3e] focus:border-[#ff9900] outline-none">
+                                        <select v-else v-model="meta.key"
+                                            class="w-full bg-white border border-[#eaeded] px-6 py-4 text-[11px] font-black italic uppercase tracking-widest text-[#232f3e] focus:border-[#ff9900] outline-none">
+                                            <option value="" disabled selected>Choose key</option>
+                                            <option>Content-Type</option>
+                                            <option>Cache-Control</option>
+                                            <option>Content-Disposition</option>
+                                            <option>Content-Encoding</option>
+                                            <option>Content-Language</option>
+                                        </select>
+                                    </div>
+                                    <div class="col-span-4">
+                                        <input v-model="meta.value" type="text" placeholder="Value"
+                                            class="w-full bg-white border border-[#eaeded] px-6 py-4 text-[11px] font-black italic uppercase tracking-widest text-[#232f3e] focus:border-[#ff9900] outline-none">
+                                    </div>
+                                    <div class="col-span-1 flex justify-end">
+                                        <button @click="removeMetadata(index)"
+                                            class="w-12 h-12 border border-rose-500/20 text-rose-500 hover:bg-rose-500 hover:text-white flex items-center justify-center transition-all bg-white mb-1">
+                                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <div v-for="(meta, index) in metadataList" :key="index"
-                                class="grid grid-cols-12 gap-4 items-start">
-                                <div class="col-span-3">
-                                    <select v-model="meta.type"
-                                        class="w-full border border-gray-400 rounded-sm px-3 py-1.5 text-sm focus:ring-1 focus:ring-[var(--aws-blue)] outline-none bg-white">
-                                        <option>System defined</option>
-                                        <option>User defined</option>
-                                    </select>
-                                </div>
-                                <div class="col-span-4">
-                                    <select v-if="meta.type === 'System defined'" v-model="meta.key"
-                                        class="w-full border border-gray-400 rounded-sm px-3 py-1.5 text-sm focus:ring-1 focus:ring-[var(--aws-blue)] outline-none bg-white">
-                                        <option value="" disabled selected>Choose key</option>
-                                        <option>Content-Type</option>
-                                        <option>Cache-Control</option>
-                                        <option>Content-Disposition</option>
-                                        <option>Content-Encoding</option>
-                                        <option>Content-Language</option>
-                                    </select>
-                                    <input v-else v-model="meta.key" type="text" placeholder="x-amz-meta-key"
-                                        class="w-full border border-gray-400 rounded-sm px-3 py-1.5 text-sm focus:ring-1 focus:ring-[var(--aws-blue)] outline-none bg-white">
-                                </div>
-                                <div class="col-span-4">
-                                    <input v-model="meta.value" type="text" placeholder="Value"
-                                        class="w-full border border-gray-400 rounded-sm px-3 py-1.5 text-sm focus:ring-1 focus:ring-[var(--aws-blue)] outline-none bg-white">
-                                </div>
-                                <div class="col-span-1 flex justify-end">
-                                    <button @click="removeMetadata(index)"
-                                        class="px-3 py-1.5 text-xs font-bold border border-gray-300 rounded-sm hover:bg-gray-50 text-[var(--aws-blue)]">Remove</button>
-                                </div>
+                            <div v-else
+                                class="mb-10 p-12 border border-dashed border-[#eaeded] text-center bg-[#fafafa] italic">
+                                <p class="text-[14px] text-[#232f3e] font-black uppercase tracking-widest opacity-30">No
+                                    metadata defined</p>
                             </div>
-                        </div>
-                        <div v-else class="mb-4">
-                            <p class="text-xs text-gray-500 italic">No metadata associated with this resource.</p>
-                        </div>
 
-                        <button @click="addMetadata"
-                            class="px-4 py-1.5 text-xs font-bold border border-gray-300 rounded-sm hover:bg-gray-50 text-[var(--aws-blue)]">Add
-                            metadata</button>
+                            <button @click="addMetadata"
+                                class="px-10 py-4 text-[11px] font-black uppercase tracking-[0.2em] text-[#232f3e] hover:text-[#ff9900] transition-colors focus:outline-none bg-[#fafafa] border border-[#eaeded] italic flex items-center gap-4">
+                                + Add Metadata Field
+                            </button>
+                        </div>
                     </div>
                 </div>
             </section>
 
             <!-- Footer -->
             <div
-                class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-3 z-[100] px-10 shadow-2xl">
+                class="fixed bottom-0 left-0 right-0 bg-white/10 backdrop-blur-3xl border-t border-[#eaeded] p-8 flex justify-end gap-12 z-[100] px-16 italic">
                 <button @click="router.back()"
-                    class="px-6 py-2 text-xs font-bold border border-gray-300 hover:bg-gray-50 transition-colors text-[var(--aws-blue)]">Cancel</button>
+                    class="px-12 py-4 text-[11px] font-black uppercase tracking-[0.3em] text-[#545b64] hover:text-[#232f3e] transition-colors">
+                    Discard Changes
+                </button>
                 <button @click="handleUpload" :disabled="files.length === 0"
-                    :class="{ 'opacity-50 cursor-not-allowed': files.length === 0, 'hover:opacity-90': files.length > 0 }"
-                    class="px-8 py-2 text-xs font-bold bg-[var(--aws-orange)] text-white transition-opacity rounded-sm">Upload</button>
+                    class="relative group px-16 py-4 bg-[#232f3e] text-white font-black text-[12px] uppercase tracking-[0.4em] transition-all disabled:opacity-30 disabled:grayscale">
+                    <span class="relative flex items-center gap-6">
+                        Deploy manifest
+                        <svg class="w-5 h-5 group-hover:translate-x-2 transition-transform" fill="none"
+                            viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7" />
+                        </svg>
+                    </span>
+                </button>
             </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+.animate-in {
+    animation-duration: 500ms;
+}
+
+@keyframes bounce-subtle {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+.animate-bounce-subtle {
+    animation: bounce-subtle 3s infinite ease-in-out;
+}
+
+@keyframes slide-down {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>

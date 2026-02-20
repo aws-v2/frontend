@@ -15,12 +15,19 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@types/markdown-it": "^14.1.2",
     "@types/three": "^0.182.0",
     "axios": "^1.13.2",
+    "lucide-vue-next": "^0.574.0",
+    "markdown-it": "^14.1.1",
+    "mermaid": "^11.12.3",
     "pinia": "^3.0.4",
     "three": "^0.182.0",
     "vue": "^3.5.26",
-    "vue-router": "^4.6.4"
+    "vue-router": "^4.6.4",
+    "xterm": "^5.3.0",
+    "xterm-addon-attach": "^0.9.0",
+    "xterm-addon-fit": "^0.8.0"
   },
   "devDependencies": {
     "@tsconfig/node24": "^24.0.3",

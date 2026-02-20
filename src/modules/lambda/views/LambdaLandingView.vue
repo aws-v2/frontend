@@ -1,8 +1,10 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { useLambdaStore } from '../store/lambdaStore'
 
 const router = useRouter()
+const lambdaStore = useLambdaStore()
 const activeRuntimeTabIndex = ref(2) // Default to Node.js
 
 const runtimes = [
@@ -17,210 +19,196 @@ const runtimes = [
 const navigateToCreate = () => {
     router.push({ name: 'lambda-create' })
 }
+
+onMounted(() => {
+    lambdaStore.fetchFunctions()
+})
 </script>
 
 <template>
-  <div class="min-h-screen bg-[var(--bg-console)]">
-    <!-- Hero Section -->
-    <div class="bg-[#16191f] text-white px-8 py-12 flex justify-between items-start">
-      <div class="max-w-3xl">
-        <p class="text-gray-400 text-sm font-medium mb-1">Compute</p>
-        <h1 class="text-4xl font-light mb-4">AWS Lambda</h1>
-        <h2 class="text-3xl font-light text-gray-300 mb-6">lets you run code without thinking about servers.</h2>
-        <p class="text-gray-400 max-w-2xl leading-relaxed">
-          You pay only for the compute time that you consume — there is no charge when your code is not running. 
-          With Lambda, you can run code for virtually any type of application or backend service, all with zero administration.
-        </p>
-      </div>
+    <div class="min-h-screen relative overflow-hidden bg-[#05080F]">
+        <!-- Ambient Background -->
+        <div class="absolute inset-0 pointer-events-none">
+            <div class="absolute top-[10%] left-[10%] w-[50vw] h-[50vw] bg-amber-600/10 rounded-full blur-[120px] opacity-20"></div>
+            <div class="absolute bottom-[10%] right-[10%] w-[40vw] h-[40vw] bg-orange-600/10 rounded-full blur-[100px] opacity-10"></div>
+            <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-[0.03]"></div>
+        </div>
 
-      <!-- Get Started Card -->
-      <div class="bg-white text-[var(--text-main)] p-6 rounded-sm shadow-lg w-80">
-        <h3 class="font-bold text-lg mb-4">Get started</h3>
-        <p class="text-sm text-gray-600 mb-6">
-          Author a Lambda function from scratch, or choose from one of many preconfigured examples.
-        </p>
-        <button @click="navigateToCreate" class="btn-aws-primary w-full py-2 bg-[#ec7211] hover:bg-[#eb5f07] transition-colors">
-          Create a function
-        </button>
-      </div>
-    </div>
-
-    <!-- Main Content -->
-    <div class="px-8 py-10 grid grid-cols-1 lg:grid-cols-4 gap-8">
-      
-      <!-- Left Column: How it works & Related Services -->
-      <div class="lg:col-span-3 space-y-8">
-        
-        <!-- How it works -->
-        <div class="aws-card p-0 overflow-hidden">
-          <div class="px-6 py-4 border-b border-gray-200 bg-white">
-            <h3 class="font-bold text-lg">How it works</h3>
-          </div>
-          <div class="p-6 bg-white">
-            <!-- Tabs -->
-            <div class="flex border-b border-gray-200 mb-4 overflow-x-auto">
-              <button 
-                v-for="(runtime, index) in runtimes" 
-                :key="runtime.name"
-                @click="activeRuntimeTabIndex = index"
-                class="px-5 py-2.5 text-sm font-bold transition-all whitespace-nowrap border-b-2"
-                :class="activeRuntimeTabIndex === index ? 'border-[var(--aws-blue)] text-[var(--aws-blue)]' : 'border-transparent text-gray-500 hover:text-gray-700'"
-              >
-                {{ runtime.name }}
-              </button>
-            </div>
-
-            <!-- Code Editor Area -->
-            <div class="bg-[#f2f3f3] border border-gray-300 rounded-sm p-0 flex flex-col min-h-[300px]">
-              <div class="flex items-center justify-between px-4 py-2 bg-gray-100 border-b border-gray-300">
-                <div class="flex gap-2">
-                  <div class="w-2.5 h-2.5 rounded-full bg-red-400"></div>
-                  <div class="w-2.5 h-2.5 rounded-full bg-yellow-400"></div>
-                  <div class="w-2.5 h-2.5 rounded-full bg-green-400"></div>
+        <div class="relative z-10 max-w-7xl mx-auto px-6 pt-24 pb-32">
+            <!-- Header Section -->
+            <div class="flex flex-col lg:flex-row justify-between items-start gap-12 mb-24">
+                <div class="max-w-3xl">
+                    <div class="inline-flex items-center gap-2 mb-6 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-bold tracking-widest uppercase">
+                        <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                        Event-Driven Serverless
+                    </div>
+                    <h1 class="text-6xl md:text-7xl font-bold text-white tracking-tight font-display mb-8">
+                        Scale Seamlessly.<br>
+                        <span class="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-400">Zero Admin.</span>
+                    </h1>
+                    <p class="text-xl text-slate-400 leading-relaxed font-light max-w-2xl">
+                        AWS Lambda lets you run code without thinking about servers. Pay only for the compute time you consume with zero administration and sub-ms scaling.
+                    </p>
                 </div>
-                <div class="flex items-center gap-3">
-                    <button class="bg-[#ec7211] text-white px-6 py-1 text-xs font-bold rounded-sm shadow-sm hover:bg-[#d4660f]">Run</button>
-                    <button class="text-gray-500 text-xs font-bold flex items-center gap-1">
-                        Next: Lambda responds to events
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+
+                <!-- Launch Card -->
+                <div class="glass-panel p-8 rounded-3xl w-full lg:w-96 border border-white/10 hover:border-amber-500/30 transition-all group">
+                    <h3 class="text-xl font-bold text-white mb-4">Get Started</h3>
+                    <p class="text-sm text-slate-400 mb-8 leading-relaxed">
+                        Author a Lambda function from scratch, or choose from one of many preconfigured examples.
+                    </p>
+                    <button @click="navigateToCreate" 
+                        class="w-full py-4 bg-gradient-to-r from-amber-600 to-orange-500 text-white rounded-2xl font-bold text-sm tracking-wide shadow-xl shadow-amber-900/20 hover:shadow-amber-500/40 hover:-translate-y-0.5 transition-all">
+                        Create Function
                     </button>
                 </div>
-              </div>
-              <pre class="p-6 font-mono text-sm overflow-x-auto flex-grow bg-white"><code>{{ runtimes[activeRuntimeTabIndex].code }}</code></pre>
-              <div class="px-4 py-2 bg-gray-50 border-t border-gray-200 flex justify-between items-center text-[10px] text-gray-500 font-mono">
-                <span>1:1 JavaScript</span>
-                <span class="flex items-center gap-1">
-                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z"/></svg>
-                </span>
-              </div>
             </div>
 
-            <div class="mt-6">
-                <h4 class="font-bold text-sm mb-1">Just write the code</h4>
-                <p class="text-xs text-gray-600">Above is a simple Lambda function. Click "Run" to see function output before going to the next step.</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- Related Services -->
-        <div class="space-y-4">
-            <h3 class="font-bold text-lg px-2">Related services</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="aws-card p-6">
-                    <h4 class="text-[var(--aws-blue)] font-bold mb-2 flex items-center gap-1 underline underline-offset-2">
-                        AWS Step Functions
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </h4>
-                    <p class="text-xs text-gray-600 leading-relaxed">
-                        AWS Step Functions makes it easy to coordinate the components of distributed applications and microservices using visual workflows.
-                    </p>
-                </div>
-                <div class="aws-card p-6">
-                    <h4 class="text-[var(--aws-blue)] font-bold mb-2 flex items-center gap-1 underline underline-offset-2">
-                        Amazon SNS
-                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                    </h4>
-                    <p class="text-xs text-gray-600 leading-relaxed">
-                        Amazon SNS is a flexible, fully managed pub/sub messaging and mobile notifications service for coordinating the delivery of messages to subscribing endpoints and clients.
-                    </p>
-                </div>
-            </div>
-            <a href="#" class="text-xs text-[var(--aws-blue)] hover:underline px-2">See more related services</a>
-        </div>
-
-        <!-- Use Cases -->
-        <div class="space-y-4">
-            <h3 class="font-bold text-lg px-2">Use cases</h3>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div class="aws-card p-6 flex flex-col h-full">
-                    <div class="flex-grow">
-                        <h4 class="text-3xl font-black mb-4 tracking-tighter italic">BU S T L E</h4>
-                        <h5 class="font-bold text-sm mb-2">Mobile backends</h5>
-                        <p class="text-xs text-gray-600 leading-relaxed max-w-sm">
-                            You can build serverless web applications and backends using AWS Lambda, Amazon API Gateway, Amazon S3, and Amazon DynamoDB to handle web, mobile, Internet of Things (IoT), and chatbot requests.
-                        </p>
+            <!-- Functions Management Section -->
+            <div class="mb-24">
+                <div class="flex items-center justify-between mb-8">
+                    <div>
+                        <h2 class="text-3xl font-bold text-white mb-2">My Functions</h2>
+                        <p class="text-sm text-slate-500 uppercase tracking-widest font-bold">Manage your serverless infrastructure</p>
                     </div>
-                    <a href="#" class="text-xs text-[var(--aws-blue)] hover:underline mt-4">Learn more</a>
+                    <button @click="navigateToCreate" class="flex items-center gap-2 text-amber-400 text-sm font-bold hover:text-amber-300 transition-colors">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+                        </svg>
+                        New Function
+                    </button>
                 </div>
-                <div class="aws-card p-6 flex flex-col h-full">
-                    <div class="flex-grow">
-                        <div class="flex items-center gap-1.5 mb-4">
-                            <div class="w-6 h-6 bg-[#ff9900] rounded-sm"></div>
-                            <span class="text-xl font-bold tracking-tight">Localytics</span>
+
+                <div class="glass-panel rounded-3xl overflow-hidden border border-white/5">
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b border-white/5 bg-white/[0.02]">
+                                    <th class="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Function Name</th>
+                                    <th class="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Runtime</th>
+                                    <th class="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Last Modified</th>
+                                    <th class="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest">Status</th>
+                                    <th class="px-8 py-5 text-[10px] font-black text-slate-500 uppercase tracking-widest text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="func in lambdaStore.functions" :key="func.id" 
+                                    class="border-t border-white/5 hover:bg-white/[0.02] transition-colors group">
+                                    <td class="px-8 py-6">
+                                        <div class="flex items-center gap-4">
+                                            <div class="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-500">
+                                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                                </svg>
+                                            </div>
+                                            <div class="flex flex-col">
+                                                <button @click="router.push({ name: 'lambda-details', params: { id: func.id } })" 
+                                                    class="text-sm font-bold text-white hover:text-amber-400 transition-colors text-left cursor-pointer">
+                                                    {{ func.name }}
+                                                </button>
+                                                <span class="text-[10px] text-slate-500 mt-0.5">{{ func.description }}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="px-8 py-6">
+                                        <span class="text-xs font-bold text-slate-400 group-hover:text-slate-300 transition-colors">{{ func.runtime }}</span>
+                                    </td>
+                                    <td class="px-8 py-6">
+                                        <span class="text-xs text-slate-500">{{ func.lastModified }}</span>
+                                    </td>
+                                    <td class="px-8 py-6">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-1.5 h-1.5 rounded-full" :class="func.status === 'Active' ? 'bg-emerald-500' : 'bg-slate-600'"></div>
+                                            <span class="text-[10px] font-black uppercase tracking-widest" :class="func.status === 'Active' ? 'text-emerald-500/80' : 'text-slate-500'">
+                                                {{ func.status }}
+                                            </span>
+                                        </div>
+                                    </td>
+                                    <td class="px-8 py-6 text-right">
+                                        <button class="p-2 text-slate-500 hover:text-white transition-colors">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                            </svg>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- How it works -->
+            <div class="grid lg:grid-cols-2 gap-12 items-center mb-24">
+                <div>
+                    <h2 class="text-4xl font-bold text-white mb-6">Just Write Code.</h2>
+                    <p class="text-slate-400 leading-relaxed mb-8">
+                        Focus on your business logic while we handle the rest. Lambda takes care of server provisioning, maintenance, OS patching, and capacity provisioning.
+                    </p>
+                    <div class="space-y-4">
+                        <div v-for="(runtime, index) in runtimes.slice(0, 4)" :key="runtime.name"
+                            @click="activeRuntimeTabIndex = index"
+                            class="p-4 rounded-xl border transition-all cursor-pointer group"
+                            :class="activeRuntimeTabIndex === index ? 'bg-amber-500/10 border-amber-500/30' : 'bg-white/[0.02] border-white/5 hover:border-white/10'">
+                            <div class="flex items-center justify-between">
+                                <span class="text-sm font-bold transition-colors" :class="activeRuntimeTabIndex === index ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'">
+                                    {{ runtime.name }}
+                                </span>
+                                <div class="w-2 h-2 rounded-full" :class="activeRuntimeTabIndex === index ? 'bg-amber-500 shadow-[0_0_8px_rgba(245,158,11,0.5)]' : 'bg-slate-700'"></div>
+                            </div>
                         </div>
-                        <h5 class="font-bold text-sm mb-2">Data processing</h5>
-                        <p class="text-xs text-gray-600 leading-relaxed max-w-sm">
-                            You can build a variety of real-time data processing systems using AWS Lambda, Amazon Kinesis, Amazon S3, and Amazon DynamoDB.
-                        </p>
                     </div>
-                    <a href="#" class="text-xs text-[var(--aws-blue)] hover:underline mt-4">Learn more</a>
+                </div>
+
+                <div class="glass-panel p-1 rounded-3xl border border-white/10 overflow-hidden shadow-2xl">
+                    <div class="bg-[#0b0e14] rounded-[22px] overflow-hidden">
+                        <div class="flex items-center justify-between px-6 py-4 bg-white/[0.03] border-b border-white/5">
+                            <div class="flex gap-1.5">
+                                <div class="w-2.5 h-2.5 rounded-full bg-red-500/50"></div>
+                                <div class="w-2.5 h-2.5 rounded-full bg-amber-500/50"></div>
+                                <div class="w-2.5 h-2.5 rounded-full bg-emerald-500/50"></div>
+                            </div>
+                            <span class="text-[10px] font-black text-slate-500 uppercase tracking-widest">lambda_handler.{{ runtimes[activeRuntimeTabIndex]?.name.toLowerCase() }}</span>
+                        </div>
+                        <div class="p-8 font-mono text-sm leading-relaxed overflow-x-auto">
+                            <pre class="text-slate-300"><code>{{ runtimes[activeRuntimeTabIndex]?.code }}</code></pre>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <a href="#" class="text-xs text-[var(--aws-blue)] hover:underline px-2">View more use cases</a>
-        </div>
 
-      </div>
-
-      <!-- Right Column: Resources & Pricing -->
-      <div class="space-y-6">
-        <!-- More resources -->
-        <div class="aws-card overflow-hidden">
-            <div class="px-4 py-3 border-b border-gray-200 bg-gray-50 flex justify-between items-center">
-                <h3 class="font-bold text-sm">More resources</h3>
-                <svg class="w-3 h-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </div>
-            <div class="p-4 space-y-3">
-                <a href="#" class="block text-xs text-[var(--aws-blue)] hover:underline">Documentation</a>
-                <a href="#" class="block text-xs text-[var(--aws-blue)] hover:underline">API reference</a>
-                <a href="#" class="block text-xs text-[var(--aws-blue)] hover:underline">AWS Serverless Application Model (SAM)</a>
-                <a href="#" class="block text-xs text-[var(--aws-blue)] hover:underline">SAM CLI</a>
-                <a href="#" class="block text-xs text-[var(--aws-blue)] hover:underline">Forums</a>
-            </div>
-        </div>
-
-        <!-- Pricing -->
-        <div class="aws-card overflow-hidden">
-            <div class="px-4 py-3 border-b border-gray-200 bg-gray-50">
-                <h3 class="font-bold text-sm">Pricing (US)</h3>
-            </div>
-            <div class="p-4">
-                <table class="w-full text-xs">
-                    <tbody class="divide-y divide-gray-100">
-                        <tr>
-                            <td class="py-2 text-gray-600">First 1M requests / month</td>
-                            <td class="py-2 text-right font-bold">Free</td>
-                        </tr>
-                        <tr>
-                            <td class="py-2 text-gray-600">First 400K GB-sec / month</td>
-                            <td class="py-2 text-right font-bold">Free</td>
-                        </tr>
-                        <tr>
-                            <td class="py-2 text-gray-600">Requests / month</td>
-                            <td class="py-2 text-right font-bold">$0.20 per 1M</td>
-                        </tr>
-                        <tr>
-                            <td class="py-2 text-gray-600">GB-sec / month</td>
-                            <td class="py-2 text-right font-bold">$16.67 per 1M</td>
-                        </tr>
-                    </tbody>
-                </table>
-                <p class="mt-4 text-[10px] text-gray-500 leading-tight">
-                    Pricing may vary by region. See 
-                    <a href="#" class="text-[var(--aws-blue)] hover:underline">AWS Lambda Pricing</a>
-                    for more information. Use the 
-                    <a href="#" class="text-[var(--aws-blue)] hover:underline">AWS Pricing Calculator</a>
-                    to estimate costs for your use case.
-                </p>
+            <!-- Stats -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-8 py-16 border-t border-white/5">
+                <div>
+                    <div class="text-4xl font-bold text-white mb-2 font-display">1M<span class="text-amber-500">+</span></div>
+                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Free Requests</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-bold text-white mb-2 font-display">15<span class="text-amber-500">min</span></div>
+                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Max Execution</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-bold text-white mb-2 font-display">10<span class="text-amber-500">GB</span></div>
+                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Max RAM Size</div>
+                </div>
+                <div>
+                    <div class="text-4xl font-bold text-white mb-2 font-display">0<span class="text-amber-500">ms</span></div>
+                    <div class="text-[10px] font-black text-slate-500 uppercase tracking-widest">Cold Starts</div>
+                </div>
             </div>
         </div>
-      </div>
-
     </div>
-  </div>
 </template>
 
 <style scoped>
-.aws-card {
-  border-radius: 2px;
+.glass-panel {
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+}
+
+.font-display {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 </style>
+

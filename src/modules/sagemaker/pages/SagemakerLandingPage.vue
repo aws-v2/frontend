@@ -144,6 +144,31 @@
                 </div>
             </section>
         </div>
+
+        <!-- Coming Soon Overlay -->
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
+            <div class="max-w-2xl mx-auto px-8 text-center">
+                <div class="inline-flex items-center gap-3 px-4 py-2 bg-indigo-600/20 border border-indigo-500/30 rounded-full mb-8">
+                    <div class="w-2 h-2 bg-indigo-500 rounded-full animate-pulse"></div>
+                    <span class="text-xs font-black text-indigo-400 uppercase tracking-widest">In Development</span>
+                </div>
+                <h2 class="text-6xl md:text-7xl font-black text-white mb-6 tracking-tighter uppercase italic">
+                    Coming <span class="text-indigo-500">Soon</span>
+                </h2>
+                <p class="text-xl text-gray-400 font-bold mb-8 leading-relaxed">
+                    SageMaker is currently under active development. We're building something extraordinary for machine learning at scale.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                    <a href="/dashboard" class="px-8 py-4 bg-white text-gray-900 font-black text-sm hover:bg-gray-100 transition-all rounded-none uppercase tracking-tight">
+                        ← Back to Dashboard
+                    </a>
+                    <div class="flex items-center gap-3 px-6 py-4 border border-gray-700 bg-gray-900/50 backdrop-blur-sm rounded-none">
+                        <div class="w-2 h-2 bg-green-500 animate-ping"></div>
+                        <span class="text-xs font-black text-gray-400 uppercase tracking-widest">ETA: Q2 2026</span>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 

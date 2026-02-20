@@ -1,20 +1,31 @@
 :root {
-  /* Brand Core - Serwin Void */
-  --serwin-blue: #007AFF;
-  --serwin-black: #000000;
-  --serwin-white: #FFFFFF;
+  /* Brand Core - AWS Inspired */
+  --aws-orange: #ff9900;
+  --aws-orange-hover: #ec7211;
+  --aws-navy: #232f3e;
+  --aws-navy-light: #414750;
+  --aws-white: #ffffff;
+  --aws-offwhite: #f2f3f3;
   
-  /* Vertical Anchors - Atomic Vibrant */
-  --color-compute: #00F5FF; /* Atomic Cyan */
-  --color-gaming: #FF0055;  /* Atomic Rose */
-  --color-ai: #7F00FF;      /* Atomic Violet */
-  --color-storage: #00FF88; /* Atomic Mint */
+  /* UI Colors */
+  --color-primary: var(--aws-orange);
+  --color-secondary: var(--aws-navy);
+  --text-primary: #16191f;
+  --text-secondary: #545b64;
+  --text-inverse: #ffffff;
+  
+  /* Borders & Surfaces */
+  --border-subtle: #eaeded;
+  --border-strong: #a0a0a0;
+  --bg-surface: #ffffff;
+  --bg-accent: #fafafa;
 
-  /* Surface Architecture (Void) */
-  --bg-void: #000000;
-  --bg-surface: #0A0A0A;
-  --text-primary: #FFFFFF;
-  --text-dim: #444444;
-  --border-subtle: #111111;
-  --border-strong: #222222;
+  /* Form & Interactive */
+  --input-bg: #ffffff;
+  --input-border: #879196;
+  --focus-ring: #0073bb;
+
+  /* Radius & Shadows (FLAT) */
+  --radius-none: 0px;
+  --shadow-none: none;
 }

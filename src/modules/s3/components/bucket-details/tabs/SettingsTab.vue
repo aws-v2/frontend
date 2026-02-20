@@ -1,19 +1,21 @@
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted, watch } from 'vue'
 import SectionHeader from '../shared/SectionHeader.vue'
 import EmptyState from '../shared/EmptyState.vue'
+import InfoAlert from '../shared/InfoAlert.vue'
+import { useS3Store } from '@/modules/s3/store/s3Store'
+import { useToastStore } from '@/shared/store/toastStore'
+
+const s3Store = useS3Store()
+const toastStore = useToastStore()
 
 // State for active modal
 const activeModal = ref<string | null>(null)
+const isSaving = ref(false)
 
 // Versioning State
 const versioning = ref('Suspended')
 const tempVersioning = ref('Suspended')
-
-const handleSaveVersioning = () => {
-    versioning.value = tempVersioning.value
-    activeModal.value = null
-}
 
 // Encryption State
 const encryption = reactive({
@@ -23,23 +25,120 @@ const encryption = reactive({
 const tempEncryption = reactive({ ...encryption })
 
 const encryptionTypeLabel = computed(() => {
-    return encryption.type === 'SSE-S3'
-        ? 'Server-side encryption with Amazon S3 managed keys (SSE-S3)'
-        : 'Server-side encryption with AWS Key Management Service keys (SSE-KMS)'
+    return 'Server-side encryption with Amazon S3 managed keys (SSE-S3)'
 })
-
-const handleSaveEncryption = () => {
-    Object.assign(encryption, tempEncryption)
-    activeModal.value = null
-}
 
 // Object Lock State
 const objectLock = ref('Disabled')
 const tempObjectLock = ref('Disabled')
 
-const handleSaveObjectLock = () => {
-    objectLock.value = tempObjectLock.value
+// Tags State
+const tags = ref<{ key: string; value: string }[]>([])
+const tempTags = ref<{ key: string; value: string }[]>([])
+
+// Initial sync with store
+const syncState = async () => {
+    const bucket = s3Store.currentBucket
+    if (bucket?.settings) {
+        versioning.value = bucket.settings.versioning_status || 'Suspended'
+        tempVersioning.value = versioning.value
+
+        encryption.type = bucket.settings.encryption?.type || 'SSE-S3'
+        encryption.bucketKey = bucket.settings.encryption?.bucketKeyEnabled ? 'Enable' : 'Disable'
+        Object.assign(tempEncryption, encryption)
+
+        objectLock.value = bucket.settings.object_lock ? 'Enabled' : 'Disabled'
+        tempObjectLock.value = objectLock.value
+
+        tags.value = JSON.parse(JSON.stringify(bucket.settings.tags || []))
+        tempTags.value = JSON.parse(JSON.stringify(tags.value))
+
+        // Access Logging
+        if (bucket.settings.logging) {
+            accessLogging.status = bucket.settings.logging.enabled ? 'Enabled' : 'Disabled'
+            accessLogging.targetBucket = bucket.settings.logging.targetBucket || ''
+            accessLogging.prefix = bucket.settings.logging.targetPrefix || ''
+        } else {
+            accessLogging.status = 'Disabled'
+            accessLogging.targetBucket = ''
+            accessLogging.prefix = ''
+        }
+        Object.assign(tempAccessLogging, accessLogging)
+    }
+
+
+    // Fetch event notifications
+    if (bucket?.bucket_id) {
+        const notifications = await s3Store.fetchEventNotifications(bucket.bucket_id)
+        eventNotifications.value = notifications.map((n: any) => ({
+            id: n.id,
+            name: n.name,
+            types: n.event_types,
+            destination: n.destination
+        }))
+
+        // Fetch resource tags
+        const fetchedTags = await s3Store.fetchBucketTags(bucket.bucket_id)
+        tags.value = fetchedTags.map((t: any) => ({
+            key: t.key,
+            value: t.value
+        }))
+        tempTags.value = JSON.parse(JSON.stringify(tags.value))
+
+        // Fetch replication rules
+        const rules = await s3Store.fetchReplicationRules(bucket.bucket_id)
+        replicationRules.value = rules.map((r: any) => ({
+            id: r.id,
+            name: r.name,
+            priority: r.priority,
+            status: r.status
+        }))
+    }
+}
+
+
+onMounted(syncState)
+watch(() => s3Store.currentBucket?.settings, syncState, { deep: true })
+
+const handleSaveVersioning = async () => {
+    if (!s3Store.currentBucket?.bucket_id) return
+
+    isSaving.value = true
+    try {
+        await s3Store.updateBucketVersioning(s3Store.currentBucket.bucket_id, tempVersioning.value)
+        versioning.value = tempVersioning.value
+        activeModal.value = null
+        toastStore.addToast(`Bucket versioning is now ${tempVersioning.value.toLowerCase()}.`, 'success')
+    } catch (error) {
+        toastStore.addToast('Could not update versioning status.', 'error')
+    } finally {
+        isSaving.value = false
+    }
+}
+
+const handleSaveEncryption = () => {
+    // In a real app, this would also be an API call
+    Object.assign(encryption, tempEncryption)
     activeModal.value = null
+    toastStore.addToast('Encryption settings updated locally.', 'success')
+}
+
+const handleSaveObjectLock = async () => {
+    if (!s3Store.currentBucket?.bucket_id) return
+
+    isSaving.value = true
+    try {
+        if (tempObjectLock.value === 'Enabled') {
+            await s3Store.enableObjectLock(s3Store.currentBucket.bucket_id)
+            objectLock.value = 'Enabled'
+            toastStore.addToast('Object lock has been enabled.', 'success')
+        }
+        activeModal.value = null
+    } catch (error) {
+        toastStore.addToast('Could not enable object lock.', 'error')
+    } finally {
+        isSaving.value = false
+    }
 }
 
 // Replication State
@@ -50,13 +149,29 @@ const newReplicationRule = reactive({
     status: 'Enabled'
 })
 
-const handleAddReplicationRule = () => {
-    replicationRules.value.push({
-        id: Date.now(),
-        ...newReplicationRule
-    })
-    Object.assign(newReplicationRule, { name: '', priority: 1, status: 'Enabled' })
-    activeModal.value = null
+const handleAddReplicationRule = async () => {
+    if (!s3Store.currentBucket?.bucket_id) return
+
+    isSaving.value = true
+    try {
+        await s3Store.createReplicationRule(
+            s3Store.currentBucket.bucket_id,
+            newReplicationRule.name,
+            newReplicationRule.priority,
+            newReplicationRule.status
+        )
+        replicationRules.value.push({
+            id: Date.now(),
+            ...newReplicationRule
+        })
+        Object.assign(newReplicationRule, { name: '', priority: 1, status: 'Enabled' })
+        activeModal.value = null
+        toastStore.addToast('Replication rule created successfully.', 'success')
+    } catch (error) {
+        toastStore.addToast('Could not create replication rule.', 'error')
+    } finally {
+        isSaving.value = false
+    }
 }
 
 // Lifecycle State
@@ -104,32 +219,61 @@ const accessLogging = reactive({
 })
 const tempAccessLogging = reactive({ ...accessLogging })
 
-const handleSaveAccessLogging = () => {
-    Object.assign(accessLogging, tempAccessLogging)
-    activeModal.value = null
+const handleSaveAccessLogging = async () => {
+    if (!s3Store.currentBucket?.bucket_id) return
+
+    isSaving.value = true
+    try {
+        await s3Store.updateBucketAccessLogging(
+            s3Store.currentBucket.bucket_id,
+            tempAccessLogging.status,
+            tempAccessLogging.targetBucket,
+            tempAccessLogging.prefix
+        )
+        Object.assign(accessLogging, tempAccessLogging)
+        activeModal.value = null
+        toastStore.addToast('Bucket access logs updated.', 'success')
+    } catch (error) {
+        toastStore.addToast('Could not update bucket access logs.', 'error')
+    } finally {
+        isSaving.value = false
+    }
 }
 
 // Event Notifications
 const eventNotifications = ref<{ id: number; name: string; types: string[]; destination: string }[]>([])
 const newEventNotification = reactive({
     name: '',
-    types: ['All object create events'],
+    types: ['s3:ObjectCreated:*'],
     destination: ''
 })
 
-const handleAddEventNotification = () => {
-    eventNotifications.value.push({
-        id: Date.now(),
-        ...newEventNotification
-    })
-    Object.assign(newEventNotification, { name: '', types: ['All object create events'], destination: '' })
-    activeModal.value = null
+const handleAddEventNotification = async () => {
+    if (!s3Store.currentBucket?.bucket_id) return
+
+    isSaving.value = true
+    try {
+        await s3Store.createEventNotification(
+            s3Store.currentBucket.bucket_id,
+            newEventNotification.name,
+            newEventNotification.types,
+            newEventNotification.destination
+        )
+        eventNotifications.value.push({
+            id: Date.now(),
+            ...newEventNotification
+        })
+        Object.assign(newEventNotification, { name: '', types: ['s3:ObjectCreated:*'], destination: '' })
+        activeModal.value = null
+        toastStore.addToast('Event notification created successfully.', 'success')
+    } catch (error) {
+        toastStore.addToast('Could not create event notification.', 'error')
+    } finally {
+        isSaving.value = false
+    }
 }
 
 // Tags State
-const tags = ref<{ key: string; value: string }[]>([])
-const tempTags = ref<{ key: string; value: string }[]>([])
-
 const handleAddTag = () => {
     tempTags.value.push({ key: '', value: '' })
 }
@@ -138,603 +282,846 @@ const handleRemoveTag = (index: number) => {
     tempTags.value.splice(index, 1)
 }
 
-const handleSaveTags = () => {
-    tags.value = JSON.parse(JSON.stringify(tempTags.value))
-    activeModal.value = null
+const handleSaveTags = async () => {
+    if (!s3Store.currentBucket?.bucket_id) return
+
+    isSaving.value = true
+    try {
+        await s3Store.updateBucketTags(s3Store.currentBucket.bucket_id, tempTags.value)
+        tags.value = JSON.parse(JSON.stringify(tempTags.value))
+        activeModal.value = null
+        toastStore.addToast('Resource tags updated successfully.', 'success')
+    } catch (error) {
+        toastStore.addToast('Could not update resource tags.', 'error')
+    } finally {
+        isSaving.value = false
+    }
+}
+
+const openAccessLoggingModal = () => {
+    activeModal.value = 'accessLogging'
+    Object.assign(tempAccessLogging, accessLogging)
+    // Auto-populate target bucket if empty
+    if (!tempAccessLogging.targetBucket && s3Store.currentBucket?.name) {
+        tempAccessLogging.targetBucket = s3Store.currentBucket.name
+    }
 }
 </script>
 
 <template>
-    <div class="space-y-12">
-        <!-- Header -->
-        <div class="bg-gray-50 border-b border-t border-gray-200 p-4 mb-4 flex justify-between items-center">
-            <div>
-                <h2 class="text-xl font-bold text-gray-900">Settings & Compliance</h2>
-                <p class="text-gray-600 text-sm">Configure lifecycle, protection, and billing.</p>
-            </div>
-            <button
-                class="bg-green-600 text-white px-4 py-2 rounded-sm font-bold shadow-sm hover:bg-green-700 flex items-center gap-2 transition-colors">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                Pay Bill (M-PESA)
-            </button>
-        </div>
+    <div class="space-y-12 pb-32 animate-in fade-in slide-in-from-bottom-4 duration-500 italic">
 
         <!-- Data Protection Section -->
-        <div class="space-y-6">
-            <h3 class="text-lg font-bold text-gray-800 px-1 border-b border-gray-200 pb-2">Data Protection</h3>
+        <div class="space-y-8">
 
             <!-- Bucket Versioning -->
-            <div class="border border-gray-200 rounded-sm bg-white">
+            <div
+                class="bg-white border-2 border-[#eaeded] overflow-hidden shadow-sm transition-all hover:border-[#ff9900]/30 italic">
                 <SectionHeader title="Bucket Versioning" :showEdit="true"
                     @edit="activeModal = 'versioning'; tempVersioning = versioning" />
-                <div class="p-4">
-                    <p class="text-xs text-gray-600 mb-4">Versioning is a means of keeping multiple variants of an
-                        object in the same bucket. <a href="#" class="text-[var(--aws-blue)] underline">Learn more
+                <div class="p-10">
+                    <p class="text-[13px] text-[#545b64] mb-8 leading-relaxed font-bold uppercase tracking-tight">
+                        Versioning is a means of keeping multiple variants of an
+                        object in the same bucket. <a href="#"
+                            class="text-[#ff9900] underline font-black ml-1 italic transition-all hover:text-[#232f3e]">Learn
+                            more
                             ↗</a></p>
-                    <h3 class="text-sm font-bold text-gray-900">Bucket Versioning</h3>
-                    <p class="text-xs text-gray-900">{{ versioning }}</p>
+                    <div class="bg-[#fafafa] p-6 border-2 border-[#eaeded] inline-block min-w-[240px]">
+                        <h4 class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] mb-2">Current Status
+                        </h4>
+                        <p class="text-2xl font-black tracking-tight transition-all uppercase italic"
+                            :class="versioning === 'Enabled' ? 'text-[#ff9900]' : 'text-[#eaeded]'">
+                            {{ versioning }}
+                        </p>
+                    </div>
                 </div>
             </div>
 
             <!-- Default Encryption -->
-            <div class="border border-gray-200 rounded-sm bg-white">
+            <div
+                class="bg-white border-2 border-[#eaeded] overflow-hidden shadow-sm transition-all hover:border-[#ff9900]/30 italic">
                 <SectionHeader title="Default encryption" :showEdit="true"
                     @edit="activeModal = 'encryption'; Object.assign(tempEncryption, encryption)" />
-                <div class="p-4">
-                    <p class="text-xs text-gray-600 mb-4">Server-side encryption is automatically applied to new objects
+                <div class="p-10">
+                    <p class="text-[13px] text-[#545b64] mb-8 leading-relaxed font-bold uppercase tracking-tight">
+                        Server-side encryption is automatically applied to new objects
                         stored in this bucket.</p>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <h3 class="text-sm font-bold text-gray-900">Encryption type</h3>
-                            <p class="text-xs text-gray-900">{{ encryptionTypeLabel }}</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-[#fafafa] p-6 border-2 border-[#eaeded]">
+                            <h4 class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] mb-2">Encryption
+                                type</h4>
+                            <p class="text-[13px] text-[#232f3e] font-black uppercase tracking-tight leading-tight">{{
+                                encryptionTypeLabel }}</p>
                         </div>
-                        <div>
-                            <h3 class="text-sm font-bold text-gray-900">Bucket Key</h3>
-                            <p class="text-xs text-gray-900">{{ encryption.bucketKey }}</p>
+                        <div class="bg-[#fafafa] p-6 border-2 border-[#eaeded]">
+                            <h4 class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] mb-2">Bucket Key
+                            </h4>
+                            <p class="text-[13px] text-[#ff9900] font-black uppercase tracking-widest">{{
+                                encryption.bucketKey }}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Object Lock -->
-            <div class="border border-gray-200 rounded-sm bg-white">
+            <div
+                class="bg-white border-2 border-[#eaeded] overflow-hidden shadow-sm transition-all hover:border-[#ff9900]/30 italic">
                 <SectionHeader title="Object Lock" :showEdit="true"
                     @edit="activeModal = 'objectLock'; tempObjectLock = objectLock" />
-                <div class="p-4">
-                    <p class="text-xs text-gray-600 mb-4">Store objects using a write-once-read-many (WORM) model. <a
-                            href="#" class="text-[var(--aws-blue)] underline">Learn more ↗</a></p>
-                    <h3 class="text-sm font-bold text-gray-900">Object Lock</h3>
-                    <p class="text-xs text-gray-900">{{ objectLock }}</p>
+                <div class="p-10">
+                    <p class="text-[13px] text-[#545b64] mb-8 leading-relaxed font-bold uppercase tracking-tight">Store
+                        objects using a write-once-read-many (WORM) model. <a href="#"
+                            class="text-[#ff9900] underline font-black ml-1 italic transition-all hover:text-[#232f3e]">Learn
+                            more ↗</a></p>
+                    <div class="bg-[#fafafa] p-6 border-2 border-[#eaeded] inline-block min-w-[240px]">
+                        <h4 class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] mb-2">Object Lock
+                            Security</h4>
+                        <p class="text-2xl font-black tracking-tight transition-all uppercase italic"
+                            :class="objectLock === 'Enabled' ? 'text-[#ff9900]' : 'text-[#eaeded]'">
+                            {{ objectLock }}
+                        </p>
+                    </div>
                 </div>
             </div>
 
             <!-- Replication Rules -->
-            <div class="border border-gray-200 rounded-sm bg-white">
+            <div
+                class="bg-white border-2 border-[#eaeded] overflow-hidden shadow-sm transition-all hover:border-[#ff9900]/30 italic">
                 <SectionHeader title="Replication rules" :showCreate="true" createLabel="Create replication rule"
                     @create="activeModal = 'replication'" />
-                <div v-if="replicationRules.length > 0" class="p-4">
+                <div v-if="replicationRules.length > 0" class="p-0 border-t-2 border-[#eaeded]">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-xs text-left text-gray-700">
-                            <thead class="bg-gray-50 border-b border-gray-200">
+                        <table class="w-full text-[13px] text-left">
+                            <thead class="bg-[#fafafa] border-b-2 border-[#eaeded]">
                                 <tr>
-                                    <th class="px-4 py-2 font-bold">Rule name</th>
-                                    <th class="px-4 py-2 font-bold">Priority</th>
-                                    <th class="px-4 py-2 font-bold">Status</th>
+                                    <th
+                                        class="px-10 py-5 font-black text-[#545b64] uppercase tracking-[0.2em] text-[10px] border-r-2 border-[#eaeded]">
+                                        Rule name</th>
+                                    <th
+                                        class="px-10 py-5 font-black text-[#545b64] uppercase tracking-[0.2em] text-[10px] border-r-2 border-[#eaeded]">
+                                        Priority</th>
+                                    <th
+                                        class="px-10 py-5 font-black text-[#545b64] uppercase tracking-[0.2em] text-[10px]">
+                                        Status</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200">
-                                <tr v-for="rule in replicationRules" :key="rule.id">
+                            <tbody class="divide-y-2 divide-[#eaeded] bg-white italic">
+                                <tr v-for="rule in replicationRules" :key="rule.id"
+                                    class="group hover:bg-[#fafafa] transition-all">
                                     <td
-                                        class="px-4 py-2 text-[var(--aws-blue)] hover:underline cursor-pointer font-medium">
+                                        class="px-10 py-6 font-black text-[#ff9900] tracking-tight uppercase border-r-2 border-[#eaeded]">
                                         {{ rule.name }}</td>
-                                    <td class="px-4 py-2">{{ rule.priority }}</td>
-                                    <td class="px-4 py-2">{{ rule.status }}</td>
+                                    <td class="px-10 py-6 text-[#545b64] font-black border-r-2 border-[#eaeded]">{{
+                                        rule.priority }}</td>
+                                    <td class="px-10 py-6">
+                                        <span
+                                            class="px-4 py-1.5 border-2 text-[10px] font-black uppercase tracking-widest italic"
+                                            :class="rule.status === 'Enabled' ? 'bg-[#ff9900]/5 border-[#ff9900] text-[#ff9900]' : 'bg-[#fafafa] border-[#eaeded] text-[#eaeded]'">
+                                            {{ rule.status }}
+                                        </span>
+                                    </td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <EmptyState v-else title="No replication rules"
-                    message="Use replication rules to define options you want Amazon S3 to apply during replication." />
-            </div>
-        </div>
-
-        <!-- Cost Optimization Section -->
-        <div class="space-y-6">
-            <h3 class="text-lg font-bold text-gray-800 px-1 border-b border-gray-200 pb-2">Cost Optimization</h3>
-
-            <!-- Lifecycle Configuration -->
-            <div class="border border-gray-200 rounded-sm bg-white">
-                <SectionHeader title="Lifecycle configuration" :showCreate="true" createLabel="Create lifecycle rule"
-                    @create="activeModal = 'lifecycle'; currentLifecycleJson = ''" />
-                <div class="p-4">
-                    <p class="text-xs text-gray-600 mb-4">Manage your objects so that they are stored cost effectively
-                        throughout their lifecycle.</p>
-                    <div v-if="lifecycleRules.length > 0" class="space-y-4">
-                        <div v-for="rule in lifecycleRules" :key="rule.id"
-                            class="border rounded-sm bg-gray-50 overflow-hidden">
-                            <pre
-                                class="p-3 text-[10px] font-mono text-gray-600 bg-gray-50 overflow-x-auto max-h-48"><code>{{ rule.content }}</code></pre>
-                        </div>
-                    </div>
-                    <div v-else class="p-8 text-center text-gray-600 border border-gray-300 rounded-sm bg-gray-50">
-                        <p class="text-sm font-bold mb-1">No lifecycle rules</p>
-                        <p class="text-xs">There are no lifecycle rules for this bucket.</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Intelligent-Tiering -->
-            <div class="border border-gray-200 rounded-sm bg-white">
-                <SectionHeader title="Intelligent-Tiering Archive configurations" :showCreate="true"
-                    createLabel="Create configuration" @create="activeModal = 'tiering'; currentTieringJson = ''" />
-                <div v-if="tieringConfigs.length > 0" class="p-4 space-y-4">
-                    <div v-for="config in tieringConfigs" :key="config.id"
-                        class="border rounded-sm bg-gray-50 overflow-hidden">
-                        <pre
-                            class="p-3 text-[10px] font-mono text-gray-600 bg-gray-50 overflow-x-auto max-h-48"><code>{{ config.content }}</code></pre>
-                    </div>
-                </div>
-                <EmptyState v-else title="No configurations"
-                    message="There are no Intelligent-Tiering configurations." />
-            </div>
-
-            <!-- Requester Pays -->
-            <div class="border border-gray-200 rounded-sm bg-white">
-                <SectionHeader title="Requester pays" :showEdit="true"
-                    @edit="activeModal = 'requesterPays'; tempRequesterPays = requesterPays" />
-                <div class="p-4">
-                    <p class="text-xs text-gray-600 mb-4">When enabled, the requester pays for requests and data
-                        transfer
-                        costs.</p>
-                    <h3 class="text-sm font-bold text-gray-900">Requester pays</h3>
-                    <p class="text-xs text-gray-900">{{ requesterPays }}</p>
+                <div v-else class="p-10">
+                    <EmptyState title="No replication rules"
+                        message="Use replication rules to define options you want Amazon S3 to apply during replication." />
                 </div>
             </div>
         </div>
+
 
         <!-- Events & Integration Section -->
-        <div class="space-y-6">
-            <h3 class="text-lg font-bold text-gray-800 px-1 border-b border-gray-200 pb-2">Events & Integration</h3>
+        <div class="space-y-8">
+            <h3
+                class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.3em] px-2 border-b-2 border-[#eaeded] pb-4 italic">
+                Events & Integration</h3>
 
             <!-- Server Access Logging -->
-            <div class="border border-gray-200 rounded-sm bg-white">
-                <SectionHeader title="Server access logging" :showEdit="true"
-                    @edit="activeModal = 'accessLogging'; Object.assign(tempAccessLogging, accessLogging)" />
-                <div class="p-4">
-                    <p class="text-xs text-gray-600 mb-4">Log requests for access to your bucket.</p>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <h3 class="text-sm font-bold text-gray-900">Server access logging</h3>
-                            <p class="text-xs text-gray-900">{{ accessLogging.status }}</p>
+            <div
+                class="bg-white border-2 border-[#eaeded] overflow-hidden shadow-sm transition-all hover:border-[#ff9900]/30 italic">
+                <SectionHeader title="Bucket access logs" :showEdit="true" @edit="openAccessLoggingModal" />
+                <div class="p-10">
+                    <p class="text-[13px] text-[#545b64] mb-8 leading-relaxed font-bold uppercase tracking-tight">Log
+                        requests for access to your bucket.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div class="bg-[#fafafa] p-6 border-2 border-[#eaeded]">
+                            <h4 class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] mb-2">Logging
+                                Status</h4>
+                            <p class="text-lg font-black uppercase transition-all italic"
+                                :class="accessLogging.status === 'Enabled' ? 'text-[#ff9900]' : 'text-[#eaeded]'">
+                                {{ accessLogging.status }}
+                            </p>
                         </div>
-                        <div v-if="accessLogging.status === 'Enabled'">
-                            <h3 class="text-sm font-bold text-gray-900">Target bucket</h3>
-                            <p class="text-xs text-gray-900">{{ accessLogging.targetBucket }}</p>
+                        <div v-if="accessLogging.status === 'Enabled'"
+                            class="bg-[#fafafa] p-6 border-2 border-[#eaeded]">
+                            <h4 class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] mb-2">Target
+                                bucket</h4>
+                            <p class="text-[13px] text-[#232f3e] font-black uppercase tracking-tight italic">{{
+                                accessLogging.targetBucket }}</p>
                         </div>
                     </div>
                 </div>
             </div>
 
             <!-- Event Notifications -->
-            <div class="border border-gray-200 rounded-sm bg-white">
+            <div
+                class="bg-white border-2 border-[#eaeded] overflow-hidden shadow-sm transition-all hover:border-[#ff9900]/30 italic">
                 <SectionHeader title="Event notifications" :showCreate="true" createLabel="Create event notification"
                     @create="activeModal = 'eventNotification'" />
-                <div v-if="eventNotifications.length > 0" class="p-4">
+                <div v-if="eventNotifications.length > 0" class="p-0 border-t-2 border-[#eaeded]">
                     <div class="overflow-x-auto">
-                        <table class="w-full text-xs text-left text-gray-700">
-                            <thead class="bg-gray-50 border-b border-gray-200">
+                        <table class="w-full text-[13px] text-left">
+                            <thead class="bg-[#fafafa] border-b-2 border-[#eaeded]">
                                 <tr>
-                                    <th class="px-4 py-2 font-bold">Name</th>
-                                    <th class="px-4 py-2 font-bold">Event types</th>
-                                    <th class="px-4 py-2 font-bold">Destination</th>
+                                    <th
+                                        class="px-10 py-5 font-black text-[#545b64] uppercase tracking-[0.2em] text-[10px] border-r-2 border-[#eaeded]">
+                                        Name</th>
+                                    <th
+                                        class="px-10 py-5 font-black text-[#545b64] uppercase tracking-[0.2em] text-[10px] border-r-2 border-[#eaeded]">
+                                        Event types</th>
+                                    <th
+                                        class="px-10 py-5 font-black text-[#545b64] uppercase tracking-[0.2em] text-[10px]">
+                                        Destination</th>
                                 </tr>
                             </thead>
-                            <tbody class="divide-y divide-gray-200">
-                                <tr v-for="event in eventNotifications" :key="event.id">
+                            <tbody class="divide-y-2 divide-[#eaeded] bg-white italic">
+                                <tr v-for="event in eventNotifications" :key="event.id"
+                                    class="group hover:bg-[#fafafa] transition-all">
                                     <td
-                                        class="px-4 py-2 text-[var(--aws-blue)] hover:underline cursor-pointer font-medium">
+                                        class="px-10 py-6 font-black text-[#ff9900] tracking-tight uppercase border-r-2 border-[#eaeded] italic">
                                         {{ event.name }}</td>
-                                    <td class="px-4 py-2">{{ event.types.join(', ') }}</td>
-                                    <td class="px-4 py-2">{{ event.destination }}</td>
+                                    <td class="px-10 py-6 text-[#545b64] border-r-2 border-[#eaeded]">
+                                        <div class="flex flex-wrap gap-3">
+                                            <span v-for="type in event.types" :key="type"
+                                                class="px-3 py-1 bg-white border-2 border-[#eaeded] text-[9px] font-black uppercase tracking-widest text-[#545b64] group-hover:border-[#ff9900]/30 group-hover:text-[#232f3e] transition-all">{{
+                                                    type }}</span>
+                                        </div>
+                                    </td>
+                                    <td
+                                        class="px-10 py-6 text-[#545b64] font-mono text-[11px] uppercase tracking-tight break-all">
+                                        {{ event.destination }}</td>
                                 </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <EmptyState v-else title="No event notifications" message="" />
+                <div v-else class="p-10">
+                    <EmptyState title="No event notifications" message="Set up notifications for bucket events." />
+                </div>
             </div>
 
             <!-- Tags -->
-            <div class="border border-gray-200 rounded-sm bg-white">
-                <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                    <h2 class="text-lg font-bold text-gray-900">Tags</h2>
-                    <div class="flex gap-2">
-                        <button @click="activeModal = 'tags'; tempTags = JSON.parse(JSON.stringify(tags))"
-                            class="px-3 py-1 text-xs font-bold border border-[var(--aws-blue)] text-[var(--aws-blue)] bg-white rounded-sm hover:bg-blue-50">Edit</button>
-                    </div>
+            <div class="bg-white border-2 border-[#eaeded] overflow-hidden shadow-sm transition-all italic">
+                <div class="p-8 border-b-2 border-[#eaeded] flex justify-between items-center bg-[#fafafa]">
+                    <h2 class="text-3xl font-black text-[#232f3e] tracking-tighter uppercase italic">Resource Tags</h2>
+                    <button @click="activeModal = 'tags'; tempTags = JSON.parse(JSON.stringify(tags))"
+                        class="px-8 py-2.5 text-[11px] font-black bg-[#232f3e] text-white uppercase tracking-widest shadow-xl shadow-black/10 hover:bg-black transition-all active:scale-95 italic">
+                        Edit
+                    </button>
                 </div>
-                <div v-if="tags.length > 0" class="p-4">
-                    <div class="grid grid-cols-2 gap-x-8 gap-y-4">
-                        <div v-for="(tag, index) in tags" :key="index" class="flex gap-8 border-b border-gray-100 pb-2">
-                            <div>
-                                <p class="text-[10px] font-bold text-gray-500 uppercase">Key</p>
-                                <p class="text-xs text-gray-900">{{ tag.key }}</p>
+                <div v-if="tags.length > 0" class="p-10">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div v-for="(tag, index) in tags" :key="index"
+                            class="flex gap-10 border-2 border-[#eaeded] bg-[#fafafa] p-8 relative overflow-hidden group hover:border-[#ff9900]/50 transition-all italic">
+                            <div
+                                class="absolute -top-10 -right-10 w-24 h-24 bg-[#ff9900]/5 rounded-full blur-2xl group-hover:bg-[#ff9900]/10 transition-all">
                             </div>
-                            <div>
-                                <p class="text-[10px] font-bold text-gray-500 uppercase">Value</p>
-                                <p class="text-xs text-gray-900">{{ tag.value }}</p>
+                            <div class="relative">
+                                <p class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] mb-2 italic">
+                                    Key</p>
+                                <p class="text-base text-[#232f3e] font-black uppercase tracking-tight">{{ tag.key }}
+                                </p>
+                            </div>
+                            <div class="relative">
+                                <p class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] mb-2 italic">
+                                    Value</p>
+                                <p class="text-base text-[#ff9900] font-black uppercase tracking-tight">{{ tag.value }}
+                                </p>
                             </div>
                         </div>
                     </div>
                 </div>
-                <EmptyState v-else title="No tags"
-                    message="Tags are key-value pairs that you can add to your bucket to track costs or search for resources." />
+                <div v-else class="p-10">
+                    <EmptyState title="No tags"
+                        message="Tags are key-value pairs that help you track costs or search for resources." />
+                </div>
             </div>
         </div>
     </div>
 
-    <!-- Modals -->
+    <!-- Modals (Modernized for Light Theme) -->
 
     <!-- Bucket Versioning Modal -->
     <div v-if="activeModal === 'versioning'"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-sm shadow-2xl w-full max-w-2xl">
-            <div class="p-4 border-b border-gray-200">
-                <h2 class="text-xl font-bold text-gray-900">Edit Bucket Versioning</h2>
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#232f3e]/60 backdrop-blur-sm transition-all italic">
+        <div class="bg-white border-4 border-[#232f3e] shadow-2xl w-full max-w-2xl overflow-hidden relative">
+            <div class="absolute -top-24 -left-24 w-80 h-80 bg-[#ff9900]/5 rounded-full blur-3xl pointer-events-none">
             </div>
-            <div class="p-6">
-                <div class="space-y-4">
-                    <label class="flex items-center gap-3 cursor-pointer group">
-                        <input type="radio" v-model="tempVersioning" value="Enabled"
-                            class="w-4 h-4 text-[var(--aws-blue)]">
+
+            <div class="p-10 border-b-2 border-[#eaeded] bg-[#fafafa] relative">
+                <h2
+                    class="text-4xl font-black text-[#232f3e] tracking-tighter uppercase italic flex items-center gap-4">
+                    Versioning
+                    <span
+                        class="px-4 py-1.5 bg-white border-2 border-[#eaeded] text-[#ff9900] text-[10px] font-black tracking-widest uppercase italic shadow-sm">Config
+                        Layer</span>
+                </h2>
+            </div>
+
+            <div class="p-10 relative">
+                <div class="space-y-6">
+                    <label
+                        class="flex items-center gap-6 p-8 border-2 cursor-pointer transition-all active:scale-[0.98] group italic"
+                        :class="tempVersioning === 'Enabled' ? 'bg-[#ff9900]/[0.02] border-[#ff9900] shadow-xl shadow-[#ff9900]/5' : 'bg-white border-[#eaeded] hover:border-[#ff9900]/30 shadow-none'">
+                        <div class="w-7 h-7 border-2 border-[#eaeded] flex items-center justify-center transition-all bg-white shrink-0"
+                            :class="tempVersioning === 'Enabled' ? 'border-[#ff9900] bg-[#ff9900]/10' : 'group-hover:border-[#ff9900]/50'">
+                            <div v-if="tempVersioning === 'Enabled'"
+                                class="w-4 h-4 bg-[#ff9900] rotate-45 animate-pulse"></div>
+                        </div>
+                        <input type="radio" v-model="tempVersioning" value="Enabled" class="hidden">
                         <div>
-                            <p class="text-xs font-bold text-gray-900">Enable</p>
-                            <p class="text-[11px] text-gray-500">Keep multiple variants of an object in the same bucket.
-                            </p>
+                            <p class="text-xl font-black uppercase italic tracking-tight"
+                                :class="tempVersioning === 'Enabled' ? 'text-[#ff9900]' : 'text-[#232f3e]'">Enable
+                                Versioning</p>
+                            <p
+                                class="text-[11px] text-[#545b64] leading-relaxed font-bold uppercase tracking-widest mt-1">
+                                Archive multiple variants of objects systematically.</p>
                         </div>
                     </label>
-                    <label class="flex items-center gap-3 cursor-pointer group">
-                        <input type="radio" v-model="tempVersioning" value="Suspended"
-                            class="w-4 h-4 text-[var(--aws-blue)]">
+
+                    <label
+                        class="flex items-center gap-6 p-8 border-2 cursor-pointer transition-all active:scale-[0.98] group italic"
+                        :class="tempVersioning === 'Suspended' ? 'bg-[#232f3e] border-[#232f3e] text-white shadow-2xl italic' : 'bg-white border-[#eaeded] hover:border-[#ff9900]/30 shadow-none'">
+                        <div class="w-7 h-7 border-2 border-[#eaeded] flex items-center justify-center transition-all bg-white shrink-0"
+                            :class="tempVersioning === 'Suspended' ? 'border-white bg-white' : 'group-hover:border-[#ff9900]/50'">
+                            <div v-if="tempVersioning === 'Suspended'" class="w-4 h-4 bg-[#232f3e] rotate-45"></div>
+                        </div>
+                        <input type="radio" v-model="tempVersioning" value="Suspended" class="hidden">
                         <div>
-                            <p class="text-xs font-bold text-gray-900">Suspend</p>
-                            <p class="text-[11px] text-gray-500">Stop keeping new variants of objects.</p>
+                            <p class="text-xl font-black uppercase italic tracking-tight"
+                                :class="tempVersioning === 'Suspended' ? 'text-white' : 'text-[#232f3e]'">Suspend
+                                Versioning</p>
+                            <p class="text-[11px] leading-relaxed font-bold uppercase tracking-widest mt-1"
+                                :class="tempVersioning === 'Suspended' ? 'text-white/50' : 'text-[#545b64]'">Halt the
+                                generation of new object versions immediately.</p>
                         </div>
                     </label>
                 </div>
             </div>
-            <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50 px-6">
+
+            <div class="p-10 border-t-2 border-[#eaeded] flex justify-end gap-6 bg-[#fafafa]">
                 <button @click="activeModal = null"
-                    class="px-4 py-1.5 font-bold text-[var(--aws-blue)] hover:underline text-xs">Cancel</button>
-                <button @click="handleSaveVersioning"
-                    class="px-6 py-1.5 font-bold bg-[var(--aws-orange)] text-white rounded-sm text-xs">Save
-                    changes</button>
+                    class="px-10 py-3 font-black text-[#545b64] hover:text-[#ff9900] transition-colors text-xs uppercase tracking-widest italic active:scale-95"
+                    :disabled="isSaving">Cancel</button>
+                <button @click="handleSaveVersioning" :disabled="isSaving"
+                    class="px-12 py-3 font-black bg-[#232f3e] text-white hover:bg-black transition-all shadow-2xl text-xs uppercase tracking-widest italic active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3">
+                    <svg v-if="isSaving" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
+                        fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                    {{ isSaving ? 'Saving...' : 'Save Changes' }}
+                </button>
             </div>
         </div>
     </div>
 
     <!-- Default Encryption Modal -->
     <div v-if="activeModal === 'encryption'"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-sm shadow-2xl w-full max-w-2xl">
-            <div class="p-4 border-b border-gray-200">
-                <h2 class="text-xl font-bold text-gray-900">Edit default encryption</h2>
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#232f3e]/60 backdrop-blur-sm transition-all overflow-y-auto italic">
+        <div class="bg-white border-4 border-[#232f3e] shadow-2xl w-full max-w-4xl overflow-hidden relative my-8">
+            <div class="absolute -top-24 -left-24 w-80 h-80 bg-[#ff9900]/5 rounded-full blur-3xl pointer-events-none">
             </div>
-            <div class="p-6 space-y-6">
+
+            <div class="p-10 border-b-2 border-[#eaeded] bg-[#fafafa] relative">
+                <h2 class="text-4xl font-black text-[#232f3e] tracking-tighter uppercase italic">Encryption Engine</h2>
+                <p class="text-[11px] text-[#ff9900] mt-3 font-black uppercase tracking-[0.2em] italic">Data-at-Rest
+                    Security Configuration</p>
+            </div>
+
+            <div class="p-10 space-y-12 relative">
                 <div>
-                    <label class="block text-xs font-bold text-gray-900 mb-2">Encryption type</label>
-                    <div class="space-y-3">
-                        <label class="flex items-start gap-2 cursor-pointer">
-                            <input type="radio" v-model="tempEncryption.type" value="SSE-S3"
-                                class="mt-0.5 w-4 h-4 text-[var(--aws-blue)]">
-                            <div>
-                                <p class="text-xs text-gray-900 font-bold">Amazon S3 managed keys (SSE-S3)</p>
-                                <p class="text-[11px] text-gray-500">Simplify your key management. <a href="#"
-                                        class="text-[var(--aws-blue)] hover:underline">Learn more ↗</a></p>
+                    <label
+                        class="block text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] mb-8 italic">Encryption
+                        Architecture</label>
+                    <div class="space-y-6">
+                        <label
+                            class="flex items-start gap-8 p-10 border-2 cursor-pointer transition-all active:scale-[0.98] group italic"
+                            :class="tempEncryption.type === 'SSE-S3' ? 'border-[#ff9900] bg-[#ff9900]/[0.02] shadow-xl shadow-[#ff9900]/5' : 'bg-white border-[#eaeded] hover:border-[#ff9900]/30 shadow-none'">
+                            <input type="radio" v-model="tempEncryption.type" value="SSE-S3" class="hidden">
+                            <div class="w-8 h-8 border-2 border-[#eaeded] flex items-center justify-center transition-all bg-white shrink-0 mt-1"
+                                :class="tempEncryption.type === 'SSE-S3' ? 'border-[#ff9900] bg-[#ff9900]/10' : 'group-hover:border-[#ff9900]/50'">
+                                <div v-if="tempEncryption.type === 'SSE-S3'"
+                                    class="w-5 h-5 bg-[#ff9900] rotate-45 animate-pulse"></div>
                             </div>
-                        </label>
-                        <label class="flex items-start gap-2 cursor-pointer">
-                            <input type="radio" v-model="tempEncryption.type" value="SSE-KMS"
-                                class="mt-0.5 w-4 h-4 text-[var(--aws-blue)]">
                             <div>
-                                <p class="text-xs text-gray-900 font-bold">AWS Key Management Service keys (SSE-KMS)</p>
-                                <p class="text-[11px] text-gray-500">Use AWS KMS to secure your data. <a href="#"
-                                        class="text-[var(--aws-blue)] hover:underline">Learn more ↗</a></p>
+                                <p class="text-2xl font-black uppercase italic tracking-tight"
+                                    :class="tempEncryption.type === 'SSE-S3' ? 'text-[#ff9900]' : 'text-[#232f3e]'">
+                                    Amazon S3 Managed Keys (SSE-S3)</p>
+                                <p
+                                    class="text-[12px] text-[#545b64] leading-relaxed font-bold uppercase tracking-tight mt-1">
+                                    Simplify key management with automatedSerwin Infrastructure. <a href="#"
+                                        class="text-[#ff9900] hover:underline font-black ml-2 transition-all italic">Architecture
+                                        Guide ↗</a></p>
                             </div>
                         </label>
                     </div>
                 </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-900 mb-2">Bucket Key</label>
-                    <div class="flex gap-4">
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" v-model="tempEncryption.bucketKey" value="Enable" class="w-4 h-4">
-                            <span class="text-xs">Enable</span>
+
+                <div class="pt-12 border-t-2 border-[#eaeded]">
+                    <label
+                        class="block text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] mb-8 italic">Bucket
+                        Key State</label>
+                    <div class="flex gap-8">
+                        <label
+                            class="flex-1 flex items-center justify-center gap-4 p-8 border-2 cursor-pointer transition-all active:scale-95 group italic"
+                            :class="tempEncryption.bucketKey === 'Enable' ? 'bg-[#ff9900] border-[#ff9900] text-[#232f3e] shadow-xl italic' : 'bg-white border-[#eaeded] text-[#545b64] hover:border-[#ff9900]/30 shadow-none'">
+                            <input type="radio" v-model="tempEncryption.bucketKey" value="Enable" class="hidden">
+                            <span class="text-xs font-black uppercase tracking-widest">{{ tempEncryption.bucketKey ===
+                                'Enable' ? '● ENABLED' : 'ENABLE' }}</span>
                         </label>
-                        <label class="flex items-center gap-2 cursor-pointer">
-                            <input type="radio" v-model="tempEncryption.bucketKey" value="Disable" class="w-4 h-4">
-                            <span class="text-xs">Disable</span>
+                        <label
+                            class="flex-1 flex items-center justify-center gap-4 p-8 border-2 cursor-pointer transition-all active:scale-95 group italic"
+                            :class="tempEncryption.bucketKey === 'Disable' ? 'bg-[#232f3e] border-[#232f3e] text-white shadow-2xl italic' : 'bg-white border-[#eaeded] text-[#545b64] hover:border-[#ff9900]/30 shadow-none'">
+                            <input type="radio" v-model="tempEncryption.bucketKey" value="Disable" class="hidden">
+                            <span class="text-xs font-black uppercase tracking-widest">{{ tempEncryption.bucketKey ===
+                                'Disable' ? '● DISABLED' : 'DISABLE' }}</span>
                         </label>
                     </div>
                 </div>
             </div>
-            <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50 px-6">
+
+            <div class="p-10 border-t-2 border-[#eaeded] flex justify-end gap-6 bg-[#fafafa] relative">
                 <button @click="activeModal = null"
-                    class="px-4 py-1.5 font-bold text-[var(--aws-blue)] hover:underline text-xs">Cancel</button>
+                    class="px-10 py-3 font-black text-[#545b64] hover:text-[#ff9900] transition-colors text-xs uppercase tracking-widest italic active:scale-95">Cancel</button>
                 <button @click="handleSaveEncryption"
-                    class="px-6 py-1.5 font-bold bg-[var(--aws-orange)] text-white rounded-sm text-xs">Save
-                    changes</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Lifecycle Modal -->
-    <div v-if="activeModal === 'lifecycle'"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-sm shadow-2xl w-full max-w-4xl flex flex-col my-8">
-            <div class="p-4 border-b border-gray-200 text-left">
-                <h2 class="text-xl font-bold text-gray-900">Create lifecycle rule</h2>
-                <p class="text-xs text-gray-500 mt-1">Lifecycle configuration is written in JSON.</p>
-            </div>
-            <div class="p-6">
-                <div class="border border-gray-300 rounded-sm overflow-hidden flex flex-col h-[400px]">
-                    <textarea v-model="currentLifecycleJson" placeholder='{ "Rules": [...] }'
-                        class="flex-1 p-4 font-mono text-[11px] text-gray-800 bg-[#f8f9fa] resize-none focus:outline-none"></textarea>
-                </div>
-            </div>
-            <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-white">
-                <button @click="activeModal = null"
-                    class="px-4 py-1.5 font-bold text-[var(--aws-blue)] hover:underline text-xs">Cancel</button>
-                <button @click="handleSaveLifecycle" :disabled="!currentLifecycleJson.trim()"
-                    class="px-6 py-1.5 font-bold bg-[var(--aws-orange)] text-white rounded-sm text-xs">Create
-                    rule</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Intelligent-Tiering Modal -->
-    <div v-if="activeModal === 'tiering'"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-sm shadow-2xl w-full max-w-4xl flex flex-col my-8">
-            <div class="p-4 border-b border-gray-200 text-left">
-                <h2 class="text-xl font-bold text-gray-900">Create Intelligent-Tiering configuration</h2>
-            </div>
-            <div class="p-6">
-                <div class="border border-gray-300 rounded-sm overflow-hidden flex flex-col h-[400px]">
-                    <textarea v-model="currentTieringJson" placeholder='{ "Id": "...", "Status": "Enabled", ... }'
-                        class="flex-1 p-4 font-mono text-[11px] text-gray-800 bg-[#f8f9fa] resize-none focus:outline-none"></textarea>
-                </div>
-            </div>
-            <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-white">
-                <button @click="activeModal = null"
-                    class="px-4 py-1.5 font-bold text-[var(--aws-blue)] hover:underline text-xs">Cancel</button>
-                <button @click="handleSaveTiering" :disabled="!currentTieringJson.trim()"
-                    class="px-6 py-1.5 font-bold bg-[var(--aws-orange)] text-white rounded-sm text-xs">Create
-                    configuration</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Requester Pays Modal -->
-    <div v-if="activeModal === 'requesterPays'"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-sm shadow-2xl w-full max-w-2xl px-6 py-4">
-            <div class="p-4 border-b border-gray-200 text-left">
-                <h2 class="text-xl font-bold text-gray-900">Edit Requester pays</h2>
-            </div>
-            <div class="p-6 space-y-4">
-                <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="radio" v-model="tempRequesterPays" value="Enabled"
-                        class="w-4 h-4 text-[var(--aws-blue)]">
-                    <span class="text-xs font-bold">Enabled</span>
-                </label>
-                <label class="flex items-center gap-3 cursor-pointer">
-                    <input type="radio" v-model="tempRequesterPays" value="Disabled"
-                        class="w-4 h-4 text-[var(--aws-blue)]">
-                    <span class="text-xs font-bold">Disabled</span>
-                </label>
-            </div>
-            <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
-                <button @click="activeModal = null"
-                    class="px-4 py-1.5 font-bold text-[var(--aws-blue)] hover:underline text-xs">Cancel</button>
-                <button @click="handleSaveRequesterPays"
-                    class="px-6 py-1.5 font-bold bg-[var(--aws-orange)] text-white rounded-sm text-xs shadow-sm">Save
-                    changes</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Server Access Logging Modal -->
-    <div v-if="activeModal === 'accessLogging'"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-sm shadow-2xl w-full max-w-2xl px-6 py-4">
-            <div class="p-4 border-b border-gray-200 text-left">
-                <h2 class="text-xl font-bold text-gray-900">Edit server access logging</h2>
-            </div>
-            <div class="p-6 space-y-6">
-                <div class="space-y-4">
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="radio" v-model="tempAccessLogging.status" value="Enabled"
-                            class="w-4 h-4 text-[var(--aws-blue)]">
-                        <span class="text-xs font-bold">Enabled</span>
-                    </label>
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="radio" v-model="tempAccessLogging.status" value="Disabled"
-                            class="w-4 h-4 text-[var(--aws-blue)]">
-                        <span class="text-xs font-bold">Disabled</span>
-                    </label>
-                </div>
-                <div v-if="tempAccessLogging.status === 'Enabled'" class="space-y-4 border-t pt-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-900 mb-2">Target bucket</label>
-                        <input type="text" v-model="tempAccessLogging.targetBucket" placeholder="s3://logging-bucket"
-                            class="w-full px-3 py-1.5 text-sm border border-gray-400 rounded-sm outline-none">
-                    </div>
-                </div>
-            </div>
-            <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
-                <button @click="activeModal = null"
-                    class="px-4 py-1.5 font-bold text-[var(--aws-blue)] hover:underline text-xs">Cancel</button>
-                <button @click="handleSaveAccessLogging"
-                    class="px-6 py-1.5 font-bold bg-[var(--aws-orange)] text-white rounded-sm text-xs shadow-sm">Save
-                    changes</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Event Notification Modal -->
-    <div v-if="activeModal === 'eventNotification'"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-sm shadow-2xl w-full max-w-2xl px-6 py-4">
-            <div class="p-4 border-b border-gray-200 text-left">
-                <h2 class="text-xl font-bold text-gray-900">Create event notification</h2>
-            </div>
-            <div class="p-6 space-y-6">
-                <div>
-                    <label class="block text-xs font-bold text-gray-900 mb-2">Event name</label>
-                    <input type="text" v-model="newEventNotification.name" placeholder="Enter rule name"
-                        class="w-full px-3 py-1.5 text-sm border border-gray-400 rounded-sm outline-none">
-                </div>
-                <div>
-                    <label class="block text-xs font-bold text-gray-900 mb-2">Destination</label>
-                    <input type="text" v-model="newEventNotification.destination" placeholder="arn:serw:lambda:..."
-                        class="w-full px-3 py-1.5 text-sm border border-gray-400 rounded-sm outline-none">
-                </div>
-            </div>
-            <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
-                <button @click="activeModal = null"
-                    class="px-4 py-1.5 font-bold text-[var(--aws-blue)] hover:underline text-xs">Cancel</button>
-                <button @click="handleAddEventNotification" :disabled="!newEventNotification.name"
-                    class="px-6 py-1.5 font-bold bg-[var(--aws-orange)] text-white rounded-sm text-xs shadow-sm disabled:opacity-50">Create</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Object Lock Modal -->
-    <div v-if="activeModal === 'objectLock'"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-sm shadow-2xl w-full max-w-2xl px-6 py-4">
-            <div class="p-4 border-b border-gray-200 text-left">
-                <h2 class="text-xl font-bold text-gray-900">Edit Object Lock</h2>
-            </div>
-            <div class="p-6">
-                <!-- AWS Style Warning -->
-                <div class="bg-amber-50 border border-amber-400 p-4 mb-6 flex gap-3">
-                    <svg class="w-5 h-5 text-amber-600 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                    </svg>
-                    <div class="text-[11px] text-amber-800 leading-relaxed font-medium">
-                        Object Lock cannot be disabled after it has been enabled. Enabling Object Lock also enables
-                        Bucket Versioning.
-                        <a href="#" class="text-[var(--aws-blue)] hover:underline">Learn more ↗</a>
-                    </div>
-                </div>
-
-                <div class="space-y-4">
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="radio" v-model="tempObjectLock" value="Enabled"
-                            class="w-4 h-4 text-[var(--aws-blue)]">
-                        <span class="text-xs font-bold">Enabled</span>
-                    </label>
-                    <label class="flex items-center gap-3 cursor-pointer">
-                        <input type="radio" v-model="tempObjectLock" value="Disabled"
-                            class="w-4 h-4 text-[var(--aws-blue)]">
-                        <span class="text-xs font-bold">Disabled</span>
-                    </label>
-                </div>
-            </div>
-            <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
-                <button @click="activeModal = null"
-                    class="px-4 py-1.5 font-bold text-[var(--aws-blue)] hover:underline text-xs">Cancel</button>
-                <button @click="handleSaveObjectLock"
-                    class="px-6 py-1.5 font-bold bg-[var(--aws-orange)] text-white rounded-sm text-xs shadow-sm">Save
-                    changes</button>
+                    class="px-12 py-3 font-black bg-[#232f3e] text-white hover:bg-black transition-all shadow-2xl text-xs uppercase tracking-widest italic active:scale-95">Deploy
+                    Config</button>
             </div>
         </div>
     </div>
 
     <!-- Replication Rule Modal -->
     <div v-if="activeModal === 'replication'"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-sm shadow-2xl w-full max-w-2xl px-6 py-4">
-            <div class="p-4 border-b border-gray-200 text-left">
-                <h2 class="text-xl font-bold text-gray-900">Create replication rule</h2>
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#232f3e]/60 backdrop-blur-sm transition-all italic">
+        <div class="bg-white border-4 border-[#232f3e] shadow-2xl w-full max-w-2xl overflow-hidden relative italic">
+            <div class="p-10 border-b-2 border-[#eaeded] bg-[#fafafa]">
+                <h2 class="text-4xl font-black text-[#232f3e] tracking-tighter uppercase italic">Replication Rule</h2>
+                <p class="text-[11px] text-[#ff9900] mt-3 font-black uppercase tracking-[0.2em] italic">Cross-Region
+                    Data Sync</p>
             </div>
-            <div class="p-6 space-y-6">
-                <div>
-                    <label class="block text-xs font-bold text-gray-900 mb-2">Replication rule name</label>
-                    <input type="text" v-model="newReplicationRule.name" placeholder="Enter rule name"
-                        class="w-full px-3 py-1.5 text-sm border border-gray-400 rounded-sm outline-none">
+
+            <div class="p-10 space-y-6 relative">
+                <div class="space-y-3">
+                    <label class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] italic">Rule
+                        Name</label>
+                    <input type="text" v-model="newReplicationRule.name" placeholder="e.g. backup-to-us-east"
+                        class="w-full px-6 py-4 bg-white border-2 border-[#eaeded] text-[14px] font-black uppercase italic tracking-tight text-[#232f3e] focus:border-[#ff9900] outline-none transition-all placeholder:text-[#eaeded] shadow-inner">
                 </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-900 mb-2">Priority</label>
-                        <input type="number" v-model="newReplicationRule.priority"
-                            class="w-full px-3 py-1.5 text-sm border border-gray-400 rounded-sm outline-none">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-gray-900 mb-2">Status</label>
-                        <select v-model="newReplicationRule.status"
-                            class="w-full px-3 py-1.5 text-sm border border-gray-400 rounded-sm outline-none">
-                            <option value="Enabled">Enabled</option>
-                            <option value="Disabled">Disabled</option>
-                        </select>
+
+                <div class="space-y-3">
+                    <label
+                        class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] italic">Priority</label>
+                    <input type="number" v-model.number="newReplicationRule.priority" placeholder="1" min="1" max="1000"
+                        class="w-full px-6 py-4 bg-white border-2 border-[#eaeded] text-[14px] font-black uppercase italic tracking-tight text-[#232f3e] focus:border-[#ff9900] outline-none transition-all placeholder:text-[#eaeded] shadow-inner">
+                    <p class="text-[10px] text-[#545b64] italic">Lower number = higher priority (1-1000)</p>
+                </div>
+
+                <div class="space-y-3">
+                    <label
+                        class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] italic">Status</label>
+                    <div class="flex gap-6">
+                        <label
+                            class="flex-1 flex items-center justify-center gap-4 p-6 border-2 cursor-pointer transition-all active:scale-95 group italic"
+                            :class="newReplicationRule.status === 'Enabled' ? 'bg-[#ff9900] border-[#ff9900] text-[#232f3e] shadow-xl italic' : 'bg-white border-[#eaeded] text-[#545b64] hover:border-[#ff9900]/30 shadow-none'">
+                            <input type="radio" v-model="newReplicationRule.status" value="Enabled" class="hidden">
+                            <span class="text-xs font-black uppercase tracking-widest">{{ newReplicationRule.status ===
+                                'Enabled' ? '● ENABLED' : 'ENABLE' }}</span>
+                        </label>
+                        <label
+                            class="flex-1 flex items-center justify-center gap-4 p-6 border-2 cursor-pointer transition-all active:scale-95 group italic"
+                            :class="newReplicationRule.status === 'Disabled' ? 'bg-[#232f3e] border-[#232f3e] text-white shadow-2xl italic' : 'bg-white border-[#eaeded] text-[#545b64] hover:border-[#ff9900]/30 shadow-none'">
+                            <input type="radio" v-model="newReplicationRule.status" value="Disabled" class="hidden">
+                            <span class="text-xs font-black uppercase tracking-widest">{{ newReplicationRule.status ===
+                                'Disabled' ? '● DISABLED' : 'DISABLE' }}</span>
+                        </label>
                     </div>
                 </div>
             </div>
-            <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
+
+            <div class="p-10 border-t-2 border-[#eaeded] flex justify-end gap-6 bg-[#fafafa]">
                 <button @click="activeModal = null"
-                    class="px-4 py-1.5 font-bold text-[var(--aws-blue)] hover:underline text-xs">Cancel</button>
-                <button @click="handleAddReplicationRule" :disabled="!newReplicationRule.name"
-                    class="px-6 py-1.5 font-bold bg-[var(--aws-orange)] text-white rounded-sm text-xs shadow-sm disabled:opacity-50">Create
-                    rule</button>
+                    class="px-10 py-3 font-black text-[#545b64] hover:text-[#ff9900] transition-colors text-xs uppercase tracking-widest italic active:scale-95"
+                    :disabled="isSaving">Cancel</button>
+                <button @click="handleAddReplicationRule" :disabled="isSaving"
+                    class="px-12 py-3 font-black bg-[#232f3e] text-white hover:bg-black transition-all shadow-2xl text-xs uppercase tracking-widest italic active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3">
+                    <svg v-if="isSaving" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
+                        fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                    {{ isSaving ? 'Creating...' : 'Create Rule' }}
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Tags Modal -->
-    <div v-if="activeModal === 'tags'"
-        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-        <div class="bg-white rounded-sm shadow-2xl w-full max-w-2xl px-6 py-4">
-            <div class="p-4 border-b border-gray-200 text-left">
-                <h2 class="text-xl font-bold text-gray-900">Edit tags</h2>
+    <!-- Lifecycle Modal -->
+    <div v-if="activeModal === 'lifecycle'"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#232f3e]/60 backdrop-blur-sm transition-all overflow-y-auto italic">
+        <div
+            class="bg-white border-4 border-[#232f3e] shadow-2xl w-full max-w-4xl flex flex-col my-8 overflow-hidden relative italic">
+            <div class="p-10 border-b-2 border-[#eaeded] bg-[#fafafa]">
+                <h2 class="text-4xl font-black text-[#232f3e] tracking-tighter uppercase italic">Lifecycle Rule
+                    Architect</h2>
+                <p class="text-[11px] text-[#545b64] mt-3 font-bold uppercase tracking-tight italic">Define JSON
+                    Retention Protocols systematically.</p>
             </div>
-            <div class="p-6 space-y-4 max-h-[60vh] overflow-y-auto">
-                <div v-for="(tag, index) in tempTags" :key="index"
-                    class="flex items-end gap-4 p-3 bg-gray-50 border border-gray-200 rounded-sm">
-                    <div class="flex-1 space-y-1">
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase">Key</label>
-                        <input type="text" v-model="tag.key"
-                            class="w-full px-3 py-1 text-xs border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-[var(--aws-blue)]">
+
+            <div class="p-10 flex-1 relative">
+                <div
+                    class="border-4 border-[#232f3e] overflow-hidden flex flex-col h-[500px] bg-[#fafafa] shadow-inner font-mono">
+                    <div class="bg-white p-6 border-b-2 border-[#eaeded] flex justify-between items-center italic">
+                        <span class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">Rule Structure
+                            Highlighter</span>
+                        <div
+                            class="text-[10px] text-[#ff9900] font-black bg-[#ff9900]/5 border-2 border-[#ff9900]/20 px-4 py-1.5 uppercase tracking-widest italic animate-pulse">
+                            JSON Schema Active</div>
                     </div>
-                    <div class="flex-1 space-y-1">
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase">Value</label>
-                        <input type="text" v-model="tag.value"
-                            class="w-full px-3 py-1 text-xs border border-gray-300 rounded-sm outline-none focus:ring-1 focus:ring-[var(--aws-blue)]">
-                    </div>
-                    <button @click="handleRemoveTag(index)"
-                        class="p-1 px-3 text-[var(--aws-blue)] hover:bg-gray-200 rounded-sm font-bold text-xs">Remove</button>
+                    <textarea v-model="currentLifecycleJson" placeholder='{ "Rules": [...] }'
+                        class="flex-1 p-10 text-[14px] text-[#232f3e] bg-transparent resize-none focus:outline-none leading-relaxed transition-colors placeholder:text-[#eaeded] custom-scrollbar selection:bg-[#ff9900]/30 italic"></textarea>
                 </div>
-                <button @click="handleAddTag"
-                    class="text-xs font-bold text-[var(--aws-blue)] hover:underline flex items-center gap-1">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
+            </div>
+
+            <div class="p-10 border-t-2 border-[#eaeded] flex justify-end gap-6 bg-[#fafafa] relative">
+                <button @click="activeModal = null"
+                    class="px-10 py-3 font-black text-[#545b64] hover:text-[#ff9900] transition-colors text-xs uppercase tracking-widest italic active:scale-95">Cancel</button>
+                <button @click="handleSaveLifecycle" :disabled="!currentLifecycleJson.trim()"
+                    class="px-12 py-3 font-black bg-[#232f3e] text-white hover:bg-black transition-all shadow-2xl disabled:opacity-20 disabled:grayscale uppercase tracking-widest text-xs italic active:scale-95">Deploy
+                    Rule</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Requester Pays Modal -->
+    <div v-if="activeModal === 'requesterPays'"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#232f3e]/60 backdrop-blur-sm transition-all italic">
+        <div class="bg-white border-4 border-[#232f3e] shadow-2xl w-full max-w-2xl overflow-hidden relative italic">
+            <div class="p-10 border-b-2 border-[#eaeded] bg-[#fafafa]">
+                <h2 class="text-4xl font-black text-[#232f3e] tracking-tighter uppercase italic">Billing Controller</h2>
+                <p class="text-[11px] text-[#ff9900] mt-3 font-black uppercase tracking-[0.2em] italic">Cost
+                    Transmission Governance</p>
+            </div>
+
+            <div class="p-10 space-y-6 relative">
+                <label
+                    class="flex items-center gap-8 p-10 border-2 cursor-pointer transition-all active:scale-[0.98] group italic"
+                    :class="tempRequesterPays === 'Enabled' ? 'bg-[#ff9900] border-[#ff9900] text-[#232f3e] shadow-xl italic' : 'bg-white border-[#eaeded] text-[#545b64] hover:border-[#ff9900]/30 shadow-none'">
+                    <div class="w-8 h-8 border-2 border-[#eaeded] flex items-center justify-center transition-all bg-white shrink-0"
+                        :class="tempRequesterPays === 'Enabled' ? 'border-[#232f3e] bg-[#232f3e] shadow-xl' : 'group-hover:border-[#ff9900]/50'">
+                        <div v-if="tempRequesterPays === 'Enabled'" class="w-4 h-4 bg-white rotate-45 animate-pulse">
+                        </div>
+                    </div>
+                    <input type="radio" v-model="tempRequesterPays" value="Enabled" class="hidden">
+                    <span class="text-2xl font-black uppercase italic tracking-tight">{{ tempRequesterPays === 'Enabled'
+                        ? '● ENABLED' : 'ENABLE' }}</span>
+                </label>
+
+                <label
+                    class="flex items-center gap-8 p-10 border-2 cursor-pointer transition-all active:scale-[0.98] group italic"
+                    :class="tempRequesterPays === 'Disabled' ? 'bg-[#232f3e] border-[#232f3e] text-white shadow-2xl italic' : 'bg-white border-[#eaeded] text-[#545b64] hover:border-[#ff9900]/30 shadow-none'">
+                    <div class="w-8 h-8 border-2 border-[#eaeded] flex items-center justify-center transition-all bg-white shrink-0"
+                        :class="tempRequesterPays === 'Disabled' ? 'border-white bg-white' : 'group-hover:border-[#ff9900]/50'">
+                        <div v-if="tempRequesterPays === 'Disabled'" class="w-4 h-4 bg-[#232f3e] rotate-45"></div>
+                    </div>
+                    <input type="radio" v-model="tempRequesterPays" value="Disabled" class="hidden">
+                    <span class="text-2xl font-black uppercase italic tracking-tight">{{ tempRequesterPays ===
+                        'Disabled' ? '● DISABLED' : 'DISABLE' }}</span>
+                </label>
+            </div>
+
+            <div class="p-10 border-t-2 border-[#eaeded] flex justify-end gap-6 bg-[#fafafa]">
+                <button @click="activeModal = null"
+                    class="px-10 py-3 font-black text-[#545b64] hover:text-[#ff9900] transition-colors text-xs uppercase tracking-widest italic active:scale-95">Cancel</button>
+                <button @click="handleSaveRequesterPays"
+                    class="px-12 py-3 font-black bg-[#232f3e] text-white hover:bg-black transition-all shadow-2xl text-xs uppercase tracking-widest italic active:scale-95">Save
+                    Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Access Logging Modal -->
+    <div v-if="activeModal === 'accessLogging'"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#232f3e]/60 backdrop-blur-sm transition-all italic">
+        <div class="bg-white border-4 border-[#232f3e] shadow-2xl w-full max-w-2xl overflow-hidden relative italic">
+            <div class="p-10 border-b-2 border-[#eaeded] bg-[#fafafa]">
+                <h2 class="text-4xl font-black text-[#232f3e] tracking-tighter uppercase italic">Access Logs</h2>
+                <p class="text-[11px] text-[#ff9900] mt-3 font-black uppercase tracking-[0.2em] italic">Audit Trail
+                    Configuration</p>
+            </div>
+
+            <div class="p-10 space-y-6 relative">
+                <div class="flex gap-8 mb-8">
+                    <label
+                        class="flex-1 flex items-center justify-center gap-4 p-8 border-2 cursor-pointer transition-all active:scale-95 group italic"
+                        :class="tempAccessLogging.status === 'Enabled' ? 'bg-[#ff9900] border-[#ff9900] text-[#232f3e] shadow-xl italic' : 'bg-white border-[#eaeded] text-[#545b64] hover:border-[#ff9900]/30 shadow-none'">
+                        <input type="radio" v-model="tempAccessLogging.status" value="Enabled" class="hidden">
+                        <span class="text-xs font-black uppercase tracking-widest">{{ tempAccessLogging.status ===
+                            'Enabled' ? '● ENABLED' : 'ENABLE' }}</span>
+                    </label>
+                    <label
+                        class="flex-1 flex items-center justify-center gap-4 p-8 border-2 cursor-pointer transition-all active:scale-95 group italic"
+                        :class="tempAccessLogging.status === 'Disabled' ? 'bg-[#232f3e] border-[#232f3e] text-white shadow-2xl italic' : 'bg-white border-[#eaeded] text-[#545b64] hover:border-[#ff9900]/30 shadow-none'">
+                        <input type="radio" v-model="tempAccessLogging.status" value="Disabled" class="hidden">
+                        <span class="text-xs font-black uppercase tracking-widest">{{ tempAccessLogging.status ===
+                            'Disabled' ? '● DISABLED' : 'DISABLE' }}</span>
+                    </label>
+                </div>
+
+                <div v-if="tempAccessLogging.status === 'Enabled'"
+                    class="space-y-6 animate-in fade-in slide-in-from-top-2">
+                    <div class="space-y-3">
+                        <label class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] italic">Target
+                            Bucket</label>
+                        <input type="text" v-model="tempAccessLogging.targetBucket" placeholder="e.g. my-logs-bucket"
+                            class="w-full px-6 py-4 bg-white border-2 border-[#eaeded] text-[14px] font-black uppercase italic tracking-tight text-[#232f3e] focus:border-[#ff9900] outline-none transition-all placeholder:text-[#eaeded] shadow-inner">
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-10 border-t-2 border-[#eaeded] flex justify-end gap-6 bg-[#fafafa]">
+                <button @click="activeModal = null"
+                    class="px-10 py-3 font-black text-[#545b64] hover:text-[#ff9900] transition-colors text-xs uppercase tracking-widest italic active:scale-95">Cancel</button>
+                <button @click="handleSaveAccessLogging"
+                    class="px-12 py-3 font-black bg-[#232f3e] text-white hover:bg-black transition-all shadow-2xl text-xs uppercase tracking-widest italic active:scale-95">Save
+                    Changes</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Object Lock Modal (Updated) -->
+    <div v-if="activeModal === 'objectLock'"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#232f3e]/60 backdrop-blur-sm transition-all italic">
+        <div class="bg-white border-4 border-[#232f3e] shadow-2xl w-full max-w-2xl overflow-hidden relative italic">
+            <div class="p-10 border-b-2 border-[#eaeded] bg-[#fafafa]">
+                <h2 class="text-4xl font-black text-[#232f3e] tracking-tighter uppercase italic">WORM Protocol Shield
+                </h2>
+                <p class="text-[11px] text-rose-500 mt-3 font-black uppercase tracking-[0.2em] italic">Critical
+                    Integrity Control</p>
+            </div>
+
+            <div class="p-10 relative">
+                <!-- AWS Style Warning -->
+                <div class="bg-rose-500/5 border-2 border-rose-500/20 p-8 mb-10 flex gap-8 italic">
+                    <div
+                        class="w-14 h-14 bg-white border-2 border-rose-500 flex items-center justify-center shrink-0 rotate-3 shadow-lg shadow-rose-500/10">
+                        <svg class="w-8 h-8 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                    </div>
+                    <div class="text-[12px] text-rose-500 leading-relaxed font-black uppercase tracking-tight">
+                        Object Lock cannot be disabled after activation. Enabling Object Lock also mandates the
+                        activation of Bucket Versioning.
+                        <a href="#"
+                            class="text-[#ff9900] hover:underline transition-all font-black ml-2 italic transition-all">Doc
+                            Layer ↗</a>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <label
+                        class="flex items-center gap-8 p-10 border-2 cursor-pointer transition-all active:scale-[0.98] group italic shadow-sm"
+                        :class="tempObjectLock === 'Enabled' ? 'bg-[#ff9900] border-[#ff9900] text-[#232f3e] shadow-xl italic' : 'bg-white border-[#eaeded] text-[#545b64] hover:border-[#ff9900]/30 shadow-none'">
+                        <div class="w-8 h-8 border-2 border-[#eaeded] flex items-center justify-center transition-all bg-white shrink-0"
+                            :class="tempObjectLock === 'Enabled' ? 'border-[#232f3e] bg-[#232f3e]' : 'group-hover:border-[#ff9900]/50'">
+                            <div v-if="tempObjectLock === 'Enabled'" class="w-4 h-4 bg-white rotate-45 animate-pulse">
+                            </div>
+                        </div>
+                        <input type="radio" v-model="tempObjectLock" value="Enabled" class="hidden">
+                        <span class="text-2xl font-black uppercase italic tracking-tight">{{ tempObjectLock ===
+                            'Enabled' ? '● ACTIVATED' : 'ACTIVATE' }}</span>
+                    </label>
+
+                    <label
+                        class="flex items-center gap-8 p-10 border-2 cursor-pointer transition-all active:scale-[0.98] group italic shadow-xl"
+                        :class="tempObjectLock === 'Disabled' ? 'bg-[#232f3e] border-[#232f3e] text-white shadow-2xl italic' : 'bg-white border-[#eaeded] text-[#545b64] hover:border-[#ff9900]/30 shadow-none'">
+                        <div class="w-8 h-8 border-2 border-[#eaeded] flex items-center justify-center transition-all bg-white shrink-0"
+                            :class="tempObjectLock === 'Disabled' ? 'border-white bg-white' : 'group-hover:border-[#ff9900]/50'">
+                            <div v-if="tempObjectLock === 'Disabled'" class="w-4 h-4 bg-[#232f3e] rotate-45"></div>
+                        </div>
+                        <input type="radio" v-model="tempObjectLock" value="Disabled" class="hidden">
+                        <span class="text-2xl font-black uppercase italic tracking-tight">{{ tempObjectLock ===
+                            'Disabled' ? '● DISABLED' : 'REMAIN DISABLED' }}</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="p-10 border-t-2 border-[#eaeded] flex justify-end gap-6 bg-[#fafafa]">
+                <button @click="activeModal = null"
+                    class="px-10 py-3 font-black text-[#545b64] hover:text-[#ff9900] transition-colors text-xs uppercase tracking-widest italic active:scale-95">Cancel</button>
+                <button @click="handleSaveObjectLock"
+                    class="px-12 py-3 font-black bg-[#232f3e] text-white hover:bg-black transition-all shadow-2xl text-xs uppercase tracking-widest italic active:scale-95">Commit
+                    Shield</button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Event Notification Modal -->
+    <div v-if="activeModal === 'eventNotification'"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#232f3e]/60 backdrop-blur-sm transition-all italic">
+        <div class="bg-white border-4 border-[#232f3e] shadow-2xl w-full max-w-2xl overflow-hidden relative italic">
+            <div class="p-10 border-b-2 border-[#eaeded] bg-[#fafafa]">
+                <h2 class="text-4xl font-black text-[#232f3e] tracking-tighter uppercase italic">Event Notification</h2>
+                <p class="text-[11px] text-[#ff9900] mt-3 font-black uppercase tracking-[0.2em] italic">Real-Time Event
+                    Streaming</p>
+            </div>
+
+            <div class="p-10 space-y-6 relative">
+                <div class="space-y-3">
+                    <label class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] italic">Notification
+                        Name</label>
+                    <input type="text" v-model="newEventNotification.name"
+                        placeholder="e.g. object-created-notification"
+                        class="w-full px-6 py-4 bg-white border-2 border-[#eaeded] text-[14px] font-black uppercase italic tracking-tight text-[#232f3e] focus:border-[#ff9900] outline-none transition-all placeholder:text-[#eaeded] shadow-inner">
+                </div>
+
+                <div class="space-y-3">
+                    <label class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] italic">Event
+                        Types</label>
+                    <select v-model="newEventNotification.types[0]"
+                        class="w-full px-6 py-4 bg-white border-2 border-[#eaeded] text-[14px] font-black uppercase italic tracking-tight text-[#232f3e] focus:border-[#ff9900] outline-none transition-all shadow-inner">
+                        <option value="s3:ObjectCreated:*">s3:ObjectCreated:* (All create events)</option>
+                        <option value="s3:ObjectCreated:Put">s3:ObjectCreated:Put</option>
+                        <option value="s3:ObjectCreated:Post">s3:ObjectCreated:Post</option>
+                        <option value="s3:ObjectCreated:Copy">s3:ObjectCreated:Copy</option>
+                        <option value="s3:ObjectRemoved:*">s3:ObjectRemoved:* (All delete events)</option>
+                        <option value="s3:ObjectRemoved:Delete">s3:ObjectRemoved:Delete</option>
+                        <option value="s3:ObjectRestore:*">s3:ObjectRestore:* (All restore events)</option>
+                        <option value="s3:ObjectRestore:Post">s3:ObjectRestore:Post</option>
+                        <option value="s3:ObjectRestore:Completed">s3:ObjectRestore:Completed</option>
+                    </select>
+                </div>
+
+                <div class="space-y-3">
+                    <label class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] italic">Destination
+                        (ARN)</label>
+                    <input type="text" v-model="newEventNotification.destination"
+                        placeholder="e.g. arn:serw:sns:region:account:topic"
+                        class="w-full px-6 py-4 bg-white border-2 border-[#eaeded] text-[14px] font-mono italic tracking-tight text-[#232f3e] focus:border-[#ff9900] outline-none transition-all placeholder:text-[#eaeded] shadow-inner">
+                </div>
+            </div>
+
+            <div class="p-10 border-t-2 border-[#eaeded] flex justify-end gap-6 bg-[#fafafa]">
+                <button @click="activeModal = null"
+                    class="px-10 py-3 font-black text-[#545b64] hover:text-[#ff9900] transition-colors text-xs uppercase tracking-widest italic active:scale-95"
+                    :disabled="isSaving">Cancel</button>
+                <button @click="handleAddEventNotification" :disabled="isSaving"
+                    class="px-12 py-3 font-black bg-[#232f3e] text-white hover:bg-black transition-all shadow-2xl text-xs uppercase tracking-widest italic active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3">
+                    <svg v-if="isSaving" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
+                        fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
                     </svg>
-                    Add tag
+                    {{ isSaving ? 'Creating...' : 'Create Notification' }}
                 </button>
             </div>
-            <div class="p-4 border-t border-gray-200 flex justify-end gap-3 bg-gray-50">
+        </div>
+    </div>
+
+    <!-- Tags Modal (Updated) -->
+    <div v-if="activeModal === 'tags'"
+        class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#232f3e]/60 backdrop-blur-sm transition-all overflow-y-auto italic">
+        <div
+            class="bg-white border-4 border-[#232f3e] shadow-2xl w-full max-w-4xl flex flex-col my-8 overflow-hidden relative italic">
+            <div class="p-10 border-b-2 border-[#eaeded] bg-[#fafafa]">
+                <h2 class="text-4xl font-black text-[#232f3e] tracking-tighter uppercase italic">Resource Tag Manager
+                </h2>
+                <p class="text-[11px] text-[#ff9900] mt-3 font-black uppercase tracking-[0.2em] italic">Metadata & Cost
+                    Allocation Stratum</p>
+            </div>
+
+            <div class="p-10 space-y-8 relative max-h-[600px] overflow-y-auto custom-scrollbar italic">
+                <div v-if="tempTags.length > 0" class="space-y-6">
+                    <div v-for="(tag, index) in tempTags" :key="index"
+                        class="flex gap-6 items-center p-8 bg-[#fafafa] border-2 border-[#eaeded] relative group italic">
+                        <div class="absolute top-0 left-0 w-1 bg-[#ff9900] h-full"></div>
+                        <div class="flex-1 space-y-3">
+                            <label class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] italic">Key
+                                Node</label>
+                            <input type="text" v-model="tag.key" placeholder="Enter Key..."
+                                class="w-full px-6 py-4 bg-white border-2 border-[#eaeded] text-[14px] font-black uppercase italic tracking-tight text-[#232f3e] focus:border-[#ff9900] outline-none transition-all placeholder:text-[#eaeded] shadow-inner">
+                        </div>
+                        <div class="flex-1 space-y-3">
+                            <label class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] italic">Value
+                                Association</label>
+                            <input type="text" v-model="tag.value" placeholder="Enter Value..."
+                                class="w-full px-6 py-4 bg-white border-2 border-[#eaeded] text-[14px] font-black uppercase italic tracking-tight text-[#232f3e] focus:border-[#ff9900] outline-none transition-all placeholder:text-[#eaeded] shadow-inner">
+                        </div>
+                        <button @click="handleRemoveTag(index)"
+                            class="mt-8 w-14 h-14 flex items-center justify-center bg-white border-2 border-[#eaeded] text-[#eaeded] hover:text-rose-500 hover:border-rose-500 transition-all active:scale-95 italic">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M20 12H4" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <button @click="handleAddTag"
+                    class="w-full py-6 border-4 border-dashed border-[#eaeded] text-[#545b64] hover:text-[#ff9900] hover:border-[#ff9900]/50 transition-all font-black uppercase tracking-widest text-[11px] italic bg-[#fafafa]/50">
+                    + ADD NEW METADATA TAG
+                </button>
+            </div>
+
+            <div class="p-10 border-t-2 border-[#eaeded] flex justify-end gap-6 bg-[#fafafa]">
                 <button @click="activeModal = null"
-                    class="px-4 py-1.5 font-bold text-[var(--aws-blue)] hover:underline text-xs">Cancel</button>
-                <button @click="handleSaveTags"
-                    class="px-6 py-1.5 font-bold bg-[var(--aws-orange)] text-white rounded-sm text-xs shadow-sm">Save
-                    changes</button>
+                    class="px-10 py-3 font-black text-[#545b64] hover:text-[#ff9900] transition-colors text-xs uppercase tracking-widest italic active:scale-95"
+                    :disabled="isSaving">Cancel</button>
+                <button @click="handleSaveTags" :disabled="isSaving"
+                    class="px-12 py-3 font-black bg-[#232f3e] text-white hover:bg-black transition-all shadow-2xl text-xs uppercase tracking-widest italic active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3">
+                    <svg v-if="isSaving" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg"
+                        fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
+                        </circle>
+                        <path class="opacity-75" fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
+                        </path>
+                    </svg>
+                    {{ isSaving ? 'Saving...' : 'Sync Tags' }}
+                </button>
             </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #eaeded;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #ff9900;
+}
+</style>

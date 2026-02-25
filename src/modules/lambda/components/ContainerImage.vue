@@ -12,45 +12,54 @@ const vpcEnabled = ref(false)
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div class="glass-panel p-8 rounded-3xl border border-white/10 shadow-xl">
-      <div class="flex items-center gap-1.5 mb-8">
-        <h3 class="text-xl font-bold text-white">Basic information</h3>
+  <div class="space-y-10">
+    <div class="bg-white p-10 border-2 border-[#232f3e] relative overflow-hidden">
+      <div
+        class="absolute right-0 top-0 w-32 h-32 bg-[#fafafa] -rotate-45 translate-x-16 -translate-y-16 border-l-2 border-[#232f3e]">
       </div>
 
-      <div class="space-y-8 max-w-2xl">
+      <div class="flex items-center gap-4 mb-10">
+        <span class="w-1.5 h-8 bg-amber-500"></span>
+        <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tight">Image_Registry_Manifest</h3>
+      </div>
+
+      <div class="space-y-10 max-w-3xl">
         <!-- Function Name -->
-        <div>
-          <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Function name</label>
-          <p class="text-[11px] text-slate-400 mb-4">Enter a name that describes the purpose of your function.</p>
-          <input v-model="functionName" type="text" placeholder="my-container-function" 
-            class="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 outline-none transition-all placeholder:text-slate-600" />
+        <div class="space-y-4">
+          <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-[#879196] italic">//
+            Destination_Identifier</label>
+          <input v-model="functionName" type="text" placeholder="IMAGE_NODE_V1"
+            class="w-full bg-white border-2 border-[#eaeded] px-6 py-4 text-sm font-black text-[#232f3e] focus:border-amber-500 outline-none transition-all placeholder:text-[#eaeded] uppercase tracking-widest" />
         </div>
 
         <!-- Container Image URI -->
-        <div>
-          <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Container image URI</label>
-          <p class="text-[11px] text-slate-400 mb-4">The location of the container image to use for your function.</p>
-          <div class="flex gap-3">
-            <input v-model="containerUri" type="text" placeholder="123456789012.dkr.ecr.us-east-1.amazonaws.com/my-image:latest" 
-                class="flex-grow bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 outline-none transition-all placeholder:text-slate-600" />
-            <button class="px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-white transition-all whitespace-nowrap">Browse images</button>
+        <div class="space-y-4">
+          <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-[#879196] italic">//
+            Registry_Uri_Handshake</label>
+          <div class="flex flex-col md:flex-row gap-4">
+            <input v-model="containerUri" type="text" placeholder="ECR_REGISTRY_PROTOCOL_01..."
+              class="flex-grow bg-white border-2 border-[#eaeded] px-6 py-4 text-sm font-black text-[#232f3e] focus:border-amber-500 outline-none transition-all placeholder:text-[#eaeded] uppercase tracking-widest" />
+            <button
+              class="px-8 py-4 bg-[#232f3e] text-white text-[10px] font-black uppercase tracking-widest hover:bg-amber-500 transition-all whitespace-nowrap">Scan_Registry</button>
           </div>
         </div>
 
         <!-- Architecture -->
-        <div>
-          <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-4">Architecture</label>
-          <div class="grid grid-cols-2 gap-4">
+        <div class="space-y-6">
+          <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-[#879196] italic">//
+            Computational_Architecture</label>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
             <label v-for="arch in ['arm64', 'x86_64']" :key="arch"
-              class="flex flex-col p-4 rounded-xl border transition-all cursor-pointer group"
-              :class="architecture === arch ? 'bg-amber-500/10 border-amber-500/30' : 'bg-white/[0.02] border-white/5 hover:border-white/10'">
-              <div class="flex items-center justify-between mb-2">
-                <span class="text-sm font-bold transition-colors" :class="architecture === arch ? 'text-white' : 'text-slate-500 group-hover:text-slate-300'">{{ arch }}</span>
+              class="flex flex-col p-6 border-2 transition-all cursor-pointer group"
+              :class="architecture === arch ? 'bg-[#fafafa] border-amber-500 translate-y-[-2px]' : 'bg-white border-[#eaeded] hover:border-[#232f3e]'">
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-black uppercase tracking-tight transition-colors"
+                  :class="architecture === arch ? 'text-[#232f3e]' : 'text-[#879196] group-hover:text-[#232f3e]'">{{
+                  arch }}</span>
                 <input type="radio" :value="arch" v-model="architecture" class="sr-only">
-                <div class="w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center"
-                    :class="architecture === arch ? 'border-amber-500 bg-amber-500' : 'border-slate-700'">
-                    <div v-if="architecture === arch" class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                <div class="w-6 h-6 border-2 transition-all flex items-center justify-center"
+                  :class="architecture === arch ? 'border-amber-500 bg-amber-500' : 'border-[#eaeded] group-hover:border-[#232f3e]'">
+                  <div v-if="architecture === arch" class="w-3 h-3 bg-white"></div>
                 </div>
               </div>
             </label>
@@ -60,54 +69,71 @@ const vpcEnabled = ref(false)
     </div>
 
     <!-- Additional Configurations Expandable -->
-    <div class="glass-panel border border-white/5 rounded-3xl overflow-hidden shadow-xl">
+    <div class="bg-white border-2 border-[#eaeded] overflow-hidden group hover:border-[#232f3e] transition-colors">
       <div @click="additionalConfigExpanded = !additionalConfigExpanded"
-        class="p-6 cursor-pointer hover:bg-white/[0.02] transition-all flex items-center gap-4">
-        <div class="w-8 h-8 rounded-lg bg-slate-500/10 flex items-center justify-center text-slate-400 transition-transform" :class="additionalConfigExpanded ? 'rotate-90' : ''">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
+        class="p-8 cursor-pointer flex items-center gap-6 relative">
+        <div v-if="additionalConfigExpanded" class="absolute left-0 top-0 bottom-0 w-1.5 bg-amber-500"></div>
+        <div
+          class="w-10 h-10 border-2 border-[#232f3e] flex items-center justify-center text-[#232f3e] transition-transform"
+          :class="additionalConfigExpanded ? 'rotate-90 bg-[#232f3e] text-white' : ''">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path d="M9 5l7 7-7 7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
         </div>
         <div class="flex-grow">
-          <h3 class="font-bold text-white text-sm">Additional configurations</h3>
-          <p class="text-[11px] text-slate-500 font-normal mt-1">Networking, security, and governance settings.</p>
+          <h3 class="font-black text-[#232f3e] text-lg uppercase tracking-tight">Advanced_Cluster_Policy</h3>
+          <p class="text-[10px] text-[#879196] font-black uppercase tracking-[0.2em] mt-1 italic">// Networking //
+            Security // Governance</p>
         </div>
       </div>
 
-      <div v-if="additionalConfigExpanded" class="px-8 pb-8 space-y-8 max-w-2xl border-t border-white/5 pt-8">
+      <div v-if="additionalConfigExpanded" class="px-10 pb-10 space-y-10 max-w-3xl border-t-2 border-[#eaeded] pt-10">
         <!-- Compute type -->
-        <div>
-          <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-4">Compute type</label>
+        <div class="space-y-6">
+          <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-[#879196] italic">//
+            Resource_Provisioning_Strategy</label>
           <div class="space-y-4">
-            <label v-for="type in [{id: 'standard', label: 'Lambda standard', sub: 'Default compute option'}, {id: 'snapstart', label: 'Lambda SnapStart', sub: 'Improve cold start performance'}]" :key="type.id"
-              class="flex items-start gap-4 p-4 rounded-xl border transition-all cursor-pointer group"
-              :class="computeType === type.id ? 'bg-amber-500/10 border-amber-500/30' : 'bg-white/[0.02] border-white/5 hover:border-white/10'">
+            <label
+              v-for="type in [{ id: 'standard', label: 'Forge Standard', sub: 'Balanced_Default' }, { id: 'snapstart', label: 'Forge SnapStart', sub: 'Low_Latency_Optimization' }]"
+              :key="type.id" class="flex items-start gap-6 p-6 border-2 transition-all cursor-pointer group"
+              :class="computeType === type.id ? 'bg-[#fafafa] border-amber-500' : 'bg-white border-[#eaeded] hover:border-[#232f3e]'">
               <div class="mt-1">
                 <input type="radio" :value="type.id" v-model="computeType" class="sr-only">
-                <div class="w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center"
-                    :class="computeType === type.id ? 'border-amber-500 bg-amber-500' : 'border-slate-700'">
-                    <div v-if="computeType === type.id" class="w-1.5 h-1.5 rounded-full bg-white"></div>
+                <div class="w-6 h-6 border-2 transition-all flex items-center justify-center"
+                  :class="computeType === type.id ? 'border-amber-500 bg-amber-500' : 'border-[#eaeded] group-hover:border-[#232f3e]'">
+                  <div v-if="computeType === type.id" class="w-3 h-3 bg-white"></div>
                 </div>
               </div>
               <div class="flex-grow">
-                <span class="text-sm font-bold block transition-colors" :class="computeType === type.id ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'">{{ type.label }}</span>
-                <span class="text-[11px] text-slate-500 block mt-1">{{ type.sub }}</span>
+                <span class="text-sm font-black uppercase tracking-tight block transition-colors"
+                  :class="computeType === type.id ? 'text-[#232f3e]' : 'text-[#879196] group-hover:text-[#232f3e]'">{{
+                  type.label }}</span>
+                <span class="text-[9px] font-black text-[#879196] uppercase tracking-widest block mt-2">{{ type.sub
+                  }}</span>
               </div>
             </label>
           </div>
         </div>
 
         <!-- Networking Toggle -->
-        <div class="p-6 bg-white/[0.02] border border-white/5 rounded-2xl">
-          <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-4">VPC Networking</label>
-          <label class="flex items-center gap-3 cursor-pointer group">
-            <div class="relative">
-                <input type="checkbox" v-model="vpcEnabled" class="sr-only">
-                <div class="w-10 h-6 bg-white/10 rounded-full transition-colors group-hover:bg-white/20" :class="vpcEnabled ? 'bg-amber-600' : ''"></div>
-                <div class="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform" :class="vpcEnabled ? 'translate-x-4' : ''"></div>
+        <div class="p-8 bg-[#fafafa] border-2 border-[#eaeded]">
+          <div class="flex items-center justify-between">
+            <div>
+              <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-[#879196] italic mb-2">//
+                Private_Mesh_Access</label>
+              <p class="text-[11px] font-medium text-[#545b64] uppercase tracking-wide">Establish direct connection to
+                protected VPC network segments.</p>
             </div>
-            <span class="text-xs font-bold text-slate-300 group-hover:text-white transition-colors">Enable VPC Access</span>
-          </label>
+            <label class="flex items-center cursor-pointer group shrink-0">
+              <div class="relative">
+                <input type="checkbox" v-model="vpcEnabled" class="sr-only">
+                <div class="w-14 h-8 border-2 border-[#232f3e] bg-white transition-colors group-hover:bg-[#fafafa]"
+                  :class="vpcEnabled ? 'bg-amber-500 border-amber-500' : ''"></div>
+                <div class="absolute left-1 top-1 w-6 h-6 bg-[#232f3e] transition-transform"
+                  :class="vpcEnabled ? 'translate-x-6 bg-white' : ''"></div>
+              </div>
+            </label>
+          </div>
         </div>
       </div>
     </div>
@@ -115,10 +141,5 @@ const vpcEnabled = ref(false)
 </template>
 
 <style scoped>
-.glass-panel {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-}
+/* Scoped styles removed as utility classes are used for the new theme */
 </style>
-

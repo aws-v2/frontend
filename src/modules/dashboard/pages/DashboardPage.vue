@@ -15,7 +15,7 @@ const router = useRouter()
 
 // Available Services Types
 const serviceCatalog = [
-    { id: 'compute', name: 'Compute Engine', icon: 'server', description: 'Manage clusters & serverless functions', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/compute', enabled: false },
+    { id: 'compute', name: 'Compute Engine', icon: 'server', description: 'Manage clusters & serverless functions', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/compute', enabled: true },
     { id: 'storage', name: 'Object Storage', icon: 'database', description: 'Buckets, policies & replication', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/s3/buckets', enabled: true },
     { id: 'sagemaker', name: 'SageMaker', icon: 'brain', description: 'Train & deploy ML models', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/sagemaker', enabled: false },
     { id: 'gaming', name: 'GameLift Edge', icon: 'gamepad', description: 'Multiplayer fleet scaling', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/gaming', enabled: false }
@@ -26,16 +26,7 @@ const activeServices = ref<any[]>([])
 const isResourceModalOpen = ref(false)
 
 const checkActiveServices = async () => {
-    // Check Compute
-    if (computeStore.instances.length === 0) {
-        await computeStore.fetchInstances()
-    }
-    const computeService = serviceCatalog.find(s => s.id === 'compute')
-    if (computeStore.instances.length > 0 && computeService?.enabled) {
-        activateService(computeService)
-    }
-
-    // Check local storage for manually activated services (simulated persistence for demo)
+    // 1. Load from local storage first
     const storedServices = localStorage.getItem('activeServices')
     if (storedServices) {
         const parsed = JSON.parse(storedServices)
@@ -43,6 +34,18 @@ const checkActiveServices = async () => {
             const service = serviceCatalog.find(s => s.id === id)
             if (service) activateService(service, false)
         })
+    }
+
+    // 2. Then check for auto-activations (Compute)
+    if (computeStore.instances.length === 0) {
+        await computeStore.fetchInstances()
+    }
+    const computeService = serviceCatalog.find(s => s.id === 'compute')
+    if (computeStore.instances.length > 0 && computeService?.enabled) {
+        // If not already active, activate and save
+        if (!activeServices.value.find(s => s.id === 'compute')) {
+            activateService(computeService)
+        }
     }
 }
 
@@ -273,14 +276,16 @@ const navigateTo = (path: string) => {
                         <svg viewBox="0 0 100 240" preserveAspectRatio="none"
                             class="absolute left-16 right-0 top-0 bottom-10 w-full h-full pointer-events-none overflow-visible">
                             <!-- Serwin Orange Trend Line (Data Entering) -->
-                            <path v-if="storageLensData && storageLensData.timeSeries.length"
-                                :d="`M 0,${240 - (storageLensData.timeSeries[0].storage / (storageLensData.summary.totalStorage || 1) * 180 + 20)} ${storageLensData.timeSeries.map((p, i) => 'L ' + (i * (100 / (storageLensData.timeSeries.length - 1))) + ',' + (240 - (p.storage / (storageLensData.summary.totalStorage || 1) * 180 + 20))).join(' ')}`"
+                            <path
+                                v-if="storageLensData && storageLensData.timeSeries && storageLensData.timeSeries.length && storageLensData.summary"
+                                :d="`M 0,${240 - ((storageLensData.timeSeries[0]?.storage || 0) / (storageLensData.summary.totalStorage || 1) * 180 + 20)} ${storageLensData.timeSeries.map((p, i) => 'L ' + (i * (100 / (storageLensData.timeSeries!.length - 1))) + ',' + (240 - ((p.storage || 0) / (storageLensData.summary!.totalStorage || 1) * 180 + 20))).join(' ')}`"
                                 stroke="#ff9900" stroke-width="2" fill="none" stroke-linejoin="round"
                                 stroke-linecap="round" />
 
                             <!-- YELLOW STORAGE THROUGHPUT LINE -->
-                            <path v-if="storageLensData && storageLensData.timeSeries.length"
-                                :d="`M 0,${240 - (storageLensData.timeSeries[0].throughput / 150000000 * 180 + 10)} ${storageLensData.timeSeries.map((p, i) => 'L ' + (i * (100 / (storageLensData.timeSeries.length - 1))) + ',' + (240 - (p.throughput / 150000000 * 180 + 10))).join(' ')}`"
+                            <path
+                                v-if="storageLensData && storageLensData.timeSeries && storageLensData.timeSeries.length"
+                                :d="`M 0,${240 - ((storageLensData.timeSeries[0]?.throughput || 0) / 150000000 * 180 + 10)} ${storageLensData.timeSeries.map((p, i) => 'L ' + (i * (100 / (storageLensData.timeSeries!.length - 1))) + ',' + (240 - ((p.throughput || 0) / 150000000 * 180 + 10))).join(' ')}`"
                                 stroke="#FFFB00" stroke-width="1.5" fill="none" stroke-linejoin="round"
                                 stroke-linecap="round" class="drop-shadow-[0_0_4px_rgba(255,251,0,0.3)]" />
                         </svg>

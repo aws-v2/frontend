@@ -13,34 +13,41 @@ export interface LambdaFunction {
     timeout?: number
 }
 
+export interface LambdaMetrics {
+    invocations: number
+    duration: number
+    errors: number
+    timeline: { timestamp: string; value: number }[]
+}
+
 export const useLambdaStore = defineStore('lambda', () => {
-    const functions = ref<LambdaFunction[]>([
-        // Mock data for initial development
-        { id: '1', name: 'process-image', runtime: 'Node.js 24.x', lastModified: '2026-02-10 14:30', status: 'Active', description: 'Handles image processing' },
-        { id: '2', name: 'send-email', runtime: 'Python 3.13', lastModified: '2026-02-11 09:15', status: 'Active', description: 'Sends welcome emails' },
-        { id: '3', name: 'data-cleanup', runtime: 'Java 21', lastModified: '2026-01-20 11:00', status: 'Inactive', description: 'Daily data cleaning job' }
-    ])
+    const functions = ref<LambdaFunction[]>([])
     const isLoading = ref(false)
     const currentFunction = ref<LambdaFunction | null>(null)
+    const lastTestResult = ref<any>(null)
+    const metrics = ref<LambdaMetrics | null>(null)
 
     const fetchFunctions = async () => {
         isLoading.value = true
         try {
-            const response = await apiClient.get<{ data: any[] }>('/lambda/functions')
-            const rawData = response.data?.data || []
+            const response = await apiClient.get<any>('/lambda/functions')
+            // Handle both { data: [] } and raw [] response formats
+            const rawData = Array.isArray(response.data) ? response.data : response.data?.data || []
+
             if (rawData.length > 0) {
-                functions.value = rawData.map(f => ({
-                    id: f.id,
-                    name: f.name,
-                    runtime: f.runtime,
-                    lastModified: f.last_modified || f.lastModified,
+                functions.value = rawData.map((f: any) => ({
+                    id: f.Name || f.id,
+                    name: f.Name || f.name,
+                    runtime: f.Execution?.kind ? f.Execution.kind.toUpperCase() : (f.runtime || 'SCRIPT'),
+                    lastModified: f.last_modified || f.lastModified || new Date().toISOString().slice(0, 16).replace('T', ' '),
                     status: f.status || 'Active',
-                    description: f.description || ''
+                    description: f.description || '',
+                    memory: f.Resources?.memory || f.memory,
+                    timeout: f.TimeoutMS ? f.TimeoutMS / 1000 : f.timeout
                 }))
             }
         } catch (error) {
             console.error('Failed to fetch lambda functions:', error)
-            // Keep mock data if API fails for now
         } finally {
             isLoading.value = false
         }
@@ -49,25 +56,26 @@ export const useLambdaStore = defineStore('lambda', () => {
     const fetchFunctionById = async (id: string) => {
         isLoading.value = true
         try {
-            // First check if we already have it in the list to avoid flickers
             const existing = functions.value.find(f => f.id === id)
             if (existing) currentFunction.value = existing
 
-            const response = await apiClient.get<{ data: any }>(`/lambda/functions/${id}`)
-            const data = response.data?.data
+            const response = await apiClient.get<any>(`/lambda/functions/${id}`)
+            const data = response.data?.data || response.data
+
             if (data) {
                 currentFunction.value = {
-                    id: data.id,
-                    name: data.name,
-                    runtime: data.runtime,
-                    lastModified: data.last_modified || data.lastModified,
+                    id: data.Name || data.id,
+                    name: data.Name || data.name,
+                    runtime: data.Execution?.kind ? data.Execution.kind.toUpperCase() : (data.runtime || 'SCRIPT'),
+                    lastModified: data.last_modified || data.lastModified || new Date().toISOString().slice(0, 16).replace('T', ' '),
                     status: data.status || 'Active',
-                    description: data.description || ''
+                    description: data.description || '',
+                    memory: data.Resources?.memory || data.memory,
+                    timeout: data.TimeoutMS ? data.TimeoutMS / 1000 : data.timeout
                 }
             }
         } catch (error) {
             console.error(`Failed to fetch lambda function ${id}:`, error)
-            // Fallback to mock if not found in list
             if (!currentFunction.value) {
                 const mock = functions.value.find(f => f.id === id)
                 if (mock) currentFunction.value = mock
@@ -77,11 +85,88 @@ export const useLambdaStore = defineStore('lambda', () => {
         }
     }
 
+    const registerFunction = async (formData: FormData) => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.post('/lambda/functions', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data'
+                }
+            })
+            return response.data
+        } catch (error) {
+            console.error('Failed to register lambda function:', error)
+            throw error
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const invokeFunction = async (id: string, payload: any) => {
+        isLoading.value = true
+        try {
+            // In a real app, this would be a POST to an invocation endpoint
+            // For now, we simulate a latency and return the payload with some metadata
+            await new Promise(resolve => setTimeout(resolve, 800))
+            lastTestResult.value = {
+                status: 200,
+                latency: Math.floor(Math.random() * 50) + 10,
+                response: {
+                    message: "Execution successful",
+                    inputReceived: payload,
+                    timestamp: new Date().toISOString()
+                }
+            }
+            return lastTestResult.value
+        } catch (error) {
+            console.error('Failed to invoke function:', error)
+            lastTestResult.value = { status: 500, error: 'Execution failed' }
+            throw error
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const fetchMetrics = async (name: string) => {
+        try {
+            const response = await apiClient.get<LambdaMetrics>(`/lambda/functions/${name}/metrics`)
+            metrics.value = response.data
+        } catch (error) {
+            console.error(`Failed to fetch metrics for ${name}:`, error)
+        }
+    }
+
+    const updateConfiguration = async (name: string, config: Partial<LambdaFunction>) => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.patch(`/lambda/functions/${name}/config`, {
+                memory: config.memory,
+                timeout: config.timeout,
+                description: config.description
+            })
+            if (currentFunction.value) {
+                currentFunction.value = { ...currentFunction.value, ...config }
+            }
+            return response.data
+        } catch (error) {
+            console.error('Failed to update configuration:', error)
+            throw error
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     return {
         functions,
         currentFunction,
         isLoading,
+        lastTestResult,
+        metrics,
         fetchFunctions,
-        fetchFunctionById
+        fetchFunctionById,
+        registerFunction,
+        invokeFunction,
+        fetchMetrics,
+        updateConfiguration
     }
 })

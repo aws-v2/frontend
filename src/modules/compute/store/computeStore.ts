@@ -17,6 +17,23 @@ export interface Instance {
     ssh_key?: string
 }
 
+export interface FleetStats {
+    totalInstances: number
+    activeInstances: number
+    avgCpuLoad: number
+    avgRamUsage: number
+    activeFunctions: number
+    clusterHealth: string
+}
+
+export interface FleetEvent {
+    id: string
+    timestamp: string
+    type: 'info' | 'warn' | 'error' | 'success'
+    message: string
+    resource: string
+}
+
 export interface CreateInstancePayload {
     image: string
     cpu: number
@@ -28,6 +45,15 @@ export const useComputeStore = defineStore('compute', () => {
     const instances = ref<Instance[]>([])
     const currentInstance = ref<Instance | null>(null)
     const isLoading = ref(false)
+    const fleetStats = ref<FleetStats>({
+        totalInstances: 0,
+        activeInstances: 0,
+        avgCpuLoad: 0,
+        avgRamUsage: 0,
+        activeFunctions: 0,
+        clusterHealth: 'Unknown'
+    })
+    const recentEvents = ref<FleetEvent[]>([])
 
     const fetchInstances = async () => {
         isLoading.value = true
@@ -133,6 +159,29 @@ export const useComputeStore = defineStore('compute', () => {
         }
     }
 
+    const fetchFleetOverview = async () => {
+        try {
+            const response = await apiClient.get<{ data: FleetStats }>('/compute/fleet/overview')
+            if (response.data?.data) {
+                fleetStats.value = response.data.data
+            }
+        } catch (error) {
+            console.error('Failed to fetch fleet overview:', error)
+            // Fallback to meaningful defaults if needed
+        }
+    }
+
+    const fetchRecentEvents = async () => {
+        try {
+            const response = await apiClient.get<{ data: FleetEvent[] }>('/compute/fleet/events')
+            if (response.data?.data) {
+                recentEvents.value = response.data.data
+            }
+        } catch (error) {
+            console.error('Failed to fetch recent events:', error)
+        }
+    }
+
     return {
         instances,
         currentInstance,
@@ -143,6 +192,10 @@ export const useComputeStore = defineStore('compute', () => {
         startInstance,
         stopInstance,
         restartInstance,
-        deleteInstance
+        deleteInstance,
+        fleetStats,
+        recentEvents,
+        fetchFleetOverview,
+        fetchRecentEvents
     }
 })

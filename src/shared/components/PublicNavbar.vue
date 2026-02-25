@@ -18,6 +18,10 @@ const handleComingSoon = () => {
     toastStore.addToast('Feature coming soon! 🚀', 'info')
 }
 
+const handleComputeClick = () => {
+    router.push({ name: 'compute-landing' })
+}
+
 const handleS3Click = () => {
     // Smart Navigation: Check auth before choosing destination
     const isAuthenticated = authStore.isAuthenticated || !!localStorage.getItem('auth_token')
@@ -47,8 +51,8 @@ const handleS3Click = () => {
 
             <!-- ... links omitted ... -->
             <div class="hidden md:flex items-center gap-12 text-sm font-bold text-[#545b64]">
-                <button @click="handleComingSoon"
-                    class="transition-colors text-[#ff9900]/40 hover:text-[#ff9900]/60 flex items-center gap-1.5">
+                <button @click="handleComputeClick" class="transition-colors cursor-pointer"
+                    :class="activeLink === 'compute' ? 'text-[#ff9900]' : 'hover:text-[#ff9900]'">
                     Compute
                 </button>
                 <a @click="handleS3Click" class="transition-colors cursor-pointer"

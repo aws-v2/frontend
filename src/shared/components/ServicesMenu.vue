@@ -26,6 +26,7 @@ const currentItems = (label: string) => {
 
 const getServiceRoute = (serviceName: string): string => {
     const routes: Record<string, string> = {
+        'EC2': '/compute/instances',
         'Lambda': '/lambda/functions',
         'S3': '/s3/buckets',
         'RDS': '/rds/databases',

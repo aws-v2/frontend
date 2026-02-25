@@ -1,73 +1,79 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import { useComputeStore } from '@/modules/compute/store/computeStore'
+import { useLambdaStore } from '@/modules/lambda/store/lambdaStore'
 import PublicNavbar from '@/shared/components/PublicNavbar.vue'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const computeStore = useComputeStore()
+const lambdaStore = useLambdaStore()
 
-// Mock analytics data
-const computeServices = [
-    {
-        id: 'ec2',
-        name: 'EC2 Instances',
-        icon: 'server',
-        description: 'Virtual servers in the cloud',
-        route: { name: 'instances-list' },
-        metrics: {
-            active: 12,
-            total: 15,
-            cpu: 45,
-            cost: 234.50
-        },
-        color: 'blue'
-    },
-    {
-        id: 'lambda',
-        name: 'AWS Lambda',
-        icon: 'bolt',
-        description: 'Serverless compute functions',
-        route: { name: 'lambda-landing' },
-        metrics: {
-            active: 28,
-            total: 28,
-            invocations: '1.2M',
-            cost: 89.30
-        },
-        color: 'indigo'
-    },
-    {
-        id: 'eks',
-        name: 'EKS Clusters',
-        icon: 'cubes',
-        description: 'Managed Kubernetes service',
-        route: '/eks',
-        metrics: {
-            active: 3,
-            total: 3,
-            pods: 142,
-            cost: 456.00
-        },
-        color: 'cyan',
-        comingSoon: true
-    }
+// State for live-feel metrics
+const liveCpu = ref(45.2)
+const liveRam = ref(32.8)
+const activeTab = ref('nodes')
+const activeRuntimeTabIndex = ref(2) // Default to Node.js
+let intervalId: any = null
+
+const runtimes = [
+    { name: '.NET', code: 'public void Handler(Stream stream) {\n  Console.WriteLine("Hello from .NET!");\n}' },
+    { name: 'Java', code: 'public class Handler implements RequestHandler<Map<String, String>, String> {\n  @Override\n  public String handleRequest(Map<String, String> event, Context context) {\n    return "Hello from Java!";\n  }\n}' },
+    { name: 'Node.js', code: 'exports.handler = async (event) => {\n  console.log(event);\n  return "Hello from Lambda!";\n};' },
+    { name: 'Python', code: 'import json\n\ndef lambda_handler(event, context):\n    print(event)\n    return {\n        \'statusCode\': 200,\n        \'body\': json.dumps(\'Hello from Python!\')\n    }' },
+    { name: 'Ruby', code: 'require "json"\n\ndef lambda_handler(event:, context:)\n    puts event\n    { statusCode: 200, body: JSON.generate("Hello from Ruby!") }\nend' }
 ]
 
-const totalBilling = ref(779.80)
-const billingTrend = ref('+12.3')
-
-const navigateTo = (route: any) => {
-    if (typeof route === 'string') {
-        router.push(route)
-    } else {
-        router.push(route)
-    }
+const updateLiveMetrics = () => {
+    liveCpu.value = Math.max(10, Math.min(95, liveCpu.value + (Math.random() - 0.5) * 5))
+    liveRam.value = Math.max(20, Math.min(80, liveRam.value + (Math.random() - 0.5) * 2))
 }
 
-onMounted(() => {
-    console.log('ComputeLandingPage mounted, auth status:', authStore.isAuthenticated)
+const navigateTo = (route: any) => {
+    router.push(route)
+}
+
+onMounted(async () => {
+    // Set active tab based on route if arriving from a lambda-specific link
+    if (router.currentRoute.value.name === 'lambda-landing') {
+        activeTab.value = 'functions'
+    }
+
+    if (authStore.isAuthenticated) {
+        await Promise.all([
+            computeStore.fetchInstances(),
+            computeStore.fetchFleetOverview(),
+            computeStore.fetchRecentEvents(),
+            lambdaStore.fetchFunctions()
+        ])
+
+        intervalId = setInterval(updateLiveMetrics, 3000)
+    }
 })
+
+onUnmounted(() => {
+    if (intervalId) clearInterval(intervalId)
+})
+
+const consoleEvents = computed(() => {
+    if (computeStore.recentEvents.length > 0) return computeStore.recentEvents
+    return [
+        { id: '1', timestamp: new Date().toISOString(), type: 'success', message: 'Hypervisor layer initialized', resource: 'SYSTEM' },
+        { id: '2', timestamp: new Date().toISOString(), type: 'info', message: 'Fleet sync completed', resource: 'ORCHESTRATOR' },
+        { id: '3', timestamp: new Date().toISOString(), type: 'info', message: 'Telemetry stream active', resource: 'MONITOR' }
+    ]
+})
+
+const getStatusColor = (type: string) => {
+    switch (type) {
+        case 'success': return 'text-emerald-500'
+        case 'warn': return 'text-amber-500'
+        case 'error': return 'text-red-500'
+        default: return 'text-blue-400'
+    }
+}
 </script>
 
 <template>
@@ -77,298 +83,441 @@ onMounted(() => {
         <!-- Navigation -->
         <PublicNavbar activeLink="compute" />
 
-        <div class="relative bg-[#fafafa]">
+        <div class="relative min-h-screen pt-24">
             <!-- Structural Grid Background -->
             <div
-                class="absolute inset-0 bg-[linear-gradient(rgba(37,99,235,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(37,99,235,0.03)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none">
+                class="absolute inset-0 bg-[linear-gradient(rgba(0,102,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,102,255,0.03)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none">
             </div>
 
-            <!-- Authenticated View: Dashboard -->
-            <div v-if="authStore.isAuthenticated" class="relative z-10 max-w-7xl mx-auto px-6 pt-24 pb-40">
-                <!-- Header -->
-                <div class="mb-16">
-                    <div class="inline-flex items-center gap-3 mb-8 text-blue-600">
-                        <div class="w-12 h-[2px] bg-blue-600"></div>
-                        <span class="text-[10px] font-black uppercase tracking-[0.3em]">Compute Infrastructure</span>
+            <!-- Authenticated View: Developer Console -->
+            <div v-if="authStore.isAuthenticated" class="relative z-10 max-w-7xl mx-auto px-6 pb-40">
+                <!-- Trace Header -->
+                <div class="mb-12 border-l-4 border-blue-600 pl-8 py-4 bg-[#fafafa] relative overflow-hidden group">
+                    <div
+                        class="absolute right-0 top-0 w-32 h-32 bg-blue-600/5 -rotate-45 translate-x-16 -translate-y-16">
                     </div>
-                    <h1 class="text-5xl md:text-7xl font-black text-[#232f3e] tracking-tighter mb-4 uppercase">
-                        Compute <span class="text-blue-600 italic">Overview</span>
+                    <div class="flex items-center gap-4 mb-3">
+                        <div class="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                        <span class="text-[10px] font-black text-blue-600 tracking-[0.3em] uppercase">Compute Protocol
+                            v2.0</span>
+                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div>
+                    </div>
+                    <h1 class="text-6xl font-black tracking-tight text-[#232f3e] uppercase leading-none">
+                        Fleet <span class="text-blue-600 italic">Orchestrator</span>
                     </h1>
-                    <p class="text-xl text-[#545b64] leading-relaxed max-w-2xl font-medium">
-                        Unified control plane for EC2, Lambda, and EKS clusters.
+                </div>
+
+                <!-- Main Grid -->
+                <div class="grid lg:grid-cols-12 gap-10">
+
+                    <!-- Left: Metrics & Health -->
+                    <div class="lg:col-span-8 space-y-10">
+
+                        <!-- Real-time Cluster Metrics -->
+                        <div class="grid md:grid-cols-3 gap-0 border-2 border-[#232f3e] bg-white">
+                            <div
+                                class="p-8 border-r-2 last:border-r-0 border-[#232f3e] hover:bg-[#fafafa] transition-colors">
+                                <p class="text-[10px] font-black text-[#879196] mb-6 tracking-widest uppercase italic">
+                                    CPU_LOAD</p>
+                                <div class="flex items-end gap-3 mb-6">
+                                    <span class="text-6xl font-black text-[#232f3e] tracking-tighter">{{
+                                        liveCpu.toFixed(1) }}<span class="text-xl text-blue-600 ml-1">%</span></span>
+                                </div>
+                                <div class="h-1 bg-[#eaeded] relative overflow-hidden">
+                                    <div class="absolute inset-y-0 left-0 bg-blue-600 transition-all duration-1000"
+                                        :style="{ width: `${liveCpu}%` }"></div>
+                                </div>
+                            </div>
+
+                            <div
+                                class="p-8 border-r-2 last:border-r-0 border-[#232f3e] hover:bg-[#fafafa] transition-colors">
+                                <p class="text-[10px] font-black text-[#879196] mb-6 tracking-widest uppercase italic">
+                                    MEM_INDEX</p>
+                                <div class="flex items-end gap-3 mb-6">
+                                    <span class="text-6xl font-black text-[#232f3e] tracking-tighter">{{
+                                        liveRam.toFixed(1) }}<span class="text-xl text-blue-600 ml-1">%</span></span>
+                                </div>
+                                <div class="h-1 bg-[#eaeded] relative overflow-hidden">
+                                    <div class="absolute inset-y-0 left-0 bg-blue-600 transition-all duration-1000"
+                                        :style="{ width: `${liveRam}%` }"></div>
+                                </div>
+                            </div>
+
+                            <div class="p-8 hover:bg-[#fafafa] transition-colors">
+                                <p class="text-[10px] font-black text-[#879196] mb-6 tracking-widest uppercase italic">
+                                    UPTIME</p>
+                                <div class="flex items-end gap-3 mb-6">
+                                    <span class="text-6xl font-black text-[#232f3e] tracking-tighter">99.9<span
+                                            class="text-xl text-emerald-600 ml-1">9</span></span>
+                                </div>
+                                <div class="flex gap-1 h-1">
+                                    <div v-for="i in 8" :key="i" class="flex-1 bg-emerald-500"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Tab Switcher -->
+                        <div class="flex border-b-2 border-[#232f3e] bg-white">
+                            <button @click="activeTab = 'nodes'"
+                                class="px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden hover:bg-[#fafafa]"
+                                :class="activeTab === 'nodes' ? 'text-blue-600 bg-white' : 'text-[#879196]'">
+                                Cluster_Nodes
+                                <div v-if="activeTab === 'nodes'"
+                                    class="absolute bottom-0 left-0 right-0 h-1 bg-blue-600"></div>
+                            </button>
+                            <button @click="activeTab = 'functions'"
+                                class="px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden hover:bg-[#fafafa]"
+                                :class="activeTab === 'functions' ? 'text-amber-600 bg-white' : 'text-[#879196]'">
+                                Forge_Functions
+                                <div v-if="activeTab === 'functions'"
+                                    class="absolute bottom-0 left-0 right-0 h-1 bg-amber-500"></div>
+                            </button>
+                            <button @click="() => { }"
+                                class="px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-[#eaeded] cursor-not-allowed">
+                                Mesh_Clusters (TBD)
+                            </button>
+                        </div>
+
+                        <!-- Nodes Section -->
+                        <div v-if="activeTab === 'nodes'"
+                            class="bg-white border-x-2 border-b-2 border-[#232f3e] p-10 animate-in fade-in duration-500">
+                            <div class="flex justify-between items-end mb-12">
+                                <div>
+                                    <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tight mb-2">
+                                        Node_Inventory</h3>
+                                    <p class="text-[10px] font-black text-[#879196] uppercase tracking-widest">Active
+                                        Hybrid-Core VMS</p>
+                                </div>
+                                <button @click="router.push({ name: 'instances-list' })"
+                                    class="text-[10px] font-black text-blue-600 hover:text-[#232f3e] transition-colors uppercase tracking-[0.2em] border-b-2 border-blue-600 pb-1">View
+                                    Terminal &rarr;</button>
+                            </div>
+
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                <template v-if="computeStore.instances.length > 0">
+                                    <div v-for="inst in computeStore.instances.slice(0, 7)" :key="inst.id"
+                                        @click="router.push({ name: 'instance-details', params: { id: inst.id } })"
+                                        class="p-5 border-2 border-[#eaeded] hover:border-blue-600 transition-all cursor-pointer group bg-[#fafafa] hover:bg-white relative overflow-hidden">
+                                        <div class="flex justify-between items-start mb-4">
+                                            <div class="w-3 h-3 border-2 border-emerald-500 bg-emerald-500"></div>
+                                            <span class="text-[10px] text-[#879196] font-black tracking-widest">{{
+                                                inst.id.substring(0, 8).toUpperCase() }}</span>
+                                        </div>
+                                        <p
+                                            class="text-xs font-black text-[#232f3e] truncate mb-1 uppercase tracking-tight">
+                                            {{ inst.name }}</p>
+                                        <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">{{
+                                            inst.type }} // {{ inst.az }}</p>
+                                    </div>
+                                </template>
+                                <button @click="router.push({ name: 'launch-instance' })"
+                                    class="p-5 border-2 border-dashed border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex flex-col items-center justify-center group font-black uppercase">
+                                    <span class="text-2xl mb-1">+</span>
+                                    <span class="text-[9px] tracking-widest">Deploy</span>
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Functions Section -->
+                        <div v-if="activeTab === 'functions'"
+                            class="bg-white border-x-2 border-b-2 border-[#232f3e] p-10 animate-in fade-in duration-500">
+                            <div class="flex justify-between items-end mb-12">
+                                <div>
+                                    <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tight mb-2">
+                                        Active_Functions</h3>
+                                    <p class="text-[10px] font-black text-[#879196] uppercase tracking-widest">
+                                        Event-Driven Forge Deployments
+                                    </p>
+                                </div>
+                                <button @click="router.push('/lambda/create')"
+                                    class="text-[10px] font-black text-amber-600 hover:text-[#232f3e] transition-colors uppercase tracking-[0.2em] border-b-2 border-amber-600 pb-1">Initialize
+                                    Forge &rarr;</button>
+                            </div>
+
+                            <div class="border-2 border-[#232f3e] overflow-hidden">
+                                <table class="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr class="bg-[#fafafa] border-b-2 border-[#232f3e]">
+                                            <th
+                                                class="px-6 py-4 text-[10px] font-black text-[#232f3e] uppercase tracking-widest">
+                                                Identifier
+                                            </th>
+                                            <th
+                                                class="px-6 py-4 text-[10px] font-black text-[#232f3e] uppercase tracking-widest">
+                                                Environment
+                                            </th>
+                                            <th
+                                                class="px-6 py-4 text-[10px] font-black text-[#232f3e] uppercase tracking-widest">
+                                                State</th>
+                                            <th
+                                                class="px-6 py-4 text-[10px] font-black text-[#232f3e] uppercase tracking-widest text-right">
+                                                Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr v-for="func in lambdaStore.functions.slice(0, 5)" :key="func.id"
+                                            class="border-b border-[#eaeded] hover:bg-[#fafafa] transition-colors group">
+                                            <td class="px-6 py-4">
+                                                <div class="flex items-center gap-3">
+                                                    <div
+                                                        class="w-8 h-8 border-2 border-[#eaeded] group-hover:border-amber-500 flex items-center justify-center text-[#232f3e] transition-colors font-black italic text-[10px]">
+                                                        f</div>
+                                                    <button
+                                                        @click="router.push({ name: 'lambda-details', params: { id: func.id } })"
+                                                        class="text-[11px] font-black text-[#232f3e] hover:text-amber-600 transition-colors uppercase tracking-tight">{{
+                                                            func.name }}</button>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <span
+                                                    class="text-[9px] font-black text-[#545b64] uppercase tracking-widest">{{
+                                                        func.runtime
+                                                    }}</span>
+                                            </td>
+                                            <td class="px-6 py-4">
+                                                <div class="flex items-center gap-2">
+                                                    <div class="w-1 h-1"
+                                                        :class="func.status === 'Active' ? 'bg-amber-500' : 'bg-[#eaeded]'">
+                                                    </div>
+                                                    <span class="text-[9px] font-black uppercase tracking-widest"
+                                                        :class="func.status === 'Active' ? 'text-[#232f3e]' : 'text-[#879196]'">{{
+                                                            func.status
+                                                        }}</span>
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 text-right">
+                                                <button
+                                                    class="p-1 border-2 border-transparent hover:border-[#232f3e] text-[#879196] hover:text-[#232f3e] transition-all">
+                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor"
+                                                        viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round"
+                                                            stroke-width="3"
+                                                            d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                                                    </svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        <tr v-if="lambdaStore.functions.length === 0">
+                                            <td colspan="4" class="px-6 py-12 text-center">
+                                                <p
+                                                    class="text-[9px] font-black text-[#879196] uppercase tracking-[0.3em]">
+                                                    No_Forge_Entities_Detected</p>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Terminal Trace -->
+                        <div class="bg-white border-2 border-[#232f3e] overflow-hidden flex flex-col h-[350px]">
+                            <div class="bg-[#232f3e] px-6 py-3 flex items-center justify-between">
+                                <div class="flex items-center gap-4">
+                                    <div class="flex gap-1.5">
+                                        <div class="w-1.5 h-1.5 rounded-full bg-red-400"></div>
+                                        <div class="w-1.5 h-1.5 rounded-full bg-amber-400"></div>
+                                        <div class="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                                    </div>
+                                    <span
+                                        class="text-[10px] font-black text-slate-400 uppercase tracking-widest italic">Live_Trace_Protocol</span>
+                                </div>
+                                <div class="text-emerald-400 text-[9px] font-black uppercase flex items-center gap-2">
+                                    <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+                                    Syncing
+                                </div>
+                            </div>
+                            <div class="flex-1 p-6 overflow-y-auto bg-[#fafafa] font-mono">
+                                <div v-for="event in consoleEvents" :key="event.id"
+                                    class="flex gap-4 mb-3 text-[11px] leading-relaxed group">
+                                    <span class="text-slate-400 shrink-0">{{ event.timestamp.substring(11, 19) }}</span>
+                                    <span :class="getStatusColor(event.type)" class="shrink-0 font-black">[{{
+                                        event.type.toUpperCase()
+                                        }}]</span>
+                                    <span class="text-blue-600 shrink-0 font-bold">{{ event.resource }}:</span>
+                                    <span class="text-[#232f3e] font-medium">{{ event.message }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Code Protocol Widget (Only on Functions tab or Bottom) -->
+                        <div v-if="activeTab === 'functions'"
+                            class="grid lg:grid-cols-2 gap-10 bg-white border-2 border-[#232f3e] p-10 animate-in slide-in-from-bottom-4 duration-700">
+                            <div>
+                                <h3 class="text-xl font-black text-[#232f3e] uppercase tracking-tight mb-6">
+                                    Code_Protocol</h3>
+                                <div class="grid grid-cols-3 gap-2">
+                                    <button v-for="(runtime, index) in runtimes" :key="runtime.name"
+                                        @click="activeRuntimeTabIndex = index"
+                                        class="p-3 border-2 text-[9px] font-black uppercase tracking-widest transition-all text-center"
+                                        :class="activeRuntimeTabIndex === index ? 'bg-[#232f3e] border-[#232f3e] text-white' : 'bg-white border-[#eaeded] text-[#879196] hover:border-[#232f3e]'">
+                                        {{ runtime.name }}
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="bg-[#232f3e] p-6 border-2 border-[#232f3e] relative overflow-hidden h-[200px]">
+                                <div class="flex items-center justify-between mb-4 pb-2 border-b border-white/10">
+                                    <span
+                                        class="text-[8px] font-black text-amber-500 uppercase tracking-widest italic">kernel.{{
+                                            runtimes[activeRuntimeTabIndex]?.name.toLowerCase() }}</span>
+                                </div>
+                                <div class="font-mono text-[10px] text-slate-300 overflow-x-auto">
+                                    <pre><code>{{ runtimes[activeRuntimeTabIndex]?.code }}</code></pre>
+                                </div>
+                                <div
+                                    class="absolute inset-0 bg-[linear-gradient(rgba(251,191,36,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(251,191,36,0.02)_1px,transparent_1px)] bg-[size:15px_15px] pointer-events-none">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column -->
+                    <div class="lg:col-span-4 space-y-10">
+                        <!-- Fleet Stats -->
+                        <div class="bg-[#fafafa] border-2 border-[#232f3e] p-8 relative overflow-hidden group">
+                            <div
+                                class="absolute top-0 right-0 w-32 h-32 bg-blue-600/5 -rotate-45 translate-x-16 -translate-y-16">
+                            </div>
+                            <h4 class="text-[10px] font-black text-[#879196] mb-8 tracking-[0.3em] uppercase italic">
+                                Fleet_Inventory</h4>
+                            <div class="space-y-8">
+                                <div class="flex justify-between items-end border-b-2 border-[#eaeded] pb-4">
+                                    <span
+                                        class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">Instances</span>
+                                    <span class="text-5xl font-black text-blue-600 tracking-tighter">{{
+                                        computeStore.instances.length
+                                        }}</span>
+                                </div>
+                                <div class="flex justify-between items-end border-b-2 border-[#eaeded] pb-4">
+                                    <span
+                                        class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">Lambda</span>
+                                    <span class="text-5xl font-black text-amber-600 tracking-tighter">{{
+                                        lambdaStore.functions.length
+                                        }}</span>
+                                </div>
+                                <div class="flex justify-between items-end">
+                                    <span class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">EKS
+                                        Clusters</span>
+                                    <span class="text-5xl font-black text-emerald-600 tracking-tighter">00</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick Actions -->
+                        <div class="bg-[#232f3e] p-10 space-y-6">
+                            <h4 class="text-[10px] font-black text-blue-400 mb-6 tracking-[0.3em] uppercase italic">
+                                System_Execution</h4>
+                            <button @click="router.push({ name: 'launch-instance' })"
+                                class="w-full p-5 bg-blue-600 hover:bg-blue-500 text-white text-xs font-black uppercase tracking-widest flex justify-between items-center group transition-all">
+                                <span>Provision_VM</span>
+                                <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
+                            </button>
+                            <button @click="router.push('/lambda/create')"
+                                class="w-full p-5 border-2 border-amber-500/30 hover:border-amber-500 text-amber-400 hover:text-white text-xs font-black uppercase tracking-widest flex justify-between items-center group transition-all">
+                                <span>Deploy_Forge</span>
+                                <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
+                            </button>
+                        </div>
+
+                        <!-- Documentation Portal -->
+                        <div class="bg-white border-2 border-[#232f3e] p-8">
+                            <h4 class="text-[10px] font-black text-[#879196] mb-8 tracking-widest uppercase italic">
+                                Infrastructure_Docs</h4>
+                            <ul class="space-y-6">
+                                <li v-for="link in [
+                                    { text: 'EC2_API_SPEC', path: '/docs/content/ec2-overview', color: 'bg-blue-600' },
+                                    { text: 'LAMBDA_RUNTIME', path: '/docs/content/lambda-overview', color: 'bg-amber-600' },
+                                    { text: 'GRID_TOPOLOGY', path: '/docs/vpc', color: 'bg-emerald-600' }
+                                ]" :key="link.text">
+                                    <a :href="link.path"
+                                        class="text-[11px] font-black text-[#232f3e] hover:text-blue-600 flex items-center justify-between group">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-1.5 h-1.5" :class="link.color"></div>
+                                            {{ link.text }}
+                                        </div>
+                                        <span class="opacity-0 group-hover:opacity-100 transition-opacity">&rarr;</span>
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Public Landing Page -->
+            <div v-else
+                class="relative z-10 w-full min-h-[90vh] flex flex-col items-center pt-32 pb-40 bg-white text-[#16191f]">
+                <div class="max-w-7xl mx-auto px-6 relative w-full text-center">
+                    <div class="inline-flex items-center gap-3 mb-10 text-blue-600">
+                        <div class="w-12 h-[2px] bg-blue-600"></div>
+                        <span class="text-[10px] font-black uppercase tracking-[0.3em]">Quantum Compute
+                            Unified Protocol</span>
+                        <div class="w-12 h-[2px] bg-blue-600"></div>
+                    </div>
+
+                    <h1 class="text-7xl md:text-9xl font-black tracking-tighter mb-12 leading-[0.95] uppercase">
+                        Absolute Compute.<br><span class="text-blue-600 italic">Universal Scaling.</span>
+                    </h1>
+
+                    <p class="text-xl md:text-2xl text-[#545b64] leading-relaxed max-w-4xl mx-auto mb-20 font-medium">
+                        Deploy lightning-fast virtual nodes and serverless endpoints on our <strong
+                            class="text-[#232f3e] font-black uppercase">low-latency global grid</strong>. Orchestrate
+                        hybrid fleets
+                        with a single atomic protocol.
                     </p>
-                </div>
 
-                <!-- Billing Summary Card - Sharp & Flat -->
-                <div class="bg-white border-2 border-[#232f3e] p-10 mb-16 relative overflow-hidden group shadow-none">
-                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-10">
-                        <div>
-                            <p class="text-[10px] font-black text-[#879196] uppercase tracking-[0.3em] mb-4">Total
-                                Compute Billing</p>
-                            <div class="flex items-baseline gap-4">
-                                <span class="text-6xl font-black text-[#232f3e] tracking-tighter">${{
-                                    totalBilling.toFixed(2) }}</span>
-                                <span class="text-sm font-black text-emerald-600 uppercase">{{ billingTrend }}%</span>
-                            </div>
-                            <p class="text-[10px] font-black text-[#879196] uppercase tracking-widest mt-4">Fiscal Feb
-                                2026</p>
-                        </div>
-                        <div class="flex flex-wrap gap-4">
-                            <button @click="router.push('/docs/content/ec2-overview')"
-                                class="px-8 py-3 bg-white border-2 border-[#232f3e] text-[#232f3e] font-black uppercase tracking-widest hover:bg-[#232f3e] hover:text-white transition-all transform hover:-translate-y-1">
-                                View Architecture
-                            </button>
-                            <button @click="router.push({ name: 'compute-optimization' })"
-                                class="px-8 py-4 bg-blue-600 text-white text-xs font-black uppercase tracking-widest hover:bg-blue-700 transition-all rounded-none">
-                                Optimize Resources
-                            </button>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Service Cards Grid - Flat & High Contrast -->
-                <div class="grid md:grid-cols-3 gap-0 border border-[#eaeded] bg-white mb-16">
-                    <div v-for="service in computeServices" :key="service.id"
-                        @click="!service.comingSoon && navigateTo(service.route)" :class="[
-                            'p-12 border-r border-[#eaeded] hover:bg-[#fafafa] transition-colors relative group',
-                            service.comingSoon ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'
-                        ]">
-
-                        <!-- Coming Soon Badge -->
-                        <div v-if="service.comingSoon"
-                            class="absolute top-6 right-6 px-3 py-1 border-2 border-[#232f3e] bg-white">
-                            <span class="text-[9px] font-black text-[#232f3e] uppercase tracking-[0.2em]">Pending</span>
-                        </div>
-
-                        <!-- Icon - Sharp -->
-                        <div class="w-12 h-12 border-2 flex items-center justify-center mb-10 transition-all group-hover:scale-110"
-                            :style="{ borderColor: service.color === 'blue' ? '#2563eb' : service.color === 'indigo' ? '#4f46e5' : '#0891b2', color: service.color === 'blue' ? '#2563eb' : service.color === 'indigo' ? '#4f46e5' : '#0891b2' }">
-                            <svg v-if="service.icon === 'server'" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                    d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 01-2 2v4a2 2 0 012 2h14a2 2 0 012-2v-4a2 2 0 01-2-2m-2-4h.01M17 16h.01" />
-                            </svg>
-                            <svg v-if="service.icon === 'bolt'" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                    d="M13 10V3L4 14h7v7l9-11h-7z" />
-                            </svg>
-                            <svg v-if="service.icon === 'cubes'" class="w-6 h-6" fill="none" viewBox="0 0 24 24"
-                                stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
-                        </div>
-
-                        <!-- Service Info -->
-                        <h3 class="text-xl font-black text-[#232f3e] mb-4 uppercase tracking-tight">{{ service.name }}
-                        </h3>
-                        <p class="text-sm text-[#545b64] mb-10 font-bold leading-relaxed">{{ service.description }}</p>
-
-                        <!-- Metrics - Corporate Style -->
-                        <div class="space-y-4 pt-6 border-t-2 border-[#232f3e]">
-                            <div
-                                class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[#879196]">
-                                <span>Utilization</span>
-                                <span class="text-[#232f3e]">{{ service.metrics.active }} / {{ service.metrics.total
-                                    }}</span>
-                            </div>
-                            <div
-                                class="flex justify-between items-center text-[10px] font-black uppercase tracking-widest text-[#879196]">
-                                <span>{{ service.id === 'ec2' ? 'Avg Load' : service.id === 'lambda' ? 'Execution' :
-                                    'Compute' }}</span>
-                                <span class="text-[#232f3e]">{{ service.id === 'ec2' ? `${service.metrics.cpu}%` :
-                                    service.id === 'lambda' ? service.metrics.invocations : service.metrics.pods
-                                    }}</span>
-                            </div>
-                            <div class="flex justify-between items-center pt-2">
-                                <span
-                                    class="text-[10px] font-black uppercase tracking-widest text-[#879196]">Operational
-                                    Cost</span>
-                                <span class="text-xl font-black italic tracking-tighter"
-                                    :style="{ color: service.color === 'blue' ? '#2563eb' : service.color === 'indigo' ? '#4f46e5' : '#0891b2' }">${{
-                                        service.metrics.cost.toFixed(2) }}</span>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Quick Actions - Large Buttons -->
-                <div class="grid md:grid-cols-2 gap-8">
-                    <router-link :to="{ name: 'launch-instance' }"
-                        class="bg-white border-2 border-[#232f3e] p-8 hover:bg-[#fafafa] transition-all group flex items-center justify-between">
-                        <div class="flex items-center gap-6">
-                            <div
-                                class="w-12 h-12 border-2 border-blue-600 flex items-center justify-center text-blue-600 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 class="text-[#232f3e] font-black text-sm uppercase tracking-widest">Provision EC2
-                                    Node</h4>
-                                <p class="text-[10px] font-bold text-[#879196] uppercase tracking-[0.2em] mt-1">L1 Bare
-                                    Metal Deployment</p>
-                            </div>
-                        </div>
-                        <span class="text-2xl font-black group-hover:translate-x-2 transition-transform">→</span>
-                    </router-link>
-
-                    <router-link to="/lambda/create"
-                        class="bg-white border-2 border-[#232f3e] p-8 hover:bg-[#fafafa] transition-all group flex items-center justify-between">
-                        <div class="flex items-center gap-6">
-                            <div
-                                class="w-12 h-12 border-2 border-indigo-600 flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
-                                        d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                </svg>
-                            </div>
-                            <div>
-                                <h4 class="text-[#232f3e] font-black text-sm uppercase tracking-widest">Execute Atomic
-                                    Lambda</h4>
-                                <p class="text-[10px] font-bold text-[#879196] uppercase tracking-[0.2em] mt-1">
-                                    Cold-Start Optimized Function</p>
-                            </div>
-                        </div>
-                        <span class="text-2xl font-black group-hover:translate-x-2 transition-transform">→</span>
-                    </router-link>
-                </div>
-            </div>
-
-            <!-- Unauthenticated View: Guest Landing Page -->
-            <div v-else class="relative z-10 w-full min-h-[90vh] flex flex-col items-center pt-32 pb-40">
-                <!-- Diagonal Structural Background -->
-                <div
-                    class="absolute top-0 right-0 w-1/2 h-full bg-white transform skew-x-[-15deg] translate-x-40 hidden lg:block border-l-2 border-[#eaeded]">
-                </div>
-
-                <div class="max-w-7xl mx-auto px-6 relative w-full">
-                    <div class="grid lg:grid-cols-5 gap-16 items-center">
-                        <div class="lg:col-span-3">
-                            <div class="inline-flex items-center gap-3 mb-10 text-blue-600">
-                                <div class="w-12 h-[2px] bg-blue-600"></div>
-                                <span class="text-[10px] font-black uppercase tracking-[0.3em]">Quantum Compute
-                                    Engine</span>
-                            </div>
-
-                            <h1
-                                class="text-6xl md:text-9xl font-black text-[#232f3e] tracking-tighter mb-10 leading-[0.95] uppercase">
-                                Atomic Compute.<br>
-                                <span class="text-blue-600 italic">Total Control.</span>
-                            </h1>
-
-                            <p class="text-xl md:text-2xl text-[#545b64] leading-relaxed max-w-2xl mb-16 font-medium">
-                                Deploy lightning-fast virtual nodes and serverless endpoints on our
-                                <strong class="text-[#232f3e] font-black">low-latency global grid</strong>.
-                                High-availability infrastructure for modern engineering teams.
-                            </p>
-
-                            <div class="flex flex-wrap gap-6">
-                                <button @click="router.push('/register')"
-                                    class="bg-blue-600 hover:bg-blue-700 text-white font-black px-12 py-6 transition-all rounded-none uppercase tracking-widest text-sm">
-                                    Launch First Node
-                                </button>
-                                <button @click="router.push('/docs/content/ec2-overview')"
-                                    class="px-12 py-6 border-2 border-[#232f3e] text-[#232f3e] font-black hover:bg-[#232f3e] hover:text-white transition-all rounded-none uppercase tracking-widest text-sm">
-                                    View Architecture &rarr;
-                                </button>
-                            </div>
-                        </div>
-
-                        <!-- Right Decor: Performance Grid -->
-                        <div class="lg:col-span-2 hidden lg:block">
-                            <div class="grid grid-cols-4 gap-4 opacity-40">
-                                <div v-for="i in 16" :key="i"
-                                    class="aspect-square border-2 border-[#eaeded] bg-white flex items-center justify-center group hover:bg-blue-50 hover:border-blue-200 transition-all duration-500">
-                                    <div
-                                        class="w-1.5 h-1.5 bg-[#eaeded] group-hover:bg-blue-600 group-hover:scale-150 transition-all">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Status Widget -->
-                            <div class="mt-10 bg-white border-2 border-[#232f3e] p-8">
-                                <div class="flex flex-col gap-6">
-                                    <div
-                                        class="flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em] text-[#879196]">
-                                        <span>SYSTEM LOAD</span>
-                                        <span class="text-emerald-600 font-black">OPTIMAL</span>
-                                    </div>
-                                    <div class="h-10 border-2 border-[#eaeded] flex items-center gap-1 p-1">
-                                        <div v-for="k in 24" :key="k"
-                                            class="flex-1 h-full bg-blue-100 group hover:bg-blue-600 transition-colors"
-                                            :class="{ 'bg-blue-600': k < 18 }"></div>
-                                    </div>
-                                    <div class="text-[10px] font-black uppercase text-[#232f3e] tracking-widest">
-                                        Latency: 12.4ms (GLOBAL AVG)</div>
-                                </div>
-                            </div>
-                        </div>
+                    <div class="flex flex-wrap justify-center gap-8">
+                        <button @click="router.push('/register')"
+                            class="bg-[#232f3e] hover:bg-blue-600 text-white font-black px-16 py-8 transition-all rounded-none uppercase tracking-[0.3em] text-sm group">
+                            Launch Cluster <span
+                                class="ml-4 group-hover:translate-x-2 transition-transform inline-block">&rarr;</span>
+                        </button>
+                        <button @click="router.push('/docs/content/ec2-overview')"
+                            class="px-16 py-8 border-4 border-[#232f3e] text-[#232f3e] font-black hover:bg-[#232f3e] hover:text-white transition-all rounded-none uppercase tracking-[0.3em] text-sm">
+                            View Spec
+                        </button>
                     </div>
 
-                    <!-- Tech Preview Grid -->
-                    <div class="grid md:grid-cols-3 gap-0 mt-40 border-2 border-[#232f3e] bg-white">
-                        <div class="p-12 border-r-2 border-[#232f3e] hover:bg-[#fafafa] transition-colors group">
-                            <h3 class="text-xl font-black text-[#232f3e] mb-5 uppercase tracking-tight">EC2 Fleet</h3>
-                            <p class="text-sm text-[#545b64] font-bold leading-relaxed">Bare-metal performance for
-                                demanding workloads. Custom VM optimization and instant auto-scaling.</p>
-                        </div>
-                        <div class="p-12 border-r-2 border-[#232f3e] hover:bg-[#fafafa] transition-colors group">
-                            <h3 class="text-xl font-black text-[#232f3e] mb-5 uppercase tracking-tight">Pure Serverless
+                    <!-- Features Row -->
+                    <div class="grid md:grid-cols-3 gap-0 mt-40 border-2 border-[#232f3e]">
+                        <div
+                            class="p-12 border-r-2 border-b-2 md:border-b-0 border-[#232f3e] text-left hover:bg-[#fafafa] transition-colors group">
+                            <div
+                                class="w-10 h-10 border-2 border-blue-600 flex items-center justify-center text-blue-600 mb-8 group-hover:bg-blue-600 group-hover:text-white transition-all">
+                                <span class="font-black italic">vm</span>
+                            </div>
+                            <h3 class="text-lg font-black text-[#232f3e] mb-4 uppercase tracking-tighter">Hypervisor VM
                             </h3>
-                            <p class="text-sm text-[#545b64] font-bold leading-relaxed">Event-driven code execution with
-                                sub-ms cold starts. Fully isolated environments for atomic logic.</p>
+                            <p
+                                class="text-xs text-[#879196] font-bold leading-relaxed uppercase tracking-widest leading-6">
+                                Dedicated hardware isolation with sub-ms NVMe backplanes.</p>
                         </div>
-                        <div class="p-12 hover:bg-[#fafafa] transition-colors group">
-                            <h3 class="text-xl font-black text-[#232f3e] mb-5 uppercase tracking-tight">K8S Managed</h3>
-                            <p class="text-sm text-[#545b64] font-bold leading-relaxed">Enterprise-grade Kubernetes
-                                orchestration. One-click zero-downtime upgrades and cluster mesh.</p>
+                        <div
+                            class="p-12 border-r-2 border-b-2 md:border-b-0 border-[#232f3e] text-left hover:bg-[#fafafa] transition-colors group">
+                            <div
+                                class="w-10 h-10 border-2 border-amber-500 flex items-center justify-center text-amber-500 mb-8 group-hover:bg-amber-500 group-hover:text-white transition-all">
+                                <span class="font-black italic">λ</span>
+                            </div>
+                            <h3 class="text-lg font-black text-[#232f3e] mb-4 uppercase tracking-tighter">Forge
+                                Serverless</h3>
+                            <p
+                                class="text-xs text-[#879196] font-bold leading-relaxed uppercase tracking-widest leading-6">
+                                Event-driven triggers with zero cold-start latency mapping.</p>
+                        </div>
+                        <div class="p-12 text-left hover:bg-[#fafafa] transition-colors group">
+                            <div
+                                class="w-10 h-10 border-2 border-emerald-500 flex items-center justify-center text-emerald-500 mb-8 group-hover:bg-emerald-500 group-hover:text-white transition-all">
+                                <span class="font-black italic">k8</span>
+                            </div>
+                            <h3 class="text-lg font-black text-[#232f3e] mb-4 uppercase tracking-tighter">Mesh Clusters
+                            </h3>
+                            <p
+                                class="text-xs text-[#879196] font-bold leading-relaxed uppercase tracking-widest leading-6">
+                                Managed
+                                Kubernetes with integrated service-mesh security.</p>
                         </div>
                     </div>
                 </div>
             </div>
-
-            <!-- Stats Bar -->
-            <section class="border-y-2 border-[#232f3e] bg-white py-16 relative z-10">
-                <div class="max-w-7xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-12">
-                    <div v-for="(stat, idx) in [
-                        { label: 'Uptime Protocol', val: '99.99%', sub: 'SLI GUARANATEED' },
-                        { label: 'Edge Nodes', val: '2,400+', sub: 'GLOBAL DISTRIBUTION' },
-                        { label: 'Provision Seg', val: '< 10S', sub: 'VM SPIN-UP TIME' },
-                        { label: 'Network Fabric', val: '400G', sub: 'THROUGHPUT RATIO' }
-                    ]" :key="idx">
-                        <div class="text-[9px] font-black text-[#879196] uppercase tracking-[0.3em] mb-2">{{ stat.label
-                            }}</div>
-                        <div class="text-4xl md:text-5xl font-black text-[#232f3e] tracking-tighter mb-1 italic">{{
-                            stat.val }}</div>
-                        <div class="text-[9px] font-black text-blue-600 uppercase tracking-widest">{{ stat.sub }}</div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Testimonials - Sharp Cards -->
-            <section class="py-32 bg-[#fafafa]">
-                <div class="max-w-7xl mx-auto px-6">
-                    <div class="grid md:grid-cols-3 gap-8">
-                        <div v-for="(t, i) in [
-                            { quote: 'Serwin Compute reduced our deployment times by 40% in just one week. The L1 performance is unmatched.', name: 'John Doe', role: 'DEVOPS' },
-                            { quote: 'Moving heavy workloads was seamless. The performance per dollar ratio redefined our infrastructure costs.', name: 'Jane Smith', role: 'CTO, ORBITER' },
-                            { quote: 'The programmable scaling API is incredibly intuitive. Integration took less than an afternoon.', name: 'Mike Ross', role: 'ARCHITECT' }
-                        ]" :key="i"
-                            class="p-10 border-2 border-[#232f3e] bg-white hover:translate-y-[-4px] transition-transform">
-                            <div class="text-blue-600 font-black text-4xl mb-6">"</div>
-                            <p class="text-sm text-[#545b64] font-bold leading-relaxed mb-10 italic">{{ t.quote }}</p>
-                            <div class="flex items-center gap-4 border-t border-[#eaeded] pt-6">
-                                <div class="w-2 h-2 rounded-full bg-blue-600"></div>
-                                <div class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">{{ t.name
-                                    }} <span class="text-[#879196] font-medium ml-2">// {{ t.role }}</span></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
         </div>
 
         <footer class="py-20 bg-white border-t-2 border-[#232f3e]">
@@ -379,11 +528,12 @@ onMounted(() => {
                     <span class="font-black text-xl text-[#232f3e] tracking-tighter uppercase">SerwinCompute</span>
                 </div>
                 <div class="flex gap-10 text-[10px] font-black text-[#879196] uppercase tracking-[0.2em]">
-                    <a href="#" class="hover:text-blue-600">Terms</a>
-                    <a href="#" class="hover:text-blue-600">Infrastructure</a>
-                    <a href="#" class="hover:text-blue-600">Status</a>
+                    <a href="#" class="hover:text-blue-600 transition-colors">Infrastructure_Log</a>
+                    <a href="#" class="hover:text-blue-600 transition-colors">Access_Matrix</a>
+                    <a href="#" class="hover:text-blue-600 transition-colors">Network_SLA</a>
                 </div>
-                <div class="text-[10px] text-[#879196] font-black uppercase tracking-widest">© 2026 SERWIN SYSTEMS INC.
+                <div class="text-[10px] text-[#879196] font-black uppercase tracking-widest italic">© 2026 SERWIN
+                    INFRASTRUCTURE
                 </div>
             </div>
         </footer>
@@ -397,7 +547,18 @@ onMounted(() => {
     font-family: 'Urbanist', sans-serif;
 }
 
-.font-black {
-    font-weight: 900;
+@keyframes scan {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.animate-scan {
+    width: 30%;
+    animation: scan 2s cubic-bezier(0.4, 0, 0.2, 1) infinite;
 }
 </style>

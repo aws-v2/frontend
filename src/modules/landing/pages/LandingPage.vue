@@ -24,7 +24,7 @@ const nodes = ref([
 
 // Use Cases data
 const useCases = [
-    { title: 'Compute', action: 'Deploy VMs in seconds', icon: '⚡', route: '/compute', comingSoon: true },
+    { title: 'Compute', action: 'Deploy VMs in seconds', icon: '⚡', route: '/compute' },
     { title: 'Gaming', action: 'Host low-latency sessions', icon: '🎮', route: '/gaming', comingSoon: true },
     { title: 'Storage', action: 'Archive petabytes of data', icon: '💾', route: '/s3' },
     { title: 'AI Ops', action: 'Train models on H100 clusters', icon: '🧠', route: '/sagemaker', comingSoon: true },
@@ -44,8 +44,7 @@ const features = [
         desc: 'Spin up 10,000 cores in under 45 seconds. Our hypervisor-free architecture delivers raw silicon performance.',
         link: 'Read Benchmarks',
         path: '/compute',
-        gradient: 'bg-indigo-600/5',
-        comingSoon: true
+        gradient: 'bg-indigo-600/5'
     },
     {
         title: 'S3-Compatible Storage',

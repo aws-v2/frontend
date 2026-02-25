@@ -24,98 +24,119 @@ export const handler = async (event, context) => {
 </script>
 
 <template>
-  <div class="space-y-6">
-    <div class="glass-panel p-8 rounded-3xl border border-white/10 shadow-xl">
-      <div class="flex items-center gap-1.5 mb-8">
-        <h3 class="text-xl font-bold text-white">Basic information</h3>
-      </div>
-
-      <div class="space-y-8 max-w-4xl">
-         <!-- Blueprint Name -->
-         <div>
-          <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-4">Blueprint name</label>
-          <div class="relative group max-w-2xl">
-              <select v-model="blueprintName" 
-                class="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 outline-none transition-all cursor-pointer appearance-none">
-                <option v-for="b in blueprints" :key="b.name" :value="b.name" class="bg-[#1a1c23]">{{ b.name }}</option>
-              </select>
-              <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-500">
-                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </div>
-          </div>
-          <p class="text-[10px] text-slate-500 mt-2 font-medium">A starter AWS Lambda function. <span class="ml-4 font-bold text-amber-500">nodejs22.x</span></p>
-        </div>
-
-        <!-- Function Name -->
-        <div class="max-w-2xl">
-          <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-2">Function name</label>
-          <p class="text-[11px] text-slate-400 mb-4">Enter a name that describes the purpose of your function.</p>
-          <input v-model="functionName" type="text" placeholder="my-blueprint-function" 
-            class="w-full bg-white/[0.03] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:border-amber-500/50 focus:ring-1 focus:ring-amber-500/50 outline-none transition-all placeholder:text-slate-600" />
-        </div>
-
-        <!-- Static Info -->
-        <div class="grid grid-cols-2 gap-8 max-w-lg">
-            <div class="p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
-                <label class="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Runtime</label>
-                <p class="text-xs text-white font-bold">nodejs22.x</p>
+    <div class="space-y-10">
+        <div class="bg-white p-10 border-2 border-[#232f3e] relative overflow-hidden">
+            <div
+                class="absolute right-0 top-0 w-32 h-32 bg-[#fafafa] -rotate-45 translate-x-16 -translate-y-16 border-l-2 border-[#232f3e]">
             </div>
-            <div class="p-4 bg-white/[0.02] border border-white/5 rounded-2xl">
-                 <label class="block text-[10px] font-black uppercase tracking-widest text-slate-500 mb-1">Architecture</label>
-                 <p class="text-xs text-white font-bold">x86_64</p>
-            </div>
-        </div>
 
-        <!-- Execution Role -->
-        <div>
-            <label class="block text-xs font-black uppercase tracking-widest text-slate-500 mb-4">Execution role</label>
-            <div class="space-y-4">
-                <label v-for="role in [{id: 'create-new', label: 'Create a new role with basic Lambda permissions'}, {id: 'existing', label: 'Use an existing role'}]" :key="role.id"
-                    class="flex items-center gap-4 p-4 rounded-xl border transition-all cursor-pointer group"
-                    :class="executionRole === role.id ? 'bg-amber-500/10 border-amber-500/30' : 'bg-white/[0.02] border-white/5 hover:border-white/10'">
-                    <div class="mt-0.5">
-                        <input type="radio" :value="role.id" v-model="executionRole" class="sr-only">
-                        <div class="w-4 h-4 rounded-full border-2 transition-all flex items-center justify-center"
-                            :class="executionRole === role.id ? 'border-amber-500 bg-amber-500' : 'border-slate-700'">
-                            <div v-if="executionRole === role.id" class="w-1.5 h-1.5 rounded-full bg-white"></div>
+            <div class="flex items-center gap-4 mb-10">
+                <span class="w-1.5 h-8 bg-amber-500"></span>
+                <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tight">Blueprint_Manifest</h3>
+            </div>
+
+            <div class="space-y-10 max-w-4xl">
+                <!-- Blueprint Name -->
+                <div class="space-y-4 max-w-2xl">
+                    <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-[#879196] italic">//
+                        Selected_Template</label>
+                    <div class="relative group">
+                        <select v-model="blueprintName"
+                            class="w-full bg-white border-2 border-[#eaeded] px-6 py-4 text-sm font-black text-[#232f3e] focus:border-amber-500 outline-none transition-all cursor-pointer appearance-none uppercase tracking-widest">
+                            <option v-for="b in blueprints" :key="b.name" :value="b.name"
+                                class="bg-white text-[#232f3e]">{{ b.name }}</option>
+                        </select>
+                        <div class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-[#879196]">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path d="M19 9l-7 7-7-7" stroke-width="3" stroke-linecap="round"
+                                    stroke-linejoin="round" />
+                            </svg>
                         </div>
                     </div>
-                    <span class="text-sm font-bold transition-colors" :class="executionRole === role.id ? 'text-white' : 'text-slate-400 group-hover:text-slate-200'">{{ role.label }}</span>
-                </label>
+                    <p class="text-[9px] font-black text-[#879196] uppercase tracking-[0.2em]">Starter_Module // <span
+                            class="text-amber-600">nodejs22.x</span> // AWS_LAMBDA_OPTIMIZED</p>
+                </div>
+
+                <!-- Function Name -->
+                <div class="space-y-4 max-w-2xl">
+                    <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-[#879196] italic">//
+                        Destination_Identifier</label>
+                    <input v-model="functionName" type="text" placeholder="BLUEPRINT_NODE_V1"
+                        class="w-full bg-white border-2 border-[#eaeded] px-6 py-4 text-sm font-black text-[#232f3e] focus:border-amber-500 outline-none transition-all placeholder:text-[#eaeded] uppercase tracking-widest" />
+                </div>
+
+                <!-- Static Info -->
+                <div class="grid grid-cols-2 gap-4 max-w-lg">
+                    <div class="p-6 bg-[#fafafa] border-2 border-[#eaeded] flex flex-col">
+                        <span class="text-[9px] font-black text-[#879196] uppercase tracking-[0.2em] mb-1 italic">//
+                            Runtime</span>
+                        <span class="text-sm font-black text-[#232f3e] uppercase">nodejs22.x</span>
+                    </div>
+                    <div class="p-6 bg-[#fafafa] border-2 border-[#eaeded] flex flex-col">
+                        <span class="text-[9px] font-black text-[#879196] uppercase tracking-[0.2em] mb-1 italic">//
+                            Architecture</span>
+                        <span class="text-sm font-black text-[#232f3e] uppercase">x86_64</span>
+                    </div>
+                </div>
+
+                <!-- Execution Role -->
+                <div class="space-y-6">
+                    <label class="block text-[10px] font-black uppercase tracking-[0.2em] text-[#879196] italic">//
+                        Permission_Protocol</label>
+                    <div class="space-y-4">
+                        <label
+                            v-for="role in [{ id: 'create-new', label: 'Forge new protocol identity', sub: 'Default_Permissions_Policy' }, { id: 'existing', label: 'Inject existing security token', sub: 'Cross_Resource_Role' }]"
+                            :key="role.id"
+                            class="flex items-start gap-6 p-6 border-2 transition-all cursor-pointer group"
+                            :class="executionRole === role.id ? 'bg-[#fafafa] border-amber-500' : 'bg-white border-[#eaeded] hover:border-[#232f3e]'">
+                            <div class="mt-1">
+                                <input type="radio" :value="role.id" v-model="executionRole" class="sr-only">
+                                <div class="w-6 h-6 border-2 transition-all flex items-center justify-center"
+                                    :class="executionRole === role.id ? 'border-amber-500 bg-amber-500' : 'border-[#eaeded] group-hover:border-[#232f3e]'">
+                                    <div v-if="executionRole === role.id" class="w-3 h-3 bg-white"></div>
+                                </div>
+                            </div>
+                            <div class="flex-grow">
+                                <span class="text-sm font-black uppercase tracking-tight block transition-colors"
+                                    :class="executionRole === role.id ? 'text-[#232f3e]' : 'text-[#879196] group-hover:text-[#232f3e]'">{{
+                                        role.label }}</span>
+                                <span
+                                    class="text-[9px] font-black text-[#879196] uppercase tracking-widest block mt-2">{{
+                                        role.sub }}</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
             </div>
         </div>
-      </div>
-    </div>
 
-    <!-- Lambda Function Code -->
-    <div class="glass-panel border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-        <div class="px-8 py-6 border-b border-white/5">
-            <h3 class="font-bold text-white text-lg">Lambda function code</h3>
-            <p class="text-xs text-slate-500 mt-1">Code is preconfigured by the chosen blueprint. You can configure it after you create the function.</p>
-        </div>
-        <div class="bg-[#0b0e14] p-0 flex flex-col min-h-[400px]">
-             <!-- Minimal Mock Editor -->
-             <div class="bg-white/[0.03] border-b border-white/5 px-6 py-3 flex justify-end">
-                <div class="flex gap-1.5">
-                    <div class="w-2.5 h-2.5 rounded-full bg-red-500/30"></div>
-                    <div class="w-2.5 h-2.5 rounded-full bg-amber-500/30"></div>
-                    <div class="w-2.5 h-2.5 rounded-full bg-emerald-500/30"></div>
+        <!-- Lambda Function Code -->
+        <div class="bg-white border-2 border-[#232f3e] overflow-hidden">
+            <div class="px-8 py-6 border-b-2 border-[#eaeded] bg-[#fafafa] flex items-center justify-between">
+                <div>
+                    <h3 class="font-black text-[#232f3e] text-lg uppercase tracking-tight">Artifact_Source_Preview</h3>
+                    <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest mt-1 italic">// Read-only
+                        // Blueprint_Defined</p>
                 </div>
-             </div>
-             <pre class="p-8 font-mono text-xs leading-relaxed flex-grow text-slate-300 overflow-x-auto"><code>{{ codeSnippet }}</code></pre>
-             <div class="bg-white/[0.02] border-t border-white/5 px-6 py-2 text-[10px] text-slate-600 font-mono text-right italic">
-                 1:1 JavaScript
-             </div>
+                <div class="flex gap-2">
+                    <div class="w-3 h-3 border-2 border-[#232f3e]"></div>
+                    <div class="w-3 h-3 border-2 border-[#232f3e]"></div>
+                    <div class="w-3 h-3 border-2 border-[#232f3e] bg-amber-500"></div>
+                </div>
+            </div>
+            <div class="bg-[#1a1c23] p-0 flex flex-col min-h-[400px] relative">
+                <div class="absolute right-0 top-0 w-8 h-full bg-white/[0.02] border-l border-white/5"></div>
+                <pre
+                    class="p-10 font-mono text-[11px] leading-relaxed flex-grow text-[#94a3b8] overflow-x-auto selection:bg-amber-500/30"><code>{{ codeSnippet }}</code></pre>
+                <div
+                    class="bg-black/20 border-t border-white/5 px-8 py-3 text-[10px] text-[#475569] font-mono text-right uppercase tracking-[0.2em] font-black italic">
+                    1:1_JS_STRICT // SECURE_RUNTIME
+                </div>
+            </div>
         </div>
     </div>
-  </div>
 </template>
 
 <style scoped>
-.glass-panel {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-}
+/* Scoped styles removed as utility classes are used for the new theme */
 </style>
-

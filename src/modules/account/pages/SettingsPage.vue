@@ -9,6 +9,7 @@ const toastStore = useToastStore()
 
 const fullName = ref('')
 const organization = ref('')
+const isVerifying = ref(false)
 
 onMounted(async () => {
     if (!authStore.user) {
@@ -24,6 +25,26 @@ const handleSaveProfile = () => {
 
 const handleToggleMfa = () => {
     toastStore.addToast('MFA settings updated', 'info')
+}
+
+const handleVerifyEmail = async () => {
+    const token = authStore.user?.verificationToken
+    if (!token) {
+        toastStore.addToast('Verification token not found in registry', 'error')
+        return
+    }
+
+    try {
+        isVerifying.value = true
+        await authStore.verifyEmail(token)
+        toastStore.addToast('Email verified successfully!', 'success')
+        // Refresh profile to update verified status and clear token
+        await authStore.fetchUserProfile()
+    } catch (err: any) {
+        toastStore.addToast(err.response?.data?.error || 'Verification failed', 'error')
+    } finally {
+        isVerifying.value = false
+    }
 }
 </script>
 
@@ -67,11 +88,40 @@ const handleToggleMfa = () => {
                                     class="w-full bg-[#fafafa] border-2 border-[#eaeded] px-4 py-3 text-xs font-bold text-[#232f3e] focus:border-[#ff9900] outline-none transition-colors" />
                             </div>
                             <div class="space-y-2 md:col-span-2">
-                                <label
-                                    class="text-[10px] font-black text-[#879196] uppercase tracking-[0.2em]">Registered
-                                    Email</label>
+                                <div class="flex items-center justify-between mb-1">
+                                    <label
+                                        class="text-[10px] font-black text-[#879196] uppercase tracking-[0.2em]">Registered
+                                        Email</label>
+                                    <span v-if="authStore.emailVerified"
+                                        class="text-[9px] font-black text-emerald-600 uppercase tracking-widest bg-emerald-50 px-2 py-0.5 border border-emerald-200">
+                                        Authenticated
+                                    </span>
+                                    <span v-else
+                                        class="text-[9px] font-black text-red-600 uppercase tracking-widest bg-red-50 px-2 py-0.5 border border-red-200">
+                                        Pending Verification
+                                    </span>
+                                </div>
                                 <input :value="authStore.email" disabled type="email"
                                     class="w-full bg-[#eaeded]/50 border-2 border-[#eaeded] px-4 py-3 text-xs font-bold text-[#879196] cursor-not-allowed outline-none" />
+
+                                <!-- Verification Token Tool -->
+                                <div v-if="!authStore.emailVerified"
+                                    class="mt-8 p-6 bg-[#fafafa] border-2 border-[#eaeded]">
+                                    <h4 class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest mb-4">
+                                        Complete Your Registry Verification</h4>
+                                    <p class="text-[10px] text-[#545b64] font-bold mb-6 leading-relaxed">
+                                        Your account registry requires physical validation. Click the button below to
+                                        synchronize your identity with the primary authentication server using your
+                                        active registry token.
+                                    </p>
+                                    <div class="flex gap-4">
+                                        <button @click="handleVerifyEmail" :disabled="isVerifying"
+                                            class="w-full py-4 bg-[#232f3e] text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#ff9900] disabled:opacity-50 transition-all">
+                                            {{ isVerifying ? 'Synchronizing Identity...' : 'Confirm Email Verification'
+                                            }}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div class="pt-6 border-t border-[#eaeded] flex justify-end">

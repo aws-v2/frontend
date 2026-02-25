@@ -22,6 +22,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = ref<boolean | null>(null)
   const user = ref<any>(null)
   const loading = ref(false)
+  const emailVerified = computed(() => user.value?.emailVerified || false)
 
   // Actions
   async function initAuth() {
@@ -185,6 +186,22 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
+  async function verifyEmail(token: string) {
+    try {
+      loading.value = true
+      const response = await apiClient.get('/auth/verify-email', { params: { token } })
+      if (user.value) {
+        user.value.emailVerified = true
+      }
+      return response.data
+    } catch (error) {
+      console.error('Email verification failed:', error)
+      throw error
+    } finally {
+      loading.value = false
+    }
+  }
+
   async function fetchUserProfile() {
     try {
       loading.value = true
@@ -200,6 +217,7 @@ export const useAuthStore = defineStore('auth', () => {
         email: email.value,
         organization: 'Serwin Systems Internal',
         joinedAt: '2026-01-15',
+        emailVerified: user.value?.emailVerified || false,
         paymentMethod: {
           type: 'Visa',
           last4: '4242',
@@ -237,6 +255,7 @@ export const useAuthStore = defineStore('auth', () => {
     registrationComplete,
     isAuthenticated,
     loading,
+    emailVerified,
     initAuth,
     fetchUserProfile,
     login,
@@ -246,6 +265,7 @@ export const useAuthStore = defineStore('auth', () => {
     disableMfa,
     register,
     verifyPayment,
+    verifyEmail,
     completeRegistration,
     skipMfa,
     loginWithGoogle,

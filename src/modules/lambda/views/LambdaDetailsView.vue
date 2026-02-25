@@ -346,7 +346,11 @@ const goBack = () => {
               <div class="grid md:grid-cols-3 gap-0 border-4 border-[#232f3e] bg-white">
                 <div v-for="stat in [
                   { l: 'Invocations', v: lambdaStore.metrics?.invocations || 0, c: 'text-blue-600' },
-                  { l: 'Avg Duration', v: `${lambdaStore.metrics?.duration || 0}ms`, c: 'text-amber-600' },
+               { 
+  l: 'Avg Duration', 
+  v: `${Number(lambdaStore.metrics?.duration || 0).toFixed(2)}ms`, 
+  c: 'text-amber-600' 
+},
                   { l: 'Error Count', v: lambdaStore.metrics?.errors || 0, c: 'text-red-600' }
                 ]" :key="stat.l"
                   class="p-8 border-r-4 last:border-r-0 border-[#232f3e] hover:bg-[#fafafa] transition-colors">

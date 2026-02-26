@@ -25,36 +25,42 @@ const handleLogout = () => {
 const toggleMenu = () => {
     isMenuOpen.value = !isMenuOpen.value
 }
+
+const isDarkMode = computed(() => !!route.meta.isDarkNavbar)
 </script>
 
 <template>
     <template v-if="!isLandingPage && !route.meta.hideNavbar">
-        <nav class="fixed top-0 w-full z-[100] h-20 bg-white border-b-2 border-[#eaeded] font-urbanist transition-all">
+        <nav class="fixed top-0 w-full z-[100] h-20 font-urbanist transition-all"
+            :class="isDarkMode ? 'bg-[#05080F] border-b border-white/5' : 'bg-white border-b-2 border-[#eaeded]'">
             <div class="max-w-[1600px] mx-auto px-6 h-full flex items-center justify-between">
 
                 <!-- Left: Branding & Context -->
                 <div class="flex items-center gap-8">
                     <router-link to="/" class="flex items-center gap-3 group">
-                        <div
-                            class="w-10 h-10 bg-[#232f3e] flex items-center justify-center text-[#ff9900] font-black text-xl hover:scale-105 transition-transform">
+                        <div class="w-10 h-10 flex items-center justify-center font-black text-xl hover:scale-105 transition-transform"
+                            :class="isDarkMode ? 'bg-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.2)]' : 'bg-[#232f3e] text-[#ff9900]'">
                             S
                         </div>
-                        <div class="flex items-center text-[#232f3e] font-black text-2xl tracking-tighter">
-                            Serwin<span class="text-[#545b64] font-normal">Sys</span>
+                        <div class="flex items-center font-black text-2xl tracking-tighter"
+                            :class="isDarkMode ? 'text-white' : 'text-[#232f3e]'">
+                            Serwin<span :class="isDarkMode ? 'text-slate-400' : 'text-[#545b64]'"
+                                class="font-normal">Sys</span>
                         </div>
                     </router-link>
 
-                    <div v-if="currentVertical"
-                        class="hidden md:flex items-center gap-3 pl-4 border-l-2 border-[#eaeded]">
+                    <div v-if="currentVertical" class="hidden md:flex items-center gap-3 pl-4 border-l-2"
+                        :class="isDarkMode ? 'border-white/10' : 'border-[#eaeded]'">
                         <div class="w-2 h-2 rounded-full" :class="currentVertical.bg"></div>
-                        <span class="text-[10px] font-black uppercase tracking-[0.2em] text-[#879196]">{{
-                            currentVertical.name
-                        }}</span>
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em]"
+                            :class="isDarkMode ? 'text-slate-400' : 'text-[#879196]'">{{
+                                currentVertical.name
+                            }}</span>
                     </div>
 
                     <!-- Mega Menu Trigger -->
-                    <button @click="toggleMenu"
-                        class="ml-4 p-2 rounded-none bg-[#fafafa] border border-[#eaeded] text-[#545b64] hover:text-[#232f3e] hover:border-[#232f3e] transition-all">
+                    <button @click="toggleMenu" class="ml-4 p-2 rounded-none transition-all"
+                        :class="isDarkMode ? 'bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:border-white/20' : 'bg-[#fafafa] border border-[#eaeded] text-[#545b64] hover:text-[#232f3e] hover:border-[#232f3e]'">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                 d="M4 6h16M4 12h16M4 18h16" />
@@ -66,18 +72,20 @@ const toggleMenu = () => {
                 <div class="hidden lg:flex flex-1 max-w-lg mx-12">
                     <div class="w-full relative group">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-4 w-4 text-[#879196] group-focus-within:text-[#ff9900] transition-colors"
+                            <svg class="h-4 w-4 transition-colors"
+                                :class="isDarkMode ? 'text-slate-500 group-focus-within:text-blue-400' : 'text-[#879196] group-focus-within:text-[#ff9900]'"
                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </div>
                         <input type="text"
-                            class="block w-full pl-10 pr-3 py-2 border-2 border-[#eaeded] rounded-none bg-white text-[#232f3e] placeholder-[#879196] focus:outline-none focus:border-[#232f3e] sm:text-xs transition-all font-black uppercase tracking-widest"
+                            class="block w-full pl-10 pr-3 py-2 rounded-none sm:text-xs transition-all font-black uppercase tracking-widest outline-none"
+                            :class="isDarkMode ? 'bg-white/5 border-2 border-white/10 text-white placeholder-slate-500 focus:border-blue-500/50' : 'bg-white border-2 border-[#eaeded] text-[#232f3e] placeholder-[#879196] focus:border-[#232f3e]'"
                             placeholder="Detailed search (Press '/')" />
                         <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <span
-                                class="text-[#879196] text-[10px] font-black border border-[#eaeded] px-1.5 py-0.5">/</span>
+                            <span class="text-[10px] font-black border px-1.5 py-0.5"
+                                :class="isDarkMode ? 'text-slate-500 border-white/10' : 'text-[#879196] border-[#eaeded]'">/</span>
                         </div>
                     </div>
                 </div>
@@ -93,14 +101,15 @@ const toggleMenu = () => {
                         </router-link>
 
                         <!-- Quick Stats (Desktop) -->
-                        <div
-                            class="hidden xl:flex items-center gap-6 text-[10px] text-[#879196] border-r-2 border-[#eaeded] pr-6 font-black uppercase tracking-widest">
+                        <div class="hidden xl:flex items-center gap-6 text-[10px] pr-6 font-black uppercase tracking-widest border-r-2"
+                            :class="isDarkMode ? 'text-slate-400 border-white/10' : 'text-[#879196] border-[#eaeded]'">
                             <div class="flex flex-col items-end">
                                 <span class="text-emerald-500 font-black">99.99%</span>
                                 <span class="text-[9px] opacity-60">Health</span>
                             </div>
                             <div class="flex flex-col items-end">
-                                <span class="text-[#232f3e] font-black">ke-nbo-ak</span>
+                                <span class="font-black"
+                                    :class="isDarkMode ? 'text-white' : 'text-[#232f3e]'">ke-nbo-ak</span>
                                 <span class="text-[9px] opacity-60">Region</span>
                             </div>
                         </div>
@@ -109,15 +118,18 @@ const toggleMenu = () => {
                         <div class="relative group h-full flex items-center cursor-pointer">
                             <div class="flex items-center gap-3">
                                 <div class="text-right hidden sm:block">
-                                    <div class="text-xs font-black text-[#232f3e] uppercase">{{
-                                        authStore.email?.split('@')[0] }}</div>
-                                    <div class="text-[9px] text-[#879196] uppercase tracking-widest font-medium">{{
-                                        authStore.email
-                                    }}</div>
+                                    <div class="text-xs font-black uppercase"
+                                        :class="isDarkMode ? 'text-white' : 'text-[#232f3e]'">{{
+                                            authStore.email?.split('@')[0] }}</div>
+                                    <div class="text-[9px] uppercase tracking-widest font-medium"
+                                        :class="isDarkMode ? 'text-slate-500' : 'text-[#879196]'">{{
+                                            authStore.email
+                                        }}</div>
                                 </div>
-                                <div class="w-9 h-9 bg-[#232f3e] p-[1px] group-hover:bg-[#ff9900] transition-colors">
-                                    <div
-                                        class="w-full h-full bg-[#fafafa] flex items-center justify-center font-black text-xs text-[#232f3e]">
+                                <div class="w-9 h-9 p-[1px] transition-colors"
+                                    :class="isDarkMode ? 'bg-blue-500 group-hover:bg-white' : 'bg-[#232f3e] group-hover:bg-[#ff9900]'">
+                                    <div class="w-full h-full flex items-center justify-center font-black text-xs"
+                                        :class="isDarkMode ? 'bg-[#0D1117] text-white' : 'bg-[#fafafa] text-[#232f3e]'">
                                         {{ authStore.email?.charAt(0).toUpperCase() }}
                                     </div>
                                 </div>

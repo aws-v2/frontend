@@ -41,7 +41,7 @@ const computeRoutes: RouteRecordRaw[] = [
         path: '/compute/instances/:id/terminal',
         name: 'instance-terminal',
         component: () => import('./pages/InstanceTerminalPage.vue'),
-        meta: { requiresAuth: false }
+        meta: { requiresAuth: false, isDarkNavbar: true }
     }
 ]
 

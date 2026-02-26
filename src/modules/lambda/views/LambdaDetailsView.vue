@@ -22,6 +22,7 @@ const testPayload = ref('{\n  "KEY1": "VALUE1"\n}')
 const executionOutput = ref('')
 const isExecuting = ref(false)
 const syncStatus = ref<{ message: string; type: 'success' | 'error' } | null>(null)
+const copyStatus = ref(false)
 
 const tabs = [
   { id: 'code', label: 'Code_Test', icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4' },
@@ -174,6 +175,17 @@ const saveConfig = async () => {
 const goBack = () => {
   router.push({ name: 'compute-landing' })
 }
+
+const copyArn = async () => {
+  if (!currentFunction.value?.arn) return
+  try {
+    await navigator.clipboard.writeText(currentFunction.value.arn)
+    copyStatus.value = true
+    setTimeout(() => { copyStatus.value = false }, 2000)
+  } catch (err) {
+    console.error('Failed to copy ARN:', err)
+  }
+}
 </script>
 
 <template>
@@ -218,6 +230,27 @@ const goBack = () => {
                   {{ currentFunction?.status }}
                 </div>
               </div>
+              <div v-if="currentFunction?.arn" class="flex items-center gap-3 mb-4 group/arn cursor-pointer"
+                @click="copyArn">
+                <span
+                  class="text-[10px] font-black text-[#879196] uppercase tracking-widest transition-colors group-hover/arn:text-amber-600">
+                  ARN: {{ currentFunction.arn }}
+                </span>
+                <div class="relative">
+                  <svg xmlns="http://www.w3.org/2000/svg"
+                    class="h-3.5 w-3.5 text-[#879196] group-hover/arn:text-amber-600 transition-colors" fill="none"
+                    viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                  </svg>
+                  <transition name="fade">
+                    <div v-if="copyStatus"
+                      class="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-[#232f3e] text-white text-[8px] font-black uppercase tracking-widest whitespace-nowrap">
+                      Copied!
+                    </div>
+                  </transition>
+                </div>
+              </div>
               <p class="text-lg text-[#545b64] font-medium max-w-2xl leading-relaxed">{{ currentFunction?.description ||
                 'No Protocol Manifest Found.' }}</p>
             </div>
@@ -228,10 +261,10 @@ const goBack = () => {
               class="px-10 py-5 border-2 border-[#232f3e] text-[#232f3e] font-black uppercase tracking-widest text-xs hover:bg-[#232f3e] hover:text-white transition-all">
               Debug_Terminal
             </button>
-            <button @click="saveConfig"
+            <!-- <button @click="saveConfig"
               class="px-12 py-5 bg-amber-500 text-white font-black uppercase tracking-widest text-xs hover:bg-amber-600 transition-all active:translate-y-1">
               Deploy_Revision
-            </button>
+            </button> -->
           </div>
         </div>
 
@@ -280,7 +313,7 @@ const goBack = () => {
                     </div>
                     <span
                       class="text-[10px] font-black text-amber-500 uppercase tracking-widest border-l border-white/10 pl-4 italic">kernel.{{
-                        currentFunction?.runtime.split(' ')[0].toLowerCase() }}</span>
+                        currentFunction?.runtime?.split(' ')[0].toLowerCase() }}</span>
                   </div>
                   <span class="text-[9px] text-[#879196] font-bold uppercase tracking-widest">Read-Only Artifact</span>
                 </div>
@@ -346,11 +379,11 @@ const goBack = () => {
               <div class="grid md:grid-cols-3 gap-0 border-4 border-[#232f3e] bg-white">
                 <div v-for="stat in [
                   { l: 'Invocations', v: lambdaStore.metrics?.invocations || 0, c: 'text-blue-600' },
-               { 
-  l: 'Avg Duration', 
-  v: `${Number(lambdaStore.metrics?.duration || 0).toFixed(2)}ms`, 
-  c: 'text-amber-600' 
-},
+                  {
+                    l: 'Avg Duration',
+                    v: `${Number(lambdaStore.metrics?.duration || 0).toFixed(2)}ms`,
+                    c: 'text-amber-600'
+                  },
                   { l: 'Error Count', v: lambdaStore.metrics?.errors || 0, c: 'text-red-600' }
                 ]" :key="stat.l"
                   class="p-8 border-r-4 last:border-r-0 border-[#232f3e] hover:bg-[#fafafa] transition-colors">

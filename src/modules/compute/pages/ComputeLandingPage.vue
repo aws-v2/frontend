@@ -15,15 +15,50 @@ const lambdaStore = useLambdaStore()
 const liveCpu = ref(45.2)
 const liveRam = ref(32.8)
 const activeTab = ref('nodes')
-const activeRuntimeTabIndex = ref(2) // Default to Node.js
+const activeRuntimeTabIndex = ref(0)
+const isCodeModalOpen = ref(false)
 let intervalId: any = null
 
 const runtimes = [
-    { name: '.NET', code: 'public void Handler(Stream stream) {\n  Console.WriteLine("Hello from .NET!");\n}' },
-    { name: 'Java', code: 'public class Handler implements RequestHandler<Map<String, String>, String> {\n  @Override\n  public String handleRequest(Map<String, String> event, Context context) {\n    return "Hello from Java!";\n  }\n}' },
-    { name: 'Node.js', code: 'exports.handler = async (event) => {\n  console.log(event);\n  return "Hello from Lambda!";\n};' },
-    { name: 'Python', code: 'import json\n\ndef lambda_handler(event, context):\n    print(event)\n    return {\n        \'statusCode\': 200,\n        \'body\': json.dumps(\'Hello from Python!\')\n    }' },
-    { name: 'Ruby', code: 'require "json"\n\ndef lambda_handler(event:, context:)\n    puts event\n    { statusCode: 200, body: JSON.generate("Hello from Ruby!") }\nend' }
+    {
+        name: 'JAVA',
+        code: `package com.serwinsys.lambda;
+
+import com.serwinsys.lambda.models.InvokeResponse;
+import com.serwinsys.lambda.models.MetricsResponse;
+import com.serwinsys.lambda.config.*;
+import java.util.Map;
+
+public class Example {
+    public static void main(String[] args) {
+        SerwinCredentials credentials = new SerwinCredentials(
+                System.getenv().getOrDefault("LAMBDA_ACCESS_KEY", "AKIAPQOQ22BFO8K2CT0Z"),
+                System.getenv().getOrDefault("LAMBDA_SECRET_KEY", "pjEspdB9IeF6o98fXrMaQcPeF5K/a/JTSop64vjF"));
+
+        SerwinLambdaClient client = new SerwinLambdaClient(credentials);
+
+
+        try {
+            client.listFunctions().forEach(fn -> System.out.println(" - " + fn.getName()));
+
+            InvokeResponse result = client.invoke("hello-gow", Map.of("name", "SDK User"));
+
+            MetricsResponse metrics = client.getMetrics("hello-gow");
+            
+            client.listFunctions().stream()
+                    .filter(fn -> "another-test".equals(fn.getName()))
+                    .findFirst()
+                    .ifPresent(fn -> {
+                        testInvokeByArn(client, fn.getArn());
+                    });
+        } catch (Exception e) { e.printStackTrace(); }
+    }
+
+    private static void testInvokeByArn(SerwinLambdaClient client, String arn) {
+        InvokeResponse result = client.invokeByArn(arn, Map.of("name", "ARN User"));
+    }
+}`
+    }
 ]
 
 const updateLiveMetrics = () => {
@@ -345,24 +380,20 @@ const getStatusColor = (type: string) => {
                             <div>
                                 <h3 class="text-xl font-black text-[#232f3e] uppercase tracking-tight mb-6">
                                     Code_Protocol</h3>
-                                <div class="grid grid-cols-3 gap-2">
+                                <div class="grid grid-cols-2 gap-4">
                                     <button v-for="(runtime, index) in runtimes" :key="runtime.name"
-                                        @click="activeRuntimeTabIndex = index"
-                                        class="p-3 border-2 text-[9px] font-black uppercase tracking-widest transition-all text-center"
-                                        :class="activeRuntimeTabIndex === index ? 'bg-[#232f3e] border-[#232f3e] text-white' : 'bg-white border-[#eaeded] text-[#879196] hover:border-[#232f3e]'">
-                                        {{ runtime.name }}
+                                        @click="isCodeModalOpen = true"
+                                        class="p-5 border-4 border-[#232f3e] text-xs font-black uppercase tracking-widest transition-all text-center hover:bg-[#232f3e] hover:text-white">
+                                        {{ runtime.name }} SDK EXAMPLE
                                     </button>
                                 </div>
                             </div>
-                            <div class="bg-[#232f3e] p-6 border-2 border-[#232f3e] relative overflow-hidden h-[200px]">
-                                <div class="flex items-center justify-between mb-4 pb-2 border-b border-white/10">
-                                    <span
-                                        class="text-[8px] font-black text-amber-500 uppercase tracking-widest italic">kernel.{{
-                                            runtimes[activeRuntimeTabIndex]?.name.toLowerCase() }}</span>
-                                </div>
-                                <div class="font-mono text-[10px] text-slate-300 overflow-x-auto">
-                                    <pre><code>{{ runtimes[activeRuntimeTabIndex]?.code }}</code></pre>
-                                </div>
+                            <div
+                                class="bg-[#232f3e] p-6 border-2 border-[#232f3e] relative overflow-hidden h-[200px] flex items-center justify-center">
+                                <p
+                                    class="text-[10px] font-black text-amber-500 uppercase tracking-[0.2em] italic text-center z-10">
+                                    Select protocol runtime to view <br> integration patterns & SDK implementation.
+                                </p>
                                 <div
                                     class="absolute inset-0 bg-[linear-gradient(rgba(251,191,36,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(251,191,36,0.02)_1px,transparent_1px)] bg-[size:15px_15px] pointer-events-none">
                                 </div>
@@ -537,6 +568,55 @@ const getStatusColor = (type: string) => {
                 </div>
             </div>
         </footer>
+
+        <!-- Java SDK Modal -->
+        <transition name="fade">
+            <div v-if="isCodeModalOpen" class="fixed inset-0 z-[100] flex items-center justify-center p-6">
+                <!-- Backdrop -->
+                <div class="absolute inset-0 bg-[#232f3e]/90 backdrop-blur-sm" @click="isCodeModalOpen = false"></div>
+
+                <!-- Modal Content -->
+                <div
+                    class="relative w-full max-w-4xl bg-white border-4 border-[#232f3e] shadow-[20px_20px_0px_#eaeded] animate-in zoom-in-95 duration-300 flex flex-col max-h-[90vh]">
+                    <div class="flex items-center justify-between p-8 border-b-4 border-[#232f3e] bg-[#fafafa]">
+                        <div>
+                            <h2 class="text-3xl font-black text-[#232f3e] uppercase tracking-tighter mb-1">
+                                JAVA_SDK_PROTOCOL
+                            </h2>
+                            <p class="text-[10px] font-black text-[#879196] uppercase tracking-[0.2em] italic">Forge
+                                V2.0
+                                Integration Pattern</p>
+                        </div>
+                        <button @click="isCodeModalOpen = false"
+                            class="p-3 border-4 border-[#232f3e] hover:bg-red-500 hover:text-white transition-all">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    <div class="flex-1 p-8 bg-[#232f3e] overflow-auto font-mono text-xs text-slate-300">
+                        <div
+                            class="flex items-center justify-between mb-6 pb-2 border-b border-white/10 sticky top-0 bg-[#232f3e] z-10">
+                            <span
+                                class="text-[10px] font-black text-amber-500 uppercase tracking-widest italic">kernel.java.sdk</span>
+                            <span class="text-[9px] text-[#879196] font-bold uppercase tracking-widest">Read-Only
+                                Pattern</span>
+                        </div>
+                        <pre class="whitespace-pre"><code>{{ runtimes[0]?.code }}</code></pre>
+                    </div>
+
+                    <div class="p-8 border-t-4 border-[#232f3e] bg-[#fafafa] flex justify-end">
+                        <button @click="isCodeModalOpen = false"
+                            class="px-12 py-5 bg-[#232f3e] text-white font-black uppercase tracking-widest text-xs hover:bg-blue-600 transition-all">
+                            ACKNOWLEDGE_PROTOCOL
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </transition>
     </div>
 </template>
 

@@ -11,6 +11,7 @@ export interface LambdaFunction {
     description: string
     memory?: number
     timeout?: number
+    arn?: string
 }
 
 export interface LambdaMetrics {
@@ -43,7 +44,8 @@ export const useLambdaStore = defineStore('lambda', () => {
                     status: f.status || 'Active',
                     description: f.description || '',
                     memory: f.Resources?.memory || f.memory,
-                    timeout: f.TimeoutMS ? f.TimeoutMS / 1000 : f.timeout
+                    timeout: f.TimeoutMS ? f.TimeoutMS / 1000 : f.timeout,
+                    arn: f.ARN || f.arn
                 }))
             }
         } catch (error) {
@@ -71,7 +73,8 @@ export const useLambdaStore = defineStore('lambda', () => {
                     status: data.status || 'Active',
                     description: data.description || '',
                     memory: data.Resources?.memory || data.memory,
-                    timeout: data.TimeoutMS ? data.TimeoutMS / 1000 : data.timeout
+                    timeout: data.TimeoutMS ? data.TimeoutMS / 1000 : data.timeout,
+                    arn: data.ARN || data.arn
                 }
             }
         } catch (error) {

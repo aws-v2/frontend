@@ -37,6 +37,9 @@ const SERVICE_REGISTRY: Record<string, string> = {
     auth: '/auth',
 };
 
+// Services that have live backend docs endpoints
+const LIVE_SERVICES = new Set(['s3', 'compute']);
+
 // Mock data for services that don't have backend docs yet
 const MOCK_DATA: Record<string, { manifest: DocManifest; docs: Record<string, DocResponse> }> = {
     compute: {
@@ -184,28 +187,23 @@ export const useDocsStore = defineStore('docs', {
 
             const services = Object.keys(SERVICE_REGISTRY);
             const fetchPromises = services.map(async (service) => {
-                // ONLY S3 is fetched via API
-                if (service === 's3') {
+                // Fetch from live API for services with backend doc support
+                if (LIVE_SERVICES.has(service)) {
                     try {
                         const apiBase = SERVICE_REGISTRY[service];
                         const response = await apiClient.get(`${apiBase}/docs`);
                         if (response.data?.data) {
                             this.manifests[service] = response.data.data;
-                        } else if (MOCK_DATA[service]) {
-                            this.manifests[service] = MOCK_DATA[service].manifest;
+                            return;
                         }
                     } catch (err) {
                         console.warn(`Failed to fetch manifest for ${service}. Using fallback.`);
-                        if (MOCK_DATA[service]) {
-                            this.manifests[service] = MOCK_DATA[service].manifest;
-                        }
                     }
-                } else {
-                    // All other services strictly use dummy/mock data
-                    const mockKey = MOCK_MAPPING[service] || service;
-                    if (MOCK_DATA[mockKey]) {
-                        this.manifests[service] = MOCK_DATA[mockKey].manifest;
-                    }
+                }
+                // Fallback to mock data
+                const mockKey = MOCK_MAPPING[service] || service;
+                if (MOCK_DATA[mockKey]) {
+                    this.manifests[service] = MOCK_DATA[mockKey].manifest;
                 }
             });
 
@@ -218,33 +216,26 @@ export const useDocsStore = defineStore('docs', {
             this.error = null;
             this.activeService = service;
 
-            // Strictly use mock data for non-S3 services
-            if (service !== 's3') {
-                const mockKey = MOCK_MAPPING[service] || service;
-                if (MOCK_DATA[mockKey]?.docs[slug]) {
-                    this.currentDoc = MOCK_DATA[mockKey].docs[slug];
-                } else {
-                    this.error = `Mock documentation not found for: ${service}/${slug}`;
+            // Use live API for supported services, mock data for others
+            if (LIVE_SERVICES.has(service)) {
+                try {
+                    const apiBase = SERVICE_REGISTRY[service] || `/${service}`;
+                    const response = await apiClient.get(`${apiBase}/docs/${slug}`);
+                    this.currentDoc = response.data.data;
+                    this.loading = false;
+                    return;
+                } catch (err: any) {
+                    console.warn(`Live doc fetch failed for ${service}/${slug}, using fallback.`);
+                    // Fall through to mock data below
                 }
-                this.loading = false;
-                return;
             }
 
-            // ONLY S3 makes actual network requests
-            try {
-                const apiBase = SERVICE_REGISTRY[service] || `/${service}`;
-                const response = await apiClient.get(`${apiBase}/docs/${slug}`);
-                this.currentDoc = response.data.data;
-            } catch (err: any) {
-                // S3 Fallback to mock if API fails
-                if (MOCK_DATA.s3?.docs[slug]) {
-                    this.currentDoc = MOCK_DATA.s3.docs[slug];
-                } else {
-                    this.error = err.response?.data?.message || `Failed to fetch documentation: ${service}/${slug}`;
-                    console.error(`Fetch S3 Doc Error [${slug}]:`, err);
-                }
-            } finally {
-                this.loading = false;
+            // Fallback: mock/static data
+            const mockKey = MOCK_MAPPING[service] || service;
+            if (MOCK_DATA[mockKey]?.docs[slug]) {
+                this.currentDoc = MOCK_DATA[mockKey].docs[slug];
+            } else {
+                this.error = `Documentation not found: ${service}/${slug}`;
             }
         },
 

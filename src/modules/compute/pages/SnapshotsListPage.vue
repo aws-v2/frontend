@@ -2,9 +2,11 @@
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useComputeStore } from '../store/computeStore'
+import { useToastStore } from '@/shared/store/toastStore'
 
 const router = useRouter()
 const computeStore = useComputeStore()
+const toastStore = useToastStore()
 
 const activeTab = ref('volume')
 
@@ -14,13 +16,25 @@ const tabs = [
 ]
 
 onMounted(async () => {
-    // For now, if we don't have a specific volumeId, we might want a global ListVolumeSnapshots
-    // But since the user specified the endpoint /volumes/:id/snapshots, 
-    // we'll fetch general snapshots and let the store handle global ones if available.
-    // If the backend doesn't support global volume snapshots, we might need a workaround.
     await computeStore.fetchSnapshots()
-    // If we had a way to fetch ALL volume snapshots, we'd call it here.
 })
+
+const handleDecommission = async (snap: any) => {
+    const type = snap.instance_id ? 'Instance' : 'Volume'
+    if (!confirm(`Are you sure you want to decommission this ${type.toLowerCase()} snapshot: ${snap.name || snap.id}?`))
+        return
+
+    try {
+        if (snap.instance_id) {
+            await computeStore.deleteSnapshot(snap.id)
+        } else if (snap.volume_id) {
+            await computeStore.deleteVolumeSnapshot(snap.id)
+        }
+        toastStore.addToast('Snapshot decommissioned successfully', 'success')
+    } catch (error: any) {
+        toastStore.addToast(error.response?.data?.message || 'Failed to decommission snapshot', 'error')
+    }
+}
 </script>
 
 <template>
@@ -107,7 +121,7 @@ onMounted(async () => {
                                 </span>
                             </td>
                             <td class="px-8 py-6 text-right">
-                                <button
+                                <button @click.stop="handleDecommission(snap)"
                                     class="text-[10px] font-black text-rose-600 hover:underline decoration-2 underline-offset-4 uppercase tracking-widest">
                                     Decommission
                                 </button>

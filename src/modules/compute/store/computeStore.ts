@@ -320,6 +320,11 @@ export const useComputeStore = defineStore('compute', () => {
         await fetchSnapshots()
     }
 
+    const deleteVolumeSnapshot = async (snapshotId: string) => {
+        await apiClient.delete(`/ec2/volumes/${snapshotId}/snapshot`)
+        await fetchSnapshots()
+    }
+
     // --- Template Actions ---
     const fetchTemplates = async () => {
         try {
@@ -699,6 +704,7 @@ export const useComputeStore = defineStore('compute', () => {
         fetchSnapshots,
         createSnapshot,
         deleteSnapshot,
+        deleteVolumeSnapshot,
         fetchTemplates,
         createTemplate,
         deleteTemplate,
@@ -715,6 +721,8 @@ export const useComputeStore = defineStore('compute', () => {
         fetchInstanceMetrics,
         addInstanceTag,
         deleteInstanceTag,
+        instanceTags,
+        fetchInstanceTags,
         volumeTags,
         fetchVolumeTags,
         addVolumeTag,

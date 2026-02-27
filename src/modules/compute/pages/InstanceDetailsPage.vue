@@ -183,6 +183,38 @@ const handleRemoveTag = async (key: string) => {
     toastStore.addToast('Failed to remove tag', 'error')
   }
 }
+
+// Snapshot Logic
+const isSnapshotModalOpen = ref(false)
+const isCreatingSnapshot = ref(false)
+const snapshotForm = ref({
+  name: '',
+  description: ''
+})
+
+const openSnapshotModal = () => {
+  const timestamp = Date.now()
+  snapshotForm.value = {
+    name: `Snapshot_${instanceId.value.slice(0, 8)}_${timestamp}`,
+    description: `Manual snapshot of instance ${instanceId.value}`
+  }
+  isSnapshotModalOpen.value = true
+}
+
+const handleSnapshotCreate = async () => {
+  if (!snapshotForm.value.name.trim()) return
+  isCreatingSnapshot.value = true
+  try {
+    await computeStore.createSnapshot(instanceId.value, { ...snapshotForm.value })
+    toastStore.addToast('Snapshot creation protocol initiated', 'success')
+    isSnapshotModalOpen.value = false
+  } catch (error: any) {
+    console.error('Failed to create instance snapshot:', error)
+    toastStore.addToast(error.response?.data?.message || 'Failed to initiate snapshot', 'error')
+  } finally {
+    isCreatingSnapshot.value = false
+  }
+}
 </script>
 
 <template>
@@ -367,6 +399,12 @@ const handleRemoveTag = async (key: string) => {
                     item.label }}</span>
                   <span class="text-sm font-black text-blue-600 uppercase break-all">{{
                     item.value }}</span>
+                </div>
+                <div class="pt-8">
+                  <button @click="openSnapshotModal"
+                    class="w-full py-4 border-2 border-[#232f3e] text-[#232f3e] text-[10px] font-black uppercase tracking-widest hover:bg-[#232f3e] hover:text-white transition-all">
+                    Create_Instance_Snapshot
+                  </button>
                 </div>
               </div>
             </div>
@@ -910,6 +948,49 @@ const handleRemoveTag = async (key: string) => {
     <!-- Connect Modal -->
     <ConnectInstanceModal :isOpen="isConnectModalOpen" :instance="computeStore.currentInstance"
       @close="isConnectModalOpen = false" />
+    <!-- Snapshot Modal -->
+    <div v-if="isSnapshotModalOpen"
+      class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#232f3e]/60 backdrop-blur-sm">
+      <div class="bg-white border-4 border-[#232f3e] w-full max-w-xl shadow-[30px_30px_0px_rgba(35,47,62,0.1)]">
+        <div class="p-8 border-b-4 border-[#232f3e] flex justify-between items-center bg-[#fafafa]">
+          <h2 class="text-2xl font-black text-[#232f3e] uppercase tracking-tighter italic">Initiate_Snapshot_Protocol
+          </h2>
+          <button @click="isSnapshotModalOpen = false" class="text-[#879196] hover:text-[#232f3e]">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="p-8 space-y-8">
+          <div class="space-y-4">
+            <label class="text-[10px] font-black text-[#879196] uppercase tracking-[0.2em] italic">//
+              SNAPSHOT_IDENTIFIER</label>
+            <input v-model="snapshotForm.name" type="text"
+              class="w-full bg-white border-4 border-[#eaeded] p-5 text-sm font-black uppercase tracking-tight focus:border-blue-600 outline-none transition-colors">
+          </div>
+
+          <div class="space-y-4">
+            <label class="text-[10px] font-black text-[#879196] uppercase tracking-[0.2em] italic">//
+              STATE_DESCRIPTION</label>
+            <textarea v-model="snapshotForm.description" rows="3"
+              class="w-full bg-white border-4 border-[#eaeded] p-5 text-sm font-black uppercase tracking-tight focus:border-blue-600 outline-none transition-colors resize-none"></textarea>
+          </div>
+
+          <div class="flex gap-4 pt-4">
+            <button @click="isSnapshotModalOpen = false"
+              class="flex-1 py-5 border-2 border-[#232f3e] text-[#232f3e] text-[11px] font-black uppercase tracking-[0.3em] hover:bg-[#fafafa] transition-all">
+              ABORT_PROTOCOL
+            </button>
+            <button @click="handleSnapshotCreate" :disabled="isCreatingSnapshot || !snapshotForm.name.trim()"
+              class="flex-1 py-5 bg-blue-600 text-white text-[11px] font-black uppercase tracking-[0.3em] hover:bg-[#232f3e] transition-all disabled:opacity-50">
+              <span v-if="!isCreatingSnapshot">EXECUTE_SNAPSHOT</span>
+              <span v-else class="animate-pulse">SNAPSHOT_IN_PROGRESS...</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 

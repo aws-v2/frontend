@@ -81,6 +81,10 @@ onMounted(async () => {
             computeStore.fetchInstances(),
             computeStore.fetchFleetOverview(),
             computeStore.fetchRecentEvents(),
+            computeStore.fetchVolumes(),
+            computeStore.fetchSnapshots(),
+            computeStore.fetchTemplates(),
+            computeStore.fetchSSHKeys(),
             lambdaStore.fetchFunctions()
         ])
 
@@ -367,9 +371,125 @@ const getStatusColor = (type: string) => {
                                     <span class="text-slate-400 shrink-0">{{ event.timestamp.substring(11, 19) }}</span>
                                     <span :class="getStatusColor(event.type)" class="shrink-0 font-black">[{{
                                         event.type.toUpperCase()
-                                        }}]</span>
+                                    }}]</span>
                                     <span class="text-blue-600 shrink-0 font-bold">{{ event.resource }}:</span>
                                     <span class="text-[#232f3e] font-medium">{{ event.message }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Extended Resource Management (Below Trace) -->
+                        <div v-if="activeTab === 'nodes'"
+                            class="grid md:grid-cols-2 gap-10 animate-in fade-in slide-in-from-bottom-4 duration-700">
+                            <!-- Volumes Card -->
+                            <div
+                                class="bg-white border-2 border-[#232f3e] p-8 hover:shadow-[10px_10px_0px_#eaeded] transition-all group">
+                                <div class="flex justify-between items-start mb-8">
+                                    <p class="text-[10px] font-black text-[#879196] tracking-widest uppercase italic">
+                                        Storage_Volumes</p>
+                                    <button @click="router.push({ name: 'volumes-list' })"
+                                        class="text-[9px] font-black text-blue-600 uppercase border-b border-blue-600">Inventory
+                                        &rarr;</button>
+                                </div>
+                                <div class="flex items-center gap-6">
+                                    <div
+                                        class="w-12 h-12 border-2 border-[#232f3e] flex items-center justify-center bg-[#fafafa]">
+                                        <svg class="w-6 h-6 text-[#232f3e]" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-2xl font-black text-[#232f3e] leading-none mb-1">{{
+                                            computeStore.volumes.length }}</p>
+                                        <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">Active
+                                            Block Disks</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Snapshots Card -->
+                            <div
+                                class="bg-white border-2 border-[#232f3e] p-8 hover:shadow-[10px_10px_0px_#eaeded] transition-all group">
+                                <div class="flex justify-between items-start mb-8">
+                                    <p class="text-[10px] font-black text-[#879196] tracking-widest uppercase italic">
+                                        Data_Snapshots</p>
+                                    <button @click="router.push({ name: 'snapshots-list' })"
+                                        class="text-[9px] font-black text-blue-600 uppercase border-b border-blue-600">History
+                                        &rarr;</button>
+                                </div>
+                                <div class="flex items-center gap-6">
+                                    <div
+                                        class="w-12 h-12 border-2 border-[#232f3e] flex items-center justify-center bg-[#fafafa]">
+                                        <svg class="w-6 h-6 text-[#232f3e]" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-2xl font-black text-[#232f3e] leading-none mb-1">{{
+                                            computeStore.snapshots.length }}</p>
+                                        <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">Backup
+                                            Revision Sets</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Templates Card -->
+                            <div
+                                class="bg-white border-2 border-[#232f3e] p-8 hover:shadow-[10px_10px_0px_#eaeded] transition-all group">
+                                <div class="flex justify-between items-start mb-8">
+                                    <p class="text-[10px] font-black text-[#879196] tracking-widest uppercase italic">
+                                        Compute_Templates</p>
+                                    <button @click="router.push({ name: 'templates-list' })"
+                                        class="text-[9px] font-black text-blue-600 uppercase border-b border-blue-600">Patterns
+                                        &rarr;</button>
+                                </div>
+                                <div class="flex items-center gap-6">
+                                    <div
+                                        class="w-12 h-12 border-2 border-[#232f3e] flex items-center justify-center bg-[#fafafa]">
+                                        <svg class="w-6 h-6 text-[#232f3e]" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-2xl font-black text-[#232f3e] leading-none mb-1">{{
+                                            computeStore.templates.length }}</p>
+                                        <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">
+                                            Blueprint Archetypes</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Auth Keys Card -->
+                            <div
+                                class="bg-white border-2 border-[#232f3e] p-8 hover:shadow-[10px_10px_0px_#eaeded] transition-all group">
+                                <div class="flex justify-between items-start mb-8">
+                                    <p class="text-[10px] font-black text-[#879196] tracking-widest uppercase italic">
+                                        SSH_Authentication</p>
+                                    <button @click="router.push({ name: 'ssh-keys-list' })"
+                                        class="text-[9px] font-black text-blue-600 uppercase border-b border-blue-600">Vault
+                                        &rarr;</button>
+                                </div>
+                                <div class="flex items-center gap-6">
+                                    <div
+                                        class="w-12 h-12 border-2 border-[#232f3e] flex items-center justify-center bg-[#fafafa]">
+                                        <svg class="w-6 h-6 text-[#232f3e]" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-2xl font-black text-[#232f3e] leading-none mb-1">{{
+                                            computeStore.sshKeys.length }}</p>
+                                        <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">Secure
+                                            Access Keys</p>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -416,19 +536,35 @@ const getStatusColor = (type: string) => {
                                         class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">Instances</span>
                                     <span class="text-5xl font-black text-blue-600 tracking-tighter">{{
                                         computeStore.instances.length
-                                        }}</span>
+                                    }}</span>
+                                </div>
+                                <div class="flex justify-between items-end border-b-2 border-[#eaeded] pb-4">
+                                    <span
+                                        class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">Volumes</span>
+                                    <span class="text-5xl font-black text-[#232f3e] tracking-tighter">{{
+                                        computeStore.volumes.length
+                                    }}</span>
+                                </div>
+                                <div class="flex justify-between items-end border-b-2 border-[#eaeded] pb-4">
+                                    <span
+                                        class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">Snapshots</span>
+                                    <span class="text-5xl font-black text-[#232f3e] tracking-tighter">{{
+                                        computeStore.snapshots.length
+                                    }}</span>
                                 </div>
                                 <div class="flex justify-between items-end border-b-2 border-[#eaeded] pb-4">
                                     <span
                                         class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">Lambda</span>
                                     <span class="text-5xl font-black text-amber-600 tracking-tighter">{{
                                         lambdaStore.functions.length
-                                        }}</span>
+                                    }}</span>
                                 </div>
                                 <div class="flex justify-between items-end">
-                                    <span class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">EKS
-                                        Clusters</span>
-                                    <span class="text-5xl font-black text-emerald-600 tracking-tighter">00</span>
+                                    <span class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">SSH
+                                        Keys</span>
+                                    <span class="text-5xl font-black text-emerald-600 tracking-tighter">{{
+                                        computeStore.sshKeys.length
+                                    }}</span>
                                 </div>
                             </div>
                         </div>

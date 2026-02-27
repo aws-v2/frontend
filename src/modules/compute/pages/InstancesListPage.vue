@@ -101,7 +101,8 @@ const handleAction = async (action: 'start' | 'stop' | 'restart' | 'delete', id:
           </svg>
           <input type="text" placeholder="QUERY_RESOURCES_PROTOCOL..."
             class="flex-grow bg-transparent border-none text-[#232f3e] font-black placeholder:text-[#eaeded] uppercase tracking-widest outline-none text-sm">
-          <button @click="computeStore.fetchInstances()" :class="{ 'animate-spin text-blue-600': computeStore.isLoading }"
+          <button @click="computeStore.fetchInstances()"
+            :class="{ 'animate-spin text-blue-600': computeStore.isLoading }"
             class="p-2 text-[#232f3e] hover:text-blue-600 transition-colors">
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
@@ -113,10 +114,11 @@ const handleAction = async (action: 'start' | 'stop' | 'restart' | 'delete', id:
         <!-- Quick Stats -->
         <div class="lg:col-span-4 grid grid-cols-2 gap-4">
           <div class="bg-[#fafafa] border-2 border-[#eaeded] p-6 flex flex-col justify-center">
-            <span class="text-[9px] font-black text-[#879196] uppercase tracking-[0.2em] mb-1 italic">//
+            <span class="text-[10px] font-black text-[#879196] uppercase tracking-[0.2em] mb-1 italic">//
               HEALTHY_NODES</span>
-            <span class="text-xl font-black text-emerald-600 uppercase">{{computeStore.instances.filter(i => i.state
-              === 'Running').length }}</span>
+            <span class="text-xl font-black text-emerald-600 uppercase">{{computeStore.instances.filter(i =>
+              i.state?.toLowerCase()
+              === 'running').length }}</span>
           </div>
           <div class="bg-[#fafafa] border-2 border-[#eaeded] p-6 flex flex-col justify-center">
             <span class="text-[9px] font-black text-[#879196] uppercase tracking-[0.2em] mb-1 italic">//
@@ -160,12 +162,12 @@ const handleAction = async (action: 'start' | 'stop' | 'restart' | 'delete', id:
                 <td class="p-8 border-r-2 border-[#eaeded]">
                   <span :class="[
                     'flex items-center gap-2 text-[10px] font-black uppercase px-3 py-1 border-2 tracking-widest w-fit',
-                    instance.state === 'Running' ? 'text-emerald-600 border-emerald-600/20 bg-emerald-500/5' :
-                      instance.state === 'Stopped' ? 'text-rose-600 border-rose-600/20 bg-rose-500/5' :
+                    instance.state?.toLowerCase() === 'running' ? 'text-emerald-600 border-emerald-600/20 bg-emerald-500/5' :
+                      instance.state?.toLowerCase() === 'stopped' ? 'text-rose-600 border-rose-600/20 bg-rose-500/5' :
                         'text-[#879196] border-[#eaeded] bg-[#fafafa]'
                   ]">
                     <span
-                      :class="['w-1.5 h-1.5', instance.state === 'Running' ? 'bg-emerald-600 animate-pulse' : 'bg-rose-600']"></span>
+                      :class="['w-1.5 h-1.5', instance.state?.toLowerCase() === 'running' ? 'bg-emerald-600 animate-pulse' : 'bg-rose-600']"></span>
                     {{ instance.state }}
                   </span>
                 </td>
@@ -177,7 +179,8 @@ const handleAction = async (action: 'start' | 'stop' | 'restart' | 'delete', id:
                 </td>
                 <td class="p-8" @click.stop>
                   <div class="flex items-center gap-3">
-                    <button @click="handleAction('start', instance.id)" v-if="instance.state !== 'Running'"
+                    <button @click="handleAction('start', instance.id)"
+                      v-if="instance.state?.toLowerCase() !== 'running'"
                       class="p-3 border-2 border-[#eaeded] text-emerald-600 hover:bg-emerald-600 hover:text-white hover:border-emerald-600 transition-all"
                       title="START_PROTOCOL">
                       <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
@@ -186,7 +189,8 @@ const handleAction = async (action: 'start' | 'stop' | 'restart' | 'delete', id:
                           clip-rule="evenodd" />
                       </svg>
                     </button>
-                    <button @click="handleAction('stop', instance.id)" v-if="instance.state === 'Running'"
+                    <button @click="handleAction('stop', instance.id)"
+                      v-if="instance.state?.toLowerCase() === 'running'"
                       class="p-3 border-2 border-[#eaeded] text-rose-600 hover:bg-rose-600 hover:text-white hover:border-rose-600 transition-all"
                       title="STOP_PROTOCOL">
                       <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">

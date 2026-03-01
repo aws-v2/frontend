@@ -1,66 +1,51 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import DatabaseEngineCard from '../components/DatabaseEngineCard.vue'
-import type { EngineType, InstanceSize, CredentialManagement } from '../types/database'
+import { useRdsStore } from '../store/rdsStore'
+import type { InstanceSize, CredentialManagement } from '../types/database'
 
 const router = useRouter()
+const rdsStore = useRdsStore()
 
 // Form state
 const creationMethod = ref<'easy' | 'full'>('easy')
-const selectedEngine = ref<EngineType>('Aurora (PostgreSQL Compatible)')
+const selectedEngine = ref('PostgreSQL')
 const instanceSize = ref<InstanceSize>('Dev/Test')
 const dbIdentifier = ref('database-1')
 const masterUsername = ref('postgres')
-const credentialManagement = ref<CredentialManagement>('aws-secrets-manager')
+const masterPassword = ref('')
+const credentialManagement = ref<CredentialManagement>('self-managed')
 const encryptionKey = ref('aws/secretsmanager (default)')
 const showEc2Connection = ref(false)
 const showDefaultSettings = ref(false)
+const isCreating = ref(false)
 
-const engines: { type: EngineType; description?: string }[] = [
-    { type: 'Aurora (MySQL-SQL Compatible)' },
-    { type: 'Aurora (PostgreSQL Compatible)' },
-    { type: 'MySQL' },
-    { type: 'PostgreSQL' },
-    { type: 'MariaDB' },
-    { type: 'Oracle' },
-    { type: 'Microsoft SQL Server' },
-    { type: 'IBM Db2' },
-]
 
 const defaultSettings = [
     { config: 'Encryption', value: 'Enabled', editable: 'No' },
-    { config: 'VPC', value: 'Default VPC (vpc-0c6a5c9e1b17d1)', editable: 'No' },
-    { config: 'Option group', value: 'default:aurora-postgresql-17', editable: 'No' },
+    { config: 'VPC', value: 'Default VPC', editable: 'No' },
     { config: 'Multi-AZ', value: 'No', editable: 'Yes' },
-    { config: 'Subnet group', value: 'Create new DB Subnet Group', editable: 'Yes' },
     { config: 'Automatic backups', value: 'Enabled', editable: 'Yes' },
-    { config: 'VPC security group', value: 'default', editable: 'Yes' },
     { config: 'Publicly accessible', value: 'No', editable: 'Yes' },
     { config: 'Database port', value: '5432', editable: 'Yes' },
-    { config: 'DB cluster identifier', value: 'database-1', editable: 'Yes' },
-    { config: 'DB instance identifier', value: 'database-1', editable: 'Yes' },
-    { config: 'DB engine version', value: '17.4', editable: 'Yes' },
-    { config: 'DB parameter group', value: 'default.aurora-postgresql17', editable: 'Yes' },
-    { config: 'DB cluster parameter group', value: 'default.aurora-postgresql17', editable: 'Yes' },
-    { config: 'Monitoring type', value: 'Database Insights - Standard', editable: 'Yes' },
-    { config: 'Performance Insights', value: 'Enabled', editable: 'Yes' },
-    { config: 'Monitoring', value: 'Enabled', editable: 'Yes' },
-    { config: 'Maintenance', value: 'Auto minor version upgrade enabled', editable: 'Yes' },
-    { config: 'Delete protection', value: 'Not enabled', editable: 'Yes' },
 ]
 
-const createDatabase = () => {
-    console.log('Creating database with:', {
-        creationMethod: creationMethod.value,
-        engine: selectedEngine.value,
-        instanceSize: instanceSize.value,
-        dbIdentifier: dbIdentifier.value,
-        masterUsername: masterUsername.value,
-        credentialManagement: credentialManagement.value,
-    })
-    // Navigate back to databases list
-    router.push('/rds/databases')
+const createDatabase = async () => {
+    if (!dbIdentifier.value || !masterUsername.value) return
+    if (credentialManagement.value === 'self-managed' && !masterPassword.value) return
+    isCreating.value = true
+    try {
+        await rdsStore.createDatabase({
+            name: dbIdentifier.value,
+            user: masterUsername.value,
+            password: masterPassword.value || 'auto-generated',
+        })
+        router.push('/rds/databases')
+    } catch (e) {
+        console.error('Failed to create database:', e)
+    } finally {
+        isCreating.value = false
+    }
 }
 
 const cancel = () => {
@@ -89,7 +74,7 @@ const cancel = () => {
             <span class="text-gray-900">Create database</span>
         </nav>
 
-        <div class="px-8 py-6">
+        <div class="px-8 py-6 pt-20">
             <div class="flex items-center gap-2 mb-6">
                 <h1 class="text-2xl font-bold text-gray-900 leading-tight">Create database</h1>
                 <span class="text-[var(--aws-blue)] cursor-help">
@@ -104,16 +89,12 @@ const cancel = () => {
             <div class="aws-card p-6 rounded-sm mb-6">
                 <h3 class="text-base font-bold text-gray-900 mb-4">Choose a database creation method</h3>
                 <div class="grid grid-cols-2 gap-4 max-w-4xl">
-                    <div @click="creationMethod = 'full'"
-                        class="aws-card p-4 rounded-sm cursor-pointer transition-all border-2"
-                        :class="creationMethod === 'full' ? 'border-[var(--aws-blue)] bg-blue-50/20' : 'border-gray-200 hover:border-gray-400'">
+                    <!-- Full Configuration — DISABLED -->
+                    <div
+                        class="aws-card p-4 rounded-sm opacity-40 cursor-not-allowed border-2 border-gray-200 relative select-none">
                         <div class="flex items-start gap-3">
                             <div class="flex-shrink-0 mt-0.5">
-                                <div class="w-4 h-4 rounded-full border flex items-center justify-center"
-                                    :class="creationMethod === 'full' ? 'border-[var(--aws-blue)]' : 'border-gray-400'">
-                                    <div v-if="creationMethod === 'full'"
-                                        class="w-2 h-2 rounded-full bg-[var(--aws-blue)]"></div>
-                                </div>
+                                <div class="w-4 h-4 rounded-full border border-gray-400"></div>
                             </div>
                             <div>
                                 <h4 class="text-xs font-bold text-gray-800">Full configuration</h4>
@@ -121,17 +102,18 @@ const cancel = () => {
                                     options, including ones for availability, security, backups, and maintenance.</p>
                             </div>
                         </div>
+                        <span
+                            class="absolute top-2 right-2 text-[8px] font-black tracking-widest uppercase px-2 py-0.5 bg-gray-200 text-gray-500">Unavailable</span>
                     </div>
 
-                    <div @click="creationMethod = 'easy'"
-                        class="aws-card p-4 rounded-sm cursor-pointer transition-all border-2"
-                        :class="creationMethod === 'easy' ? 'border-[var(--aws-blue)] bg-blue-50/20' : 'border-gray-200 hover:border-gray-400'">
+                    <!-- Easy Create — ACTIVE -->
+                    <div
+                        class="aws-card p-4 rounded-sm cursor-pointer transition-all border-2 border-[var(--aws-blue)] bg-blue-50/20">
                         <div class="flex items-start gap-3">
                             <div class="flex-shrink-0 mt-0.5">
-                                <div class="w-4 h-4 rounded-full border flex items-center justify-center"
-                                    :class="creationMethod === 'easy' ? 'border-[var(--aws-blue)]' : 'border-gray-400'">
-                                    <div v-if="creationMethod === 'easy'"
-                                        class="w-2 h-2 rounded-full bg-[var(--aws-blue)]"></div>
+                                <div
+                                    class="w-4 h-4 rounded-full border flex items-center justify-center border-[var(--aws-blue)]">
+                                    <div class="w-2 h-2 rounded-full bg-[var(--aws-blue)]"></div>
                                 </div>
                             </div>
                             <div>
@@ -148,14 +130,21 @@ const cancel = () => {
             <div class="aws-card p-6 rounded-sm mb-6">
                 <h3 class="text-base font-bold text-gray-900 mb-4">Configuration</h3>
 
-                <!-- Engine type -->
+                <!-- Engine type — PostgreSQL only -->
                 <div class="mb-6">
-                    <label class="aws-label">Engine type <span
-                            class="text-[var(--aws-blue)] text-[10px]">Info</span></label>
-                    <div class="grid grid-cols-2 gap-4 max-w-4xl">
-                        <DatabaseEngineCard v-for="engine in engines" :key="engine.type" :engine="engine.type"
-                            :selected="selectedEngine === engine.type" :description="engine.description"
-                            @select="selectedEngine = engine.type" />
+                    <label class="aws-label">Engine type</label>
+                    <div class="max-w-sm">
+                        <div
+                            class="aws-card p-4 rounded-sm border-2 border-[var(--aws-blue)] bg-blue-50/20 flex items-center gap-4">
+                            <div
+                                class="w-4 h-4 rounded-full border flex items-center justify-center border-[var(--aws-blue)] flex-shrink-0">
+                                <div class="w-2 h-2 rounded-full bg-[var(--aws-blue)]"></div>
+                            </div>
+                            <div>
+                                <h4 class="text-xs font-bold text-gray-800">PostgreSQL</h4>
+                                <p class="text-[10px] text-gray-500 mt-0.5">Open source relational database</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -166,13 +155,13 @@ const cancel = () => {
                     <div class="grid grid-cols-2 gap-4">
                         <div @click="instanceSize = 'Production'"
                             class="aws-card p-4 rounded-sm cursor-pointer transition-all border-2"
-                            :class="instanceSize === 'Production' ? 'border-[var(--aws-blue)] bg-blue-50/20' : 'border-gray-200 hover:border-gray-400'">
+                            :class="instanceSize === 'Production' ? 'border-amber-500 bg-amber-50/30' : 'border-gray-200 hover:border-gray-400'">
                             <div class="flex items-start gap-3">
                                 <div class="flex-shrink-0 mt-0.5">
-                                    <div class="w-4 h-4 rounded-full border flex items-center justify-center"
-                                        :class="instanceSize === 'Production' ? 'border-[var(--aws-blue)]' : 'border-gray-400'">
+                                    <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center"
+                                        :class="instanceSize === 'Production' ? 'border-amber-500' : 'border-gray-400'">
                                         <div v-if="instanceSize === 'Production'"
-                                            class="w-2 h-2 rounded-full bg-[var(--aws-blue)]"></div>
+                                            class="w-2 h-2 rounded-full bg-amber-500"></div>
                                     </div>
                                 </div>
                                 <div>
@@ -184,13 +173,13 @@ const cancel = () => {
 
                         <div @click="instanceSize = 'Dev/Test'"
                             class="aws-card p-4 rounded-sm cursor-pointer transition-all border-2"
-                            :class="instanceSize === 'Dev/Test' ? 'border-[var(--aws-blue)] bg-blue-50/20' : 'border-gray-200 hover:border-gray-400'">
+                            :class="instanceSize === 'Dev/Test' ? 'border-amber-500 bg-amber-50/30' : 'border-gray-200 hover:border-gray-400'">
                             <div class="flex items-start gap-3">
                                 <div class="flex-shrink-0 mt-0.5">
-                                    <div class="w-4 h-4 rounded-full border flex items-center justify-center"
-                                        :class="instanceSize === 'Dev/Test' ? 'border-[var(--aws-blue)]' : 'border-gray-400'">
+                                    <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center"
+                                        :class="instanceSize === 'Dev/Test' ? 'border-amber-500' : 'border-gray-400'">
                                         <div v-if="instanceSize === 'Dev/Test'"
-                                            class="w-2 h-2 rounded-full bg-[var(--aws-blue)]"></div>
+                                            class="w-2 h-2 rounded-full bg-amber-500"></div>
                                     </div>
                                 </div>
                                 <div>
@@ -217,13 +206,21 @@ const cancel = () => {
 
                 <!-- Master username -->
                 <div class="mb-6 max-w-2xl">
-                    <label class="aws-label">Master username <span
-                            class="text-[var(--aws-blue)] text-[10px]">Info</span></label>
+                    <label class="aws-label">Master username</label>
                     <p class="text-[11px] text-gray-500 mb-2">Type a login ID for the master user of your DB instance.
                     </p>
                     <input v-model="masterUsername" type="text" class="aws-input" />
                     <p class="text-[10px] text-gray-500 mt-1">1 to 16 alphanumeric characters. First character must be a
                         letter.</p>
+                </div>
+
+                <!-- Master password (self-managed) -->
+                <div class="mb-6 max-w-2xl">
+                    <label class="aws-label">Master password</label>
+                    <p class="text-[11px] text-gray-500 mb-2">Enter a password for the master user.</p>
+                    <input v-model="masterPassword" type="password" class="aws-input"
+                        placeholder="Minimum 8 characters" />
+                    <p class="text-[10px] text-gray-500 mt-1">Must be at least 8 characters.</p>
                 </div>
 
                 <!-- Credential management -->
@@ -233,13 +230,13 @@ const cancel = () => {
                     <div class="grid grid-cols-2 gap-4">
                         <div @click="credentialManagement = 'aws-secrets-manager'"
                             class="aws-card p-4 rounded-sm cursor-pointer transition-all border-2"
-                            :class="credentialManagement === 'aws-secrets-manager' ? 'border-[var(--aws-blue)] bg-blue-50/20' : 'border-gray-200 hover:border-gray-400'">
+                            :class="credentialManagement === 'aws-secrets-manager' ? 'border-amber-500 bg-amber-50/30' : 'border-gray-200 hover:border-gray-400'">
                             <div class="flex items-start gap-3">
                                 <div class="flex-shrink-0 mt-0.5">
-                                    <div class="w-4 h-4 rounded-full border flex items-center justify-center"
-                                        :class="credentialManagement === 'aws-secrets-manager' ? 'border-[var(--aws-blue)]' : 'border-gray-400'">
+                                    <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center"
+                                        :class="credentialManagement === 'aws-secrets-manager' ? 'border-amber-500' : 'border-gray-400'">
                                         <div v-if="credentialManagement === 'aws-secrets-manager'"
-                                            class="w-2 h-2 rounded-full bg-[var(--aws-blue)]"></div>
+                                            class="w-2 h-2 rounded-full bg-amber-500"></div>
                                     </div>
                                 </div>
                                 <div>
@@ -252,13 +249,13 @@ const cancel = () => {
 
                         <div @click="credentialManagement = 'self-managed'"
                             class="aws-card p-4 rounded-sm cursor-pointer transition-all border-2"
-                            :class="credentialManagement === 'self-managed' ? 'border-[var(--aws-blue)] bg-blue-50/20' : 'border-gray-200 hover:border-gray-400'">
+                            :class="credentialManagement === 'self-managed' ? 'border-amber-500 bg-amber-50/30' : 'border-gray-200 hover:border-gray-400'">
                             <div class="flex items-start gap-3">
                                 <div class="flex-shrink-0 mt-0.5">
-                                    <div class="w-4 h-4 rounded-full border flex items-center justify-center"
-                                        :class="credentialManagement === 'self-managed' ? 'border-[var(--aws-blue)]' : 'border-gray-400'">
+                                    <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center"
+                                        :class="credentialManagement === 'self-managed' ? 'border-amber-500' : 'border-gray-400'">
                                         <div v-if="credentialManagement === 'self-managed'"
-                                            class="w-2 h-2 rounded-full bg-[var(--aws-blue)]"></div>
+                                            class="w-2 h-2 rounded-full bg-amber-500"></div>
                                     </div>
                                 </div>
                                 <div>
@@ -357,11 +354,15 @@ const cancel = () => {
             </div>
         </div>
 
-        <!-- Footer Actions (Sticky) -->
+        <!-- Footer Actions -->
         <div
             class="fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-gray-200 flex items-center justify-end px-8 gap-4 z-50">
-            <button @click="cancel" class="text-xs font-bold text-[var(--aws-blue)] hover:underline">Cancel</button>
-            <button @click="createDatabase" class="btn-aws-primary px-8">Create database</button>
+            <button @click="cancel"
+                class="text-xs font-bold text-gray-600 hover:text-gray-900 hover:underline">Cancel</button>
+            <button @click="createDatabase" :disabled="isCreating || !dbIdentifier || !masterUsername"
+                class="px-8 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black uppercase tracking-widest transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[4px_4px_0px_#232f3e] active:translate-y-0.5 active:shadow-none">
+                {{ isCreating ? 'Creating...' : 'Create database' }}
+            </button>
         </div>
     </div>
 </template>

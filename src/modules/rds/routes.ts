@@ -23,6 +23,12 @@ const rdsRoutes: RouteRecordRaw[] = [
         component: () => import('./views/ModifyDatabaseView.vue'),
         meta: { requiresAuth: true },
     },
+    {
+        path: '/rds/databases/:id',
+        name: 'rds-database-detail',
+        component: () => import('./views/RdsDatabaseDetailView.vue'),
+        meta: { requiresAuth: true },
+    },
 ]
 
 export default rdsRoutes

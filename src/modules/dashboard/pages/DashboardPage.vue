@@ -17,6 +17,7 @@ const router = useRouter()
 const serviceCatalog = [
     { id: 'compute', name: 'Compute Engine', icon: 'server', description: 'Manage clusters & serverless functions', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/compute', enabled: true },
     { id: 'storage', name: 'Object Storage', icon: 'database', description: 'Buckets, policies & replication', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/s3/buckets', enabled: true },
+    { id: 'rds', name: 'Managed Database', icon: 'rds', description: 'Relational DB instances, snapshots & scaling', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/rds', enabled: true },
     { id: 'sagemaker', name: 'SageMaker', icon: 'brain', description: 'Train & deploy ML models', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/sagemaker', enabled: false },
     { id: 'gaming', name: 'GameLift Edge', icon: 'gamepad', description: 'Multiplayer fleet scaling', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/gaming', enabled: false }
 ]
@@ -169,6 +170,15 @@ const navigateTo = (path: string) => {
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                                    </svg>
+                                    <svg v-if="service.icon === 'rds'" class="w-7 h-7" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                        <line stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" x1="20"
+                                            y1="12" x2="20" y2="17" />
+                                        <line stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            x1="17.5" y1="17" x2="22.5" y2="17" />
                                     </svg>
                                 </div>
                                 <h3 class="text-3xl font-black text-[#232f3e] mb-3 uppercase tracking-tighter">{{
@@ -427,6 +437,15 @@ const navigateTo = (path: string) => {
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                                    </svg>
+                                    <svg v-if="service.icon === 'rds'" class="w-8 h-8" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                        <line stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" x1="20"
+                                            y1="12" x2="20" y2="17" />
+                                        <line stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            x1="17.5" y1="17" x2="22.5" y2="17" />
                                     </svg>
                                 </div>
                                 <div>

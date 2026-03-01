@@ -64,25 +64,19 @@ const handleContinue = () => {
     <div class="min-h-screen bg-[var(--bg-console)] pb-24">
         <!-- Breadcrumbs -->
         <nav
-            class="bg-white border-b border-gray-200 px-6 py-2 flex items-center gap-2 text-xs font-medium text-gray-500">
-            <a href="#" @click.prevent="router.push('/dashboard')"
-                class="hover:text-[var(--aws-blue)] hover:underline uppercase tracking-wider text-[10px]">AWS</a>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            <a href="#" @click.prevent="cancel" class="hover:text-[var(--aws-blue)] hover:underline">Aurora and RDS</a>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            <a href="#" @click.prevent="cancel" class="hover:text-[var(--aws-blue)] hover:underline">Databases</a>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            <span class="text-gray-900">Modify DB cluster: {{ dbIdentifier }}</span>
+            class="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] px-8 py-6 pt-24 bg-white border-b border-[#eaeded]">
+            <button @click="router.push('/dashboard')"
+                class="text-[#879196] hover:text-amber-600 transition-colors">Dashboard</button>
+            <span class="text-[#eaeded] font-light">/</span>
+            <button @click="router.push('/rds/databases')"
+                class="text-[#879196] hover:text-amber-600 transition-colors">Managed_Database</button>
+            <span class="text-[#eaeded] font-light">/</span>
+            <span class="text-amber-600 italic">Modify {{ dbIdentifier }}</span>
         </nav>
 
-        <div class="px-8 py-6 max-w-7xl mx-auto">
-            <h1 class="text-2xl font-bold text-gray-900 mb-6">Modify DB cluster: {{ dbIdentifier }}</h1>
+        <div class="px-8 py-10 max-w-7xl mx-auto">
+            <h1 class="text-5xl font-black text-[#232f3e] tracking-tighter uppercase leading-none mb-10">Modify DB
+                cluster: {{ dbIdentifier }}</h1>
 
             <!-- Settings -->
             <div class="aws-card p-6 rounded-sm mb-6">
@@ -115,11 +109,14 @@ const handleContinue = () => {
                         credentials.</p>
                     <div class="grid grid-cols-2 gap-4">
                         <div @click="credentialManagement = 'aws-secrets-manager'"
-                            class="aws-card p-4 rounded-sm cursor-pointer border-2"
-                            :class="credentialManagement === 'aws-secrets-manager' ? 'border-[var(--aws-blue)] bg-blue-50/20' : 'border-gray-200 hover:border-gray-400'">
+                            class="aws-card p-4 rounded-sm cursor-pointer border-2 transition-all"
+                            :class="credentialManagement === 'aws-secrets-manager' ? 'border-amber-500 bg-amber-50/30' : 'border-gray-200 hover:border-gray-400'">
                             <div class="flex items-start gap-3">
-                                <input type="radio" :checked="credentialManagement === 'aws-secrets-manager'"
-                                    class="mt-1" />
+                                <div class="w-4 h-4 mt-1 rounded-full border-2 flex items-center justify-center transition-all"
+                                    :class="credentialManagement === 'aws-secrets-manager' ? 'border-amber-500' : 'border-gray-400'">
+                                    <div v-if="credentialManagement === 'aws-secrets-manager'"
+                                        class="w-2 h-2 rounded-full bg-amber-500"></div>
+                                </div>
                                 <div>
                                     <h4 class="text-xs font-bold text-gray-800">Managed in AWS Secrets Manager - most
                                         secure</h4>
@@ -129,10 +126,14 @@ const handleContinue = () => {
                             </div>
                         </div>
                         <div @click="credentialManagement = 'self-managed'"
-                            class="aws-card p-4 rounded-sm cursor-pointer border-2"
-                            :class="credentialManagement === 'self-managed' ? 'border-[var(--aws-blue)] bg-blue-50/20' : 'border-gray-200 hover:border-gray-400'">
+                            class="aws-card p-4 rounded-sm cursor-pointer border-2 transition-all"
+                            :class="credentialManagement === 'self-managed' ? 'border-amber-500 bg-amber-50/30' : 'border-gray-200 hover:border-gray-400'">
                             <div class="flex items-start gap-3">
-                                <input type="radio" :checked="credentialManagement === 'self-managed'" class="mt-1" />
+                                <div class="w-4 h-4 mt-1 rounded-full border-2 flex items-center justify-center transition-all"
+                                    :class="credentialManagement === 'self-managed' ? 'border-amber-500' : 'border-gray-400'">
+                                    <div v-if="credentialManagement === 'self-managed'"
+                                        class="w-2 h-2 rounded-full bg-amber-500"></div>
+                                </div>
                                 <div>
                                     <h4 class="text-xs font-bold text-gray-800">Self managed</h4>
                                     <p class="text-[10px] text-gray-500 mt-1">Create your own password or have RDS
@@ -696,8 +697,10 @@ const handleContinue = () => {
         <!-- Sticky Footer -->
         <div
             class="fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-gray-200 flex items-center justify-end px-8 gap-4 z-50">
-            <button @click="cancel" class="text-xs font-bold text-[var(--aws-blue)] hover:underline">Cancel</button>
-            <button @click="handleContinue" class="btn-aws-primary px-8">Continue</button>
+            <button @click="cancel"
+                class="text-xs font-bold text-gray-600 hover:text-gray-900 hover:underline">Cancel</button>
+            <button @click="handleContinue"
+                class="px-8 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black uppercase tracking-widest transition-all shadow-[4px_4px_0px_#232f3e] active:translate-y-0.5 active:shadow-none">Continue</button>
         </div>
     </div>
 </template>

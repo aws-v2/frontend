@@ -38,7 +38,7 @@ const SERVICE_REGISTRY: Record<string, string> = {
 };
 
 // Services that have live backend docs endpoints
-const LIVE_SERVICES = new Set(['s3', 'compute']);
+const LIVE_SERVICES = new Set(['s3', 'compute', 'lambda', 'auth']);
 
 // Mock data for services that don't have backend docs yet
 const MOCK_DATA: Record<string, { manifest: DocManifest; docs: Record<string, DocResponse> }> = {
@@ -69,15 +69,44 @@ const MOCK_DATA: Record<string, { manifest: DocManifest; docs: Record<string, Do
             version: 'V1',
             categories: [
                 {
-                    title: 'Serverless',
-                    items: [{ title: 'Lambda Functions', slug: 'lambda-functions' }]
+                    title: 'Getting Started',
+                    items: [
+                        { title: 'Lambda Overview', slug: 'lambda-overview' },
+                        { title: 'Quickstart', slug: 'lambda-quickstart' }
+                    ]
+                },
+                {
+                    title: 'Functions',
+                    items: [
+                        { title: 'Runtimes', slug: 'lambda-runtimes' },
+                        { title: 'Environment Variables', slug: 'lambda-env-vars' },
+                        { title: 'Layers', slug: 'lambda-layers' }
+                    ]
+                },
+                {
+                    title: 'Triggers & Integrations',
+                    items: [
+                        { title: 'HTTP Triggers', slug: 'lambda-triggers' },
+                        { title: 'Event Sources', slug: 'lambda-event-sources' }
+                    ]
+                },
+                {
+                    title: 'Monitoring & Limits',
+                    items: [
+                        { title: 'Logs & Monitoring', slug: 'lambda-monitoring' },
+                        { title: 'Quotas & Limits', slug: 'lambda-limits' }
+                    ]
                 }
             ]
         },
         docs: {
-            'lambda-functions': {
-                metadata: { title: 'Lambda Functions', description: 'Run code without thinking about servers.', icon: 'cpu', lastUpdated: '2026-02-18', tags: ['Serverless', 'Compute'] },
-                content: '# AWS Lambda\n\nAWS Lambda is a serverless, event-driven compute service that lets you run code for virtually any type of application or backend service without provisioning or managing servers.'
+            'lambda-overview': {
+                metadata: { title: 'Lambda Overview', description: 'Run code without provisioning or managing servers — event-driven serverless execution.', icon: 'cpu', lastUpdated: '2026-02-27', tags: ['Serverless', 'Functions'] },
+                content: '# AWS Lambda\n\nAWS Lambda is a serverless, event-driven compute service that lets you run code for virtually any type of application or backend service without provisioning or managing servers.\n\n## Key Concepts\n- **Function**: The code you run on Lambda.\n- **Handler**: The entry point method Lambda calls.\n- **Runtime**: The language environment (Python, Node.js, Go, Java, etc.).\n- **Trigger**: An event source that invokes your function.\n- **Event**: The JSON payload passed to your handler.'
+            },
+            'lambda-quickstart': {
+                metadata: { title: 'Quickstart: Deploy a Function', description: 'Get a Lambda function running in minutes.', icon: 'cpu', lastUpdated: '2026-02-27', tags: ['Quickstart', 'Serverless'] },
+                content: '# Quickstart\n\n## 1. Create a Function\nNavigate to Lambda → Create Function.\n\n## 2. Write your Handler\n```python\ndef handler(event, context):\n    return {\n        "statusCode": 200,\n        "body": "Hello from Lambda!"\n    }\n```\n\n## 3. Deploy & Test\nClick Deploy, then use the test console to invoke your function and view the response.'
             }
         }
     },
@@ -105,15 +134,45 @@ const MOCK_DATA: Record<string, { manifest: DocManifest; docs: Record<string, Do
             version: 'V1',
             categories: [
                 {
-                    title: 'Access Management',
-                    items: [{ title: 'IAM Overview', slug: 'iam-overview' }]
+                    title: 'Getting Started',
+                    items: [
+                        { title: 'IAM Overview', slug: 'iam-overview' },
+                        { title: 'Quickstart', slug: 'iam-quickstart' }
+                    ]
+                },
+                {
+                    title: 'Users & Authentication',
+                    items: [
+                        { title: 'Users & Accounts', slug: 'iam-users' },
+                        { title: 'Authentication Methods', slug: 'iam-auth-methods' },
+                        { title: 'API Keys & Tokens', slug: 'iam-api-keys' }
+                    ]
+                },
+                {
+                    title: 'Roles & Permissions',
+                    items: [
+                        { title: 'Roles', slug: 'iam-roles' },
+                        { title: 'Policies', slug: 'iam-policies' },
+                        { title: 'Permission Boundaries', slug: 'iam-boundaries' }
+                    ]
+                },
+                {
+                    title: 'Security',
+                    items: [
+                        { title: 'Multi-Factor Authentication', slug: 'iam-mfa' },
+                        { title: 'Audit Logs', slug: 'iam-audit-logs' }
+                    ]
                 }
             ]
         },
         docs: {
             'iam-overview': {
-                metadata: { title: 'IAM Overview', description: 'Manage access to AWS resources.', icon: 'shield', lastUpdated: '2026-02-18', tags: ['Security', 'Identity'] },
-                content: '# AWS IAM\n\nAWS Identity and Access Management (IAM) is a web service that helps you securely control access to AWS resources.'
+                metadata: { title: 'IAM Overview', description: 'Securely control access to Serwin services and resources.', icon: 'shield', lastUpdated: '2026-02-27', tags: ['IAM', 'Security', 'Access Control'] },
+                content: '# IAM Overview\n\nAWS Identity and Access Management (IAM) is a web service that helps you securely control access to AWS resources.\n\n## Core Concepts\n- **Users**: People or services with credentials.\n- **Roles**: Named collections of permissions.\n- **Policies**: Allow/deny rules attached to roles.\n- **Principle of Least Privilege**: Grant only the permissions needed, nothing more.'
+            },
+            'iam-api-keys': {
+                metadata: { title: 'API Keys & Tokens', description: 'Programmatic access using API keys and Bearer tokens.', icon: 'shield', lastUpdated: '2026-02-27', tags: ['IAM', 'API', 'Auth'] },
+                content: '# API Keys & Tokens\n\nAll programmatic requests to Serwin APIs must be authenticated using a Bearer token.\n\n```\nAuthorization: Bearer <your-api-key>\n```\n\n## Key Rotation\nRotate your keys regularly. Old keys can be revoked from the dashboard under **Account → API Keys**.'
             }
         }
     },

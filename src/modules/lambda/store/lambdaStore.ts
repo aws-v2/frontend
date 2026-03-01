@@ -21,6 +21,15 @@ export interface LambdaMetrics {
     timeline: { timestamp: string; value: number }[]
 }
 
+export interface LambdaPolicy {
+    id?: string
+    account_id: string
+    principal_id: string
+    resource_type: string
+    resource_id: string
+    action: string
+}
+
 export const useLambdaStore = defineStore('lambda', () => {
     const functions = ref<LambdaFunction[]>([])
     const isLoading = ref(false)
@@ -159,6 +168,50 @@ export const useLambdaStore = defineStore('lambda', () => {
         }
     }
 
+    const fetchPolicies = async (principalId: string) => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.get(`/lambda/policies/${principalId}`)
+            const data = response.data?.policy || response.data?.data || response.data
+            return Array.isArray(data) ? data : (data ? [data] : [])
+        } catch (error) {
+            console.error('Failed to fetch policies:', error)
+            return []
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const createPolicy = async (policy: any) => {
+        try {
+            const response = await apiClient.post(`/lambda/policies`, policy)
+            return response.data
+        } catch (error) {
+            console.error('Failed to create policy:', error)
+            throw error
+        }
+    }
+
+    const updatePolicy = async (policyId: string, policy: any) => {
+        try {
+            const response = await apiClient.put(`/lambda/policies/${policyId}`, policy)
+            return response.data
+        } catch (error) {
+            console.error('Failed to update policy:', error)
+            throw error
+        }
+    }
+
+    const deletePolicy = async (policyIdOrPrincipalId: string) => {
+        try {
+            const response = await apiClient.delete(`/lambda/policies/${policyIdOrPrincipalId}`)
+            return response.data
+        } catch (error) {
+            console.error('Failed to delete policy:', error)
+            throw error
+        }
+    }
+
     return {
         functions,
         currentFunction,
@@ -170,6 +223,10 @@ export const useLambdaStore = defineStore('lambda', () => {
         registerFunction,
         invokeFunction,
         fetchMetrics,
-        updateConfiguration
+        updateConfiguration,
+        fetchPolicies,
+        createPolicy,
+        updatePolicy,
+        deletePolicy
     }
 })

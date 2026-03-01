@@ -27,8 +27,85 @@ const copyStatus = ref(false)
 const tabs = [
   { id: 'code', label: 'Code_Test', icon: 'M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4' },
   { id: 'monitor', label: 'Telemetry', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
+  { id: 'policies', label: 'Policies', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8V7a4 4 0 00-8 0v4h8z' },
   { id: 'config', label: 'Parameters', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z' }
 ]
+
+const authStore = useAuthStore()
+
+const policies = ref<any[]>([])
+const isLoadingPolicies = ref(false)
+const showPolicyModal = ref(false)
+const editingPolicy = ref<any>(null)
+const policyForm = ref({
+  account_id: authStore.user?.id || 'user-id',
+  principal_id: functionId,
+  resource_type: '',
+  resource_id: '',
+  action: ''
+})
+
+const loadPolicies = async () => {
+  if (!currentFunction.value?.name) return
+  isLoadingPolicies.value = true
+  try {
+    const res = await lambdaStore.fetchPolicies(currentFunction.value.name)
+    policies.value = Array.isArray(res) ? res : [res].filter(Boolean)
+  } finally {
+    isLoadingPolicies.value = false
+  }
+}
+
+const openPolicyModal = (policy?: any) => {
+  if (policy && ('id' in policy || 'PolicyId' in policy || 'Id' in policy || 'action' in policy)) {
+    editingPolicy.value = policy
+    policyForm.value = { ...policy }
+  } else {
+    editingPolicy.value = null
+    policyForm.value = {
+      account_id: authStore.user?.id || 'user-id',
+      principal_id: currentFunction.value?.name || functionId,
+      resource_type: '',
+      resource_id: '',
+      action: ''
+    }
+  }
+  showPolicyModal.value = true
+}
+
+const submitPolicy = async () => {
+  try {
+    if (editingPolicy.value) {
+      const policyId = editingPolicy.value.id || editingPolicy.value.PolicyId || editingPolicy.value.Id || currentFunction.value?.name
+      await lambdaStore.updatePolicy(policyId, policyForm.value)
+    } else {
+      await lambdaStore.createPolicy(policyForm.value)
+    }
+    showPolicyModal.value = false
+    await loadPolicies()
+    syncStatus.value = { message: 'POLICY_SYNC_SUCCESSFUL', type: 'success' }
+    setTimeout(() => { syncStatus.value = null }, 3000)
+  } catch (e) {
+    syncStatus.value = { message: 'SYNC_FAILED_VALIDATE_PARAMETERS', type: 'error' }
+    setTimeout(() => { syncStatus.value = null }, 3000)
+  }
+}
+
+const deletePolicyAction = async (policy: any) => {
+  if (!confirm('Are you sure you want to delete this policy?')) return
+  try {
+    const policyId =  policy.id || policy.PolicyId || policy.Id || currentFunction.value?.name
+    // const policyId =  policy.principalId
+    if (!policyId) return
+    await lambdaStore.deletePolicy(policyId)
+    await loadPolicies()
+    syncStatus.value = { message: 'POLICY_DELETED', type: 'success' }
+    setTimeout(() => { syncStatus.value = null }, 3000)
+  } catch (e) {
+    syncStatus.value = { message: 'DELETE_FAILED', type: 'error' }
+    setTimeout(() => { syncStatus.value = null }, 3000)
+  }
+}
 
 const currentFunction = computed(() => lambdaStore.currentFunction)
 
@@ -68,6 +145,10 @@ watch(activeTab, (newTab) => {
     startPolling()
   } else {
     stopPolling()
+  }
+
+  if (newTab === 'policies' && currentFunction.value?.name) {
+    loadPolicies()
   }
 })
 
@@ -313,7 +394,7 @@ const copyArn = async () => {
                     </div>
                     <span
                       class="text-[10px] font-black text-amber-500 uppercase tracking-widest border-l border-white/10 pl-4 italic">kernel.{{
-                        currentFunction?.runtime?.split(' ')[0].toLowerCase() }}</span>
+                        currentFunction?.runtime?.split(' ')[0]?.toLowerCase() || 'unknown' }}</span>
                   </div>
                   <span class="text-[9px] text-[#879196] font-bold uppercase tracking-widest">Read-Only Artifact</span>
                 </div>
@@ -416,6 +497,82 @@ const copyArn = async () => {
               </div>
             </div>
 
+            <!-- Policies Tab -->
+            <div v-if="activeTab === 'policies'"
+              class="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
+              <div class="p-12 border-4 border-[#232f3e] bg-white relative">
+
+                <!-- Toast Notification -->
+                <transition name="fade">
+                  <div v-if="syncStatus"
+                    class="absolute top-6 right-12 px-6 py-3 border-4 font-black text-[10px] tracking-[0.2em] uppercase z-50 bg-white"
+                    :class="syncStatus.type === 'success' ? 'border-emerald-500 text-emerald-600' : 'border-red-500 text-red-600'">
+                    {{ syncStatus.message }}
+                  </div>
+                </transition>
+
+                <div
+                  class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-8 border-b-2 border-[#eaeded] pb-6">
+                  <div>
+                    <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tight">Security_Policies</h3>
+                    <p class="text-[10px] font-black text-[#879196] uppercase tracking-widest mt-1">Manage IAM Policies
+                      for this protocol</p>
+                  </div>
+                  <button @click="openPolicyModal()"
+                    class="px-8 py-4 bg-[#232f3e] text-white font-black uppercase tracking-widest text-xs hover:bg-amber-500 transition-all">
+                    Create_Policy
+                  </button>
+                </div>
+
+                <div class="space-y-4">
+                  <div v-if="isLoadingPolicies"
+                    class="py-12 text-center text-[10px] font-black tracking-widest uppercase text-[#879196] animate-pulse">
+                    FETCHING_POLICIES...
+                  </div>
+                  <div v-else-if="policies.length === 0"
+                    class="py-12 text-center text-[10px] font-black tracking-widest uppercase text-[#879196] italic border-2 border-dashed border-[#eaeded]">
+                    No security policies attached.
+                  </div>
+                  <div v-else class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                      <thead>
+                        <tr class="border-b-2 border-[#232f3e]">
+                          <th class="py-4 px-4 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase">
+                            Resource Type</th>
+                          <th class="py-4 px-4 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase">
+                            Resource ID</th>
+                          <th class="py-4 px-4 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase">Action
+                          </th>
+                          <th
+                            class="py-4 px-4 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase text-right">
+                            Settings</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(policy, idx) in policies" :key="idx"
+                          class="border-b border-[#eaeded] hover:bg-[#fafafa] transition-colors group">
+                          <td class="py-4 px-4 text-xs font-black uppercase text-[#232f3e]">{{ policy.resourceType ||
+                            policy.ResourceType }}</td>
+                          <td class="py-4 px-4 text-xs font-mono text-[#545b64]">{{ policy.resourceId ||
+                            policy.ResourceId }}</td>
+                          <td class="py-4 px-4 text-xs font-bold text-emerald-600 uppercase">{{ policy.action ||
+                            policy.Action }}</td>
+                          <td
+                            class="py-4 px-4 flex justify-end gap-3 opacity-50 group-hover:opacity-100 transition-opacity">
+                            <button @click="openPolicyModal(policy)"
+                              class="text-[10px] font-black text-[#545b64] hover:text-amber-600 uppercase tracking-widest transition-colors">Edit</button>
+                            <button @click="deletePolicyAction(policy)"
+                              class="text-[10px] font-black text-[#545b64] hover:text-red-600 uppercase tracking-widest transition-colors">Delete</button>
+                          </td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
             <!-- Config Tab -->
             <div v-if="activeTab === 'config'"
               class="space-y-10 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -467,6 +624,92 @@ const copyArn = async () => {
               </div>
             </div>
 
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Policy Modal -->
+    <div v-if="showPolicyModal"
+      class="fixed inset-0 z-50 flex items-center justify-center p-6 bg-[#16191f]/80 backdrop-blur-sm animate-in fade-in duration-200">
+      <div class="bg-white border-4 border-[#232f3e] w-full max-w-xl shadow-2xl relative">
+        <div
+          class="absolute inset-0 bg-[linear-gradient(rgba(251,191,36,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(251,191,36,0.03)_1px,transparent_1px)] bg-[size:20px_20px] pointer-events-none">
+        </div>
+        <div class="relative p-10 space-y-8">
+          <div class="flex justify-between items-center border-b-2 border-[#eaeded] pb-6">
+            <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tight">{{ editingPolicy ? 'Update_Policy' :
+              'Create_Policy' }}</h3>
+            <button @click="showPolicyModal = false" class="text-[#879196] hover:text-red-500 transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24"
+                stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="space-y-5">
+            <div>
+              <label class="block text-[10px] font-black uppercase tracking-widest text-[#879196] mb-2">Resource
+                Type</label>
+              <select v-model="policyForm.resource_type"
+                class="w-full p-4 border-2 border-[#eaeded] bg-[#fafafa] focus:ring-0 focus:border-[#232f3e] transition-all font-bold text-sm uppercase">
+                <option value="" disabled>Select Type</option>
+                <option value="s3">S3 / Object Storage</option>
+                <option value="ec2">EC2 / Compute</option>
+                <option value="db">Database</option>
+                <option value="vpc">Network</option>
+                <option value="kms">KMS / Keys</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-[10px] font-black uppercase tracking-widest text-[#879196] mb-2">Resource
+                ID</label>
+              <input v-model="policyForm.resource_id" type="text" placeholder="e.g. bucket/images/*"
+                class="w-full p-4 border-2 border-[#eaeded] bg-[#fafafa] focus:ring-0 focus:border-[#232f3e] transition-all font-mono text-sm">
+            </div>
+            <div>
+              <label class="block text-[10px] font-black uppercase tracking-widest text-[#879196] mb-2">Action /
+                Permission</label>
+              <select v-if="policyForm.resource_type === 's3'" v-model="policyForm.action"
+                class="w-full p-4 border-2 border-[#eaeded] bg-[#fafafa] focus:ring-0 focus:border-[#232f3e] transition-all font-mono text-sm uppercase">
+                <option value="" disabled>Select S3 Action</option>
+                <option value="GetObject">GetObject</option>
+                <option value="PutObject">PutObject</option>
+                <option value="DeleteObject">DeleteObject</option>
+                <option value="ListBucket">ListBucket</option>
+                <option value="*">All S3 Actions (*)</option>
+              </select>
+              <select v-else-if="policyForm.resource_type === 'ec2'" v-model="policyForm.action"
+                class="w-full p-4 border-2 border-[#eaeded] bg-[#fafafa] focus:ring-0 focus:border-[#232f3e] transition-all font-mono text-sm uppercase">
+                <option value="" disabled>Select EC2 Action</option>
+                <option value="DescribeInstances">DescribeInstances</option>
+                <option value="StartInstances">StartInstances</option>
+                <option value="StopInstances">StopInstances</option>
+                <option value="TerminateInstances">TerminateInstances</option>
+                <option value="*">All EC2 Actions (*)</option>
+              </select>
+              <select v-else-if="policyForm.resource_type === 'db'" v-model="policyForm.action"
+                class="w-full p-4 border-2 border-[#eaeded] bg-[#fafafa] focus:ring-0 focus:border-[#232f3e] transition-all font-mono text-sm uppercase">
+                <option value="" disabled>Select DB Action</option>
+                <option value="Query">Query</option>
+                <option value="PutItem">PutItem</option>
+                <option value="UpdateItem">UpdateItem</option>
+                <option value="DeleteItem">DeleteItem</option>
+                <option value="*">All DB Actions (*)</option>
+              </select>
+              <input v-else v-model="policyForm.action" type="text" placeholder="e.g. GetObject, Write, *"
+                class="w-full p-4 border-2 border-[#eaeded] bg-[#fafafa] focus:ring-0 focus:border-[#232f3e] transition-all font-mono text-sm">
+            </div>
+          </div>
+
+          <div class="flex justify-end gap-4 pt-6 mt-8 border-t-2 border-[#eaeded]">
+            <button @click="showPolicyModal = false"
+              class="px-8 py-4 border-2 border-[#eaeded] text-[#545b64] font-black uppercase tracking-widest text-xs hover:bg-[#fafafa] transition-all">Cancel</button>
+            <button @click="submitPolicy"
+              class="px-8 py-4 bg-amber-500 text-white font-black uppercase tracking-widest text-xs hover:bg-amber-600 transition-all shadow-[6px_6px_0px_#232f3e] active:translate-y-1 active:shadow-none">
+              {{ editingPolicy ? 'SAVE_CHANGES' : 'ATTACH_POLICY' }}
+            </button>
           </div>
         </div>
       </div>

@@ -2,11 +2,13 @@
 import { onMounted, computed } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useRdsStore } from '../store/rdsStore'
+import { useDocsStore } from '../../docs/store/docsStore'
 import PublicNavbar from '@/shared/components/PublicNavbar.vue'
 
 const router = useRouter()
 const route = useRoute()
 const rdsStore = useRdsStore()
+const docsStore = useDocsStore()
 
 const dbId = computed(() => route.params.id as string)
 const db = computed(() => rdsStore.currentDatabase)
@@ -99,9 +101,19 @@ const handleDelete = async () => {
                                 </svg>
                             </div>
                             <div class="flex-1 min-w-0">
-                                <h1
-                                    class="text-5xl font-black text-[#232f3e] tracking-tighter uppercase leading-none mb-3 truncate">
-                                    {{ db.name }}</h1>
+                                <div class="flex items-center gap-4 mb-3">
+                                    <h1
+                                        class="text-5xl font-black text-[#232f3e] tracking-tighter uppercase leading-none truncate">
+                                        {{ db.name }}</h1>
+                                    <button @click="docsStore.openHelp('rds', 'rds-clusters')"
+                                        class="flex items-center gap-2 px-3 py-1.5 bg-white border-2 border-[#232f3e] text-[9px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-white transition-all shadow-[3px_3px_0px_#232f3e] active:translate-y-0.5 active:shadow-none translate-y-[-2px]">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Help
+                                    </button>
+                                </div>
 
                                 <!-- ARN Display -->
                                 <div v-if="db.arn" @click="copyToClipboard(db.arn)"
@@ -170,7 +182,7 @@ const handleDelete = async () => {
                                         class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Master
                                         User (Role)</span>
                                     <span class="text-sm font-mono text-[#232f3e]">{{ db.roleName || db.user || '—'
-                                        }}</span>
+                                    }}</span>
                                 </div>
                             </div>
                         </div>

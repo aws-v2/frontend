@@ -2,10 +2,12 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRdsStore } from '../store/rdsStore'
+import { useDocsStore } from '../../docs/store/docsStore'
 import PublicNavbar from '@/shared/components/PublicNavbar.vue'
 
 const router = useRouter()
 const rdsStore = useRdsStore()
+const docsStore = useDocsStore()
 
 onMounted(async () => {
     await rdsStore.fetchDatabases()
@@ -128,8 +130,18 @@ const goBack = () => router.push('/dashboard')
                             </svg>
                         </div>
                         <div>
-                            <h1 class="text-6xl font-black text-[#232f3e] tracking-tighter uppercase leading-none mb-4">
-                                Managed_Database</h1>
+                            <div class="flex items-center gap-4 mb-4">
+                                <h1 class="text-6xl font-black text-[#232f3e] tracking-tighter uppercase leading-none">
+                                    Managed_Database</h1>
+                                <button @click="docsStore.openHelp('rds', 'rds-overview')"
+                                    class="flex items-center gap-2 px-4 py-2 bg-white border-2 border-[#232f3e] text-[10px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-white transition-all shadow-[4px_4px_0px_#232f3e] active:translate-y-0.5 active:shadow-none translate-y-[-4px]">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Help_Center
+                                </button>
+                            </div>
                             <div class="flex items-center gap-6">
                                 <p class="text-xl text-[#545b64] font-medium leading-relaxed max-w-xl">Centralized
                                     control for relational fleet orchestration, point-in-time recovery, and elastic

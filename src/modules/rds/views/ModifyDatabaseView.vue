@@ -1,9 +1,11 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
+import { useDocsStore } from '../../docs/store/docsStore'
 
 const router = useRouter()
 const route = useRoute()
+const docsStore = useDocsStore()
 const dbId = route.params.id as string || 'database-1'
 
 // Form State
@@ -81,8 +83,18 @@ const handleContinue = () => {
             </nav>
 
             <div class="relative z-10 px-8 py-10 max-w-7xl mx-auto">
-                <h1 class="text-5xl font-black text-[#232f3e] tracking-tighter uppercase leading-none mb-10">Modify DB
-                    cluster: {{ dbIdentifier }}</h1>
+                <div class="flex items-center gap-4 mb-20">
+                    <h1 class="text-8xl font-black text-[#232f3e] tracking-tighter uppercase leading-none">
+                        Modify_Instance</h1>
+                    <button @click="docsStore.openHelp('rds', 'rds-modify')"
+                        class="flex items-center gap-2 px-5 py-2.5 bg-white border-2 border-[#232f3e] text-[11px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-white transition-all shadow-[5px_5px_0px_#232f3e] active:translate-y-0.5 active:shadow-none translate-y-[-8px]">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        Help_Center
+                    </button>
+                </div>
 
 
                 <!-- Settings -->
@@ -751,6 +763,7 @@ const handleContinue = () => {
                     class="px-8 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-black uppercase tracking-widest transition-all shadow-[4px_4px_0px_#232f3e] active:translate-y-0.5 active:shadow-none">Continue</button>
             </div>
         </div>
+    </div>
 </template>
 
 <style scoped>

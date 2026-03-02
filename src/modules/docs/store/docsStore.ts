@@ -38,7 +38,7 @@ const SERVICE_REGISTRY: Record<string, string> = {
 };
 
 // Services that have live backend docs endpoints
-const LIVE_SERVICES = new Set(['s3', 'compute', 'lambda', 'auth']);
+const LIVE_SERVICES = new Set(['s3', 'compute', 'lambda', 'auth', 'rds']);
 
 // Mock data for services that don't have backend docs yet
 const MOCK_DATA: Record<string, { manifest: DocManifest; docs: Record<string, DocResponse> }> = {

@@ -53,8 +53,14 @@ const cancel = () => {
 }
 </script>
 
-<template>
-    <div class="min-h-screen bg-[var(--bg-console)] pb-20">
+<div class="min-h-screen bg-white text-[#16191f] font-urbanist selection:bg-amber-500/20 selection:text-amber-900">
+        <div class="relative pt-24 pb-40">
+            <!-- Grid Background -->
+            <div
+                class="absolute inset-0 bg-[linear-gradient(rgba(251,191,36,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(251,191,36,0.06)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none">
+            </div>
+
+<div class="relative z-10 max-w-7xl mx-auto px-6">
         <!-- Breadcrumbs -->
         <nav
             class="bg-white border-b border-gray-200 px-6 py-2 flex items-center gap-2 text-xs font-medium text-gray-500">
@@ -85,8 +91,8 @@ const cancel = () => {
                 </span>
             </div>
 
-            <!-- Choose database creation method -->
-            <div class="aws-card p-6 rounded-sm mb-6">
+<!-- Choose database creation method -->
+<div class="aws-card p-6 rounded-sm mb-6">
                 <h3 class="text-base font-bold text-gray-900 mb-4">Choose a database creation method</h3>
                 <div class="grid grid-cols-2 gap-4 max-w-4xl">
                     <!-- Full Configuration — DISABLED -->
@@ -95,39 +101,38 @@ const cancel = () => {
                         <div class="flex items-start gap-3">
                             <div class="flex-shrink-0 mt-0.5">
                                 <div class="w-4 h-4 rounded-full border border-gray-400"></div>
-                            </div>
-                            <div>
+</div>
+<div>
                                 <h4 class="text-xs font-bold text-gray-800">Full configuration</h4>
                                 <p class="text-[10px] text-gray-500 leading-tight mt-1">Use all of the configuration
                                     options, including ones for availability, security, backups, and maintenance.</p>
                             </div>
-                        </div>
-                        <span
-                            class="absolute top-2 right-2 text-[8px] font-black tracking-widest uppercase px-2 py-0.5 bg-gray-200 text-gray-500">Unavailable</span>
-                    </div>
+</div>
+<span
+    class="absolute top-2 right-2 text-[8px] font-black tracking-widest uppercase px-2 py-0.5 bg-gray-200 text-gray-500">Unavailable</span>
+</div>
 
-                    <!-- Easy Create — ACTIVE -->
-                    <div
-                        class="aws-card p-4 rounded-sm cursor-pointer transition-all border-2 border-[var(--aws-blue)] bg-blue-50/20">
+<!-- Easy Create — ACTIVE -->
+<div class="aws-card p-4 rounded-sm cursor-pointer transition-all border-2 border-[var(--aws-blue)] bg-blue-50/20">
                         <div class="flex items-start gap-3">
                             <div class="flex-shrink-0 mt-0.5">
                                 <div
                                     class="w-4 h-4 rounded-full border flex items-center justify-center border-[var(--aws-blue)]">
                                     <div class="w-2 h-2 rounded-full bg-[var(--aws-blue)]"></div>
-                                </div>
-                            </div>
-                            <div>
+</div>
+</div>
+<div>
                                 <h4 class="text-xs font-bold text-gray-800">Easy create</h4>
                                 <p class="text-[10px] text-gray-500 leading-tight mt-1">Use recommended best practice
                                     configurations. Some configuration can be changed after the database is created.</p>
                             </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+</div>
+</div>
+</div>
+</div>
 
-            <!-- Configuration -->
-            <div class="aws-card p-6 rounded-sm mb-6">
+<!-- Configuration -->
+<div class="aws-card p-6 rounded-sm mb-6">
                 <h3 class="text-base font-bold text-gray-900 mb-4">Configuration</h3>
 
                 <!-- Engine type — PostgreSQL only -->
@@ -139,17 +144,17 @@ const cancel = () => {
                             <div
                                 class="w-4 h-4 rounded-full border flex items-center justify-center border-[var(--aws-blue)] flex-shrink-0">
                                 <div class="w-2 h-2 rounded-full bg-[var(--aws-blue)]"></div>
-                            </div>
-                            <div>
+</div>
+<div>
                                 <h4 class="text-xs font-bold text-gray-800">PostgreSQL</h4>
                                 <p class="text-[10px] text-gray-500 mt-0.5">Open source relational database</p>
                             </div>
-                        </div>
-                    </div>
-                </div>
+</div>
+</div>
+</div>
 
-                <!-- DB instance size -->
-                <div class="mb-6 max-w-4xl">
+<!-- DB instance size -->
+<div class="mb-6 max-w-4xl">
                     <label class="aws-label">DB instance size <span
                             class="text-[var(--aws-blue)] text-[10px]">Info</span></label>
                     <div class="grid grid-cols-2 gap-4">
@@ -162,37 +167,36 @@ const cancel = () => {
                                         :class="instanceSize === 'Production' ? 'border-amber-500' : 'border-gray-400'">
                                         <div v-if="instanceSize === 'Production'"
                                             class="w-2 h-2 rounded-full bg-amber-500"></div>
-                                    </div>
-                                </div>
-                                <div>
+</div>
+</div>
+<div>
                                     <h4 class="text-xs font-bold text-gray-800">Production</h4>
                                     <p class="text-[10px] text-gray-500 leading-tight mt-1">8 vCPUs, 32 GiB RAM</p>
                                 </div>
-                            </div>
-                        </div>
+</div>
+</div>
 
-                        <div @click="instanceSize = 'Dev/Test'"
-                            class="aws-card p-4 rounded-sm cursor-pointer transition-all border-2"
-                            :class="instanceSize === 'Dev/Test' ? 'border-amber-500 bg-amber-50/30' : 'border-gray-200 hover:border-gray-400'">
+<div @click="instanceSize = 'Dev/Test'" class="aws-card p-4 rounded-sm cursor-pointer transition-all border-2"
+    :class="instanceSize === 'Dev/Test' ? 'border-amber-500 bg-amber-50/30' : 'border-gray-200 hover:border-gray-400'">
                             <div class="flex items-start gap-3">
                                 <div class="flex-shrink-0 mt-0.5">
                                     <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center"
                                         :class="instanceSize === 'Dev/Test' ? 'border-amber-500' : 'border-gray-400'">
                                         <div v-if="instanceSize === 'Dev/Test'"
                                             class="w-2 h-2 rounded-full bg-amber-500"></div>
-                                    </div>
-                                </div>
-                                <div>
+</div>
+</div>
+<div>
                                     <h4 class="text-xs font-bold text-gray-800">Dev/Test</h4>
                                     <p class="text-[10px] text-gray-500 leading-tight mt-1">2 vCPUs, 4 GiB memory</p>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+</div>
+</div>
+</div>
+</div>
 
-                <!-- DB cluster identifier -->
-                <div class="mb-6 max-w-2xl">
+<!-- DB cluster identifier -->
+<div class="mb-6 max-w-2xl">
                     <label class="aws-label">DB cluster identifier <span
                             class="text-[var(--aws-blue)] text-[10px]">Info</span></label>
                     <p class="text-[11px] text-gray-500 mb-2">Type a name for your DB cluster. The name must be unique
@@ -204,8 +208,8 @@ const cancel = () => {
                         a hyphen.</p>
                 </div>
 
-                <!-- Master username -->
-                <div class="mb-6 max-w-2xl">
+<!-- Master username -->
+<div class="mb-6 max-w-2xl">
                     <label class="aws-label">Master username</label>
                     <p class="text-[11px] text-gray-500 mb-2">Type a login ID for the master user of your DB instance.
                     </p>
@@ -214,8 +218,8 @@ const cancel = () => {
                         letter.</p>
                 </div>
 
-                <!-- Master password (self-managed) -->
-                <div class="mb-6 max-w-2xl">
+<!-- Master password (self-managed) -->
+<div class="mb-6 max-w-2xl">
                     <label class="aws-label">Master password</label>
                     <p class="text-[11px] text-gray-500 mb-2">Enter a password for the master user.</p>
                     <input v-model="masterPassword" type="password" class="aws-input"
@@ -223,8 +227,8 @@ const cancel = () => {
                     <p class="text-[10px] text-gray-500 mt-1">Must be at least 8 characters.</p>
                 </div>
 
-                <!-- Credential management -->
-                <div class="max-w-4xl">
+<!-- Credential management -->
+<div class="max-w-4xl">
                     <label class="aws-label">Credential management</label>
                     <p class="text-[11px] text-gray-500 mb-3">Choose how to manage your master user credentials.</p>
                     <div class="grid grid-cols-2 gap-4">
@@ -237,39 +241,39 @@ const cancel = () => {
                                         :class="credentialManagement === 'aws-secrets-manager' ? 'border-amber-500' : 'border-gray-400'">
                                         <div v-if="credentialManagement === 'aws-secrets-manager'"
                                             class="w-2 h-2 rounded-full bg-amber-500"></div>
-                                    </div>
-                                </div>
-                                <div>
+</div>
+</div>
+<div>
                                     <h4 class="text-xs font-bold text-gray-800">AWS Secrets Manager - most secure</h4>
                                     <p class="text-[10px] text-gray-500 leading-tight mt-1">RDS generates a password for
                                         you and manages it throughout its lifecycle using AWS Secrets Manager.</p>
                                 </div>
-                            </div>
-                        </div>
+</div>
+</div>
 
-                        <div @click="credentialManagement = 'self-managed'"
-                            class="aws-card p-4 rounded-sm cursor-pointer transition-all border-2"
-                            :class="credentialManagement === 'self-managed' ? 'border-amber-500 bg-amber-50/30' : 'border-gray-200 hover:border-gray-400'">
+<div @click="credentialManagement = 'self-managed'"
+    class="aws-card p-4 rounded-sm cursor-pointer transition-all border-2"
+    :class="credentialManagement === 'self-managed' ? 'border-amber-500 bg-amber-50/30' : 'border-gray-200 hover:border-gray-400'">
                             <div class="flex items-start gap-3">
                                 <div class="flex-shrink-0 mt-0.5">
                                     <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center"
                                         :class="credentialManagement === 'self-managed' ? 'border-amber-500' : 'border-gray-400'">
                                         <div v-if="credentialManagement === 'self-managed'"
                                             class="w-2 h-2 rounded-full bg-amber-500"></div>
-                                    </div>
-                                </div>
-                                <div>
+</div>
+</div>
+<div>
                                     <h4 class="text-xs font-bold text-gray-800">Self managed</h4>
                                     <p class="text-[10px] text-gray-500 leading-tight mt-1">Create your own password or
                                         have RDS create a password that you manage.</p>
                                 </div>
-                            </div>
-                        </div>
-                    </div>
+</div>
+</div>
+</div>
 
-                    <!-- Encryption key selector (only for AWS Secrets Manager) -->
-                    <div v-if="credentialManagement === 'aws-secrets-manager'"
-                        class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-sm">
+<!-- Encryption key selector (only for AWS Secrets Manager) -->
+<div v-if="credentialManagement === 'aws-secrets-manager'"
+    class="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-sm">
                         <p class="text-[11px] text-gray-700 mb-2">
                             <svg class="inline-block w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd"
@@ -290,12 +294,12 @@ const cancel = () => {
                                 <a href="#" class="text-[var(--aws-blue)] hover:underline">Add new key</a>
                             </p>
                         </div>
-                    </div>
-                </div>
-            </div>
+</div>
+</div>
+</div>
 
-            <!-- Set up EC2 connection (expandable) -->
-            <div class="aws-card rounded-sm mb-6">
+<!-- Set up EC2 connection (expandable) -->
+<div class="aws-card rounded-sm mb-6">
                 <div @click="showEc2Connection = !showEc2Connection"
                     class="p-4 cursor-pointer hover:bg-gray-50 transition-colors flex items-center gap-3">
                     <svg class="w-4 h-4 transition-transform" :class="showEc2Connection ? 'rotate-90' : ''" fill="none"
@@ -306,16 +310,16 @@ const cancel = () => {
                         <h3 class="font-bold text-gray-900 text-sm">Set up EC2 connection - <span
                                 class="text-xs italic">optional</span></h3>
                     </div>
-                </div>
-                <div v-if="showEc2Connection" class="px-6 pb-6">
+</div>
+<div v-if="showEc2Connection" class="px-6 pb-6">
                     <p class="text-xs text-gray-600">You can also set up a connection to an EC2 instance after creating
                         the database. Go to the RDS page or the database details page, choose Actions, and then choose
                         Set up EC2 connection.</p>
                 </div>
-            </div>
+</div>
 
-            <!-- View default settings for Easy create (expandable) -->
-            <div class="aws-card rounded-sm mb-6">
+<!-- View default settings for Easy create (expandable) -->
+<div class="aws-card rounded-sm mb-6">
                 <div @click="showDefaultSettings = !showDefaultSettings"
                     class="p-4 cursor-pointer hover:bg-gray-50 transition-colors flex items-center gap-3">
                     <svg class="w-4 h-4 transition-transform" :class="showDefaultSettings ? 'rotate-90' : ''"
@@ -328,8 +332,8 @@ const cancel = () => {
                             their default values, some of which can be changed after the database is created. If you
                             want to change any of these settings now, use Standard create.</p>
                     </div>
-                </div>
-                <div v-if="showDefaultSettings" class="px-6 pb-6">
+</div>
+<div v-if="showDefaultSettings" class="px-6 pb-6">
                     <div class="overflow-x-auto">
                         <table class="w-full text-xs">
                             <thead class="bg-gray-50 border-b border-gray-200">
@@ -350,13 +354,13 @@ const cancel = () => {
                             </tbody>
                         </table>
                     </div>
-                </div>
-            </div>
-        </div>
+</div>
+</div>
+</div>
 
-        <!-- Footer Actions -->
-        <div
-            class="fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-gray-200 flex items-center justify-end px-8 gap-4 z-50">
+<!-- Footer Actions -->
+<div
+    class="fixed bottom-0 left-0 right-0 h-14 bg-white border-t border-gray-200 flex items-center justify-end px-8 gap-4 z-50">
             <button @click="cancel"
                 class="text-xs font-bold text-gray-600 hover:text-gray-900 hover:underline">Cancel</button>
             <button @click="createDatabase" :disabled="isCreating || !dbIdentifier || !masterUsername"
@@ -364,5 +368,16 @@ const cancel = () => {
                 {{ isCreating ? 'Creating...' : 'Create database' }}
             </button>
         </div>
-    </div>
+</div>
+</div>
+</div>
+</div>
 </template>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&display=swap');
+
+.font-urbanist {
+    font-family: 'Urbanist', sans-serif;
+}
+</style>

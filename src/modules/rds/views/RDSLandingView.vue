@@ -100,7 +100,7 @@ const goBack = () => router.push('/dashboard')
         <div class="relative pt-24 pb-40">
             <!-- Grid Background -->
             <div
-                class="absolute inset-0 bg-[linear-gradient(rgba(251,191,36,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(251,191,36,0.03)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none">
+                class="absolute inset-0 bg-[linear-gradient(rgba(251,191,36,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(251,191,36,0.06)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none">
             </div>
 
             <div class="relative z-10 max-w-7xl mx-auto px-6">
@@ -181,7 +181,7 @@ const goBack = () => router.push('/dashboard')
                             class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-4 italic">{{
                                 stat.label }}</span>
                         <span class="text-5xl font-black tracking-tighter uppercase" :class="stat.color">{{ stat.value
-                            }}</span>
+                        }}</span>
                     </div>
                 </div>
 
@@ -239,7 +239,7 @@ const goBack = () => router.push('/dashboard')
                                 {{ stat.label }}</span>
                             <div class="flex items-baseline gap-2">
                                 <span class="text-4xl font-black tracking-tighter" :class="stat.color">{{ stat.value
-                                    }}</span>
+                                }}</span>
                                 <span class="text-[10px] font-bold text-[#879196] uppercase">{{ stat.unit }}</span>
                             </div>
                         </div>

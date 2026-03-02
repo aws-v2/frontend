@@ -60,7 +60,7 @@ const handleDelete = async (snapshot: any) => {
         <div class="relative pt-24 pb-40">
             <!-- Grid Background -->
             <div
-                class="absolute inset-0 bg-[linear-gradient(rgba(251,191,36,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(251,191,36,0.03)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none">
+                class="absolute inset-0 bg-[linear-gradient(rgba(251,191,36,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(251,191,36,0.06)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none">
             </div>
 
             <div class="relative z-10 max-w-7xl mx-auto px-6">

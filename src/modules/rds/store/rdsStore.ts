@@ -21,9 +21,18 @@ export interface RdsDatabase {
     password?: string
 }
 
+export interface RdsSnapshot {
+    id: string
+    name: string
+    dbId: string
+    status: string
+    createdAt: string
+}
+
 export const useRdsStore = defineStore('rds', () => {
     const databases = ref<RdsDatabase[]>([])
     const currentDatabase = ref<RdsDatabase | null>(null)
+    const snapshots = ref<RdsSnapshot[]>([])
     const isLoading = ref(false)
     const error = ref<string | null>(null)
 
@@ -43,6 +52,14 @@ export const useRdsStore = defineStore('rds', () => {
         physicalDbName: d.physicalDbName || d.PhysicalDbName,
         roleName: d.roleName || d.RoleName,
         password: d.password || d.Password,
+    })
+
+    const mapSnapshot = (s: any): RdsSnapshot => ({
+        id: s.id || s.Id || '',
+        name: s.name || s.Name || '',
+        dbId: s.dbId || s.DatabaseID || '',
+        status: s.status || s.Status || 'available',
+        createdAt: s.createdAt || s.CreatedAt || s.created_at,
     })
 
     const fetchDatabases = async () => {
@@ -99,14 +116,45 @@ export const useRdsStore = defineStore('rds', () => {
         }
     }
 
+    const fetchSnapshots = async (dbId: string) => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.get<any>(`/rds/databases/${dbId}/snapshots`)
+            const raw = Array.isArray(response.data)
+                ? response.data
+                : response.data?.data || response.data?.snapshots || []
+            snapshots.value = raw.map(mapSnapshot)
+        } catch (e) {
+            console.error('RDS fetchSnapshots error:', e)
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const createSnapshot = async (dbId: string, name: string) => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.post(`/rds/databases/${dbId}/snapshots`, { name })
+            return response.data
+        } catch (e) {
+            console.error('RDS createSnapshot error:', e)
+            throw e
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     return {
         databases,
         currentDatabase,
+        snapshots,
         isLoading,
         error,
         fetchDatabases,
         fetchDatabaseById,
         createDatabase,
         deleteDatabase,
+        fetchSnapshots,
+        createSnapshot,
     }
 })

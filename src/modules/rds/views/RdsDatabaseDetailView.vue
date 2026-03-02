@@ -169,7 +169,7 @@ const handleDelete = async () => {
                                         class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Master
                                         User (Role)</span>
                                     <span class="text-sm font-mono text-[#232f3e]">{{ db.roleName || db.user || '—'
-                                        }}</span>
+                                    }}</span>
                                 </div>
                             </div>
                         </div>
@@ -204,7 +204,8 @@ const handleDelete = async () => {
                                     <span class="text-sm font-mono text-[#232f3e]">{{ db.createdAt ? new
                                         Date(db.createdAt).toLocaleDateString('en-US', {
                                             year: 'numeric', month:
-                                        'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '—' }}</span>
+                                                'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                        }) : '—' }}</span>
                                 </div>
                             </div>
                         </div>
@@ -231,10 +232,11 @@ const handleDelete = async () => {
                     <!-- Actions Strip -->
                     <div class="grid grid-cols-3 gap-0 border-4 border-[#eaeded]">
                         <div v-for="action in [
-                            { label: 'Create Snapshot', icon: '📸', desc: 'Point-in-time backup of this database.' },
-                            { label: 'Restore from Snapshot', icon: '♻️', desc: 'Restore to a previous point in time.' },
-                            { label: 'Reboot Instance', icon: '🔄', desc: 'Apply pending parameter changes.' },
+                            { label: 'Create Snapshot', icon: '📸', desc: 'Point-in-time backup of this database.', route: 'rds-create-snapshot' },
+                            { label: 'Restore from Snapshot', icon: '♻️', desc: 'Restore to a previous point in time.', route: null },
+                            { label: 'Reboot Instance', icon: '🔄', desc: 'Apply pending parameter changes.', route: null },
                         ]" :key="action.label"
+                            @click="action.route ? router.push({ name: action.route, params: { id: dbId } }) : null"
                             class="p-8 border-r-4 last:border-r-0 border-[#eaeded] hover:bg-[#fafafa] cursor-pointer transition-colors group">
                             <div class="text-2xl mb-3">{{ action.icon }}</div>
                             <h3

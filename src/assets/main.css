@@ -66,6 +66,16 @@
     @apply block text-xs font-bold text-[#545b64] mb-1;
   }
 
+  /* AWS Console Specific Inputs */
+  .aws-input {
+    @apply w-full bg-white border border-[#879196] px-3 py-1.5 text-sm text-[#16191f] placeholder-[#879196] focus:outline-none focus:border-[#0073bb] focus:ring-1 focus:ring-[#0073bb] transition-all font-sans;
+    border-radius: 2px !important;
+  }
+
+  .aws-label {
+    @apply block text-sm font-bold text-[#16191f] mb-1.5;
+  }
+
   /* Bordered Cards (Replaces Glass) */
   .aws-card {
     @apply bg-white border border-[#eaeded] p-6;

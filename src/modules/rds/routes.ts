@@ -29,6 +29,12 @@ const rdsRoutes: RouteRecordRaw[] = [
         component: () => import('./views/RdsDatabaseDetailView.vue'),
         meta: { requiresAuth: true },
     },
+    {
+        path: '/rds/databases/:id/snapshots/create',
+        name: 'rds-create-snapshot',
+        component: () => import('./views/CreateRdsSnapshotView.vue'),
+        meta: { requiresAuth: true },
+    },
 ]
 
 export default rdsRoutes

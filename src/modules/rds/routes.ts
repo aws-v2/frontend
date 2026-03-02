@@ -30,9 +30,33 @@ const rdsRoutes: RouteRecordRaw[] = [
         meta: { requiresAuth: true },
     },
     {
+        path: '/rds/databases/:id/snapshots',
+        name: 'rds-snapshots-list',
+        component: () => import('./views/RdsSnapshotsListView.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
         path: '/rds/databases/:id/snapshots/create',
         name: 'rds-create-snapshot',
         component: () => import('./views/CreateRdsSnapshotView.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/rds/snapshots/:snapshotId/restore',
+        name: 'rds-restore-database',
+        component: () => import('./views/RestoreDatabaseView.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/rds/volumes',
+        name: 'rds-volumes',
+        component: () => import('./views/RdsVolumesListView.vue'),
+        meta: { requiresAuth: true },
+    },
+    {
+        path: '/rds/volumes/create',
+        name: 'rds-create-volume',
+        component: () => import('./views/CreateRdsVolumeView.vue'),
         meta: { requiresAuth: true },
     },
 ]

@@ -22,6 +22,7 @@ const copyToClipboard = (text: string) => {
 
 onMounted(async () => {
     await rdsStore.fetchDatabaseById(dbId.value)
+    await rdsStore.fetchSnapshots(dbId.value)
 })
 
 const statusClass = (status: string) => {
@@ -229,20 +230,96 @@ const handleDelete = async () => {
                         </div>
                     </div>
 
-                    <!-- Actions Strip -->
-                    <div class="grid grid-cols-3 gap-0 border-4 border-[#eaeded]">
-                        <div v-for="action in [
-                            { label: 'Create Snapshot', icon: '📸', desc: 'Point-in-time backup of this database.', route: 'rds-create-snapshot' },
-                            { label: 'Restore from Snapshot', icon: '♻️', desc: 'Restore to a previous point in time.', route: null },
-                            { label: 'Reboot Instance', icon: '🔄', desc: 'Apply pending parameter changes.', route: null },
-                        ]" :key="action.label"
-                            @click="action.route ? router.push({ name: action.route, params: { id: dbId } }) : null"
-                            class="p-8 border-r-4 last:border-r-0 border-[#eaeded] hover:bg-[#fafafa] cursor-pointer transition-colors group">
-                            <div class="text-2xl mb-3">{{ action.icon }}</div>
-                            <h3
-                                class="text-sm font-black text-[#232f3e] uppercase tracking-tight group-hover:text-amber-600 transition-colors mb-2">
-                                {{ action.label }}</h3>
-                            <p class="text-[10px] text-[#879196] font-medium leading-relaxed">{{ action.desc }}</p>
+                    <!-- Preview Dashboard -->
+                    <div class="grid lg:grid-cols-2 gap-12 mb-12">
+                        <!-- Monitoring Preview -->
+                        <div class="border-4 border-[#232f3e] bg-white">
+                            <div
+                                class="px-8 py-4 border-b-4 border-[#232f3e] bg-[#232f3e] flex justify-between items-center">
+                                <h2 class="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em]">
+                                    Monitoring_Preview</h2>
+                                <span
+                                    class="text-[8px] font-black text-amber-500/50 uppercase tracking-widest">Real-time
+                                    telemetry</span>
+                            </div>
+                            <div class="p-8">
+                                <div class="grid grid-cols-2 gap-8 mb-8">
+                                    <div>
+                                        <span
+                                            class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">CPU
+                                            Utilization</span>
+                                        <div class="flex items-end gap-2">
+                                            <span class="text-3xl font-black text-[#232f3e]">12.4%</span>
+                                            <span class="text-[10px] text-emerald-600 font-bold mb-1">Normal</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span
+                                            class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">DB
+                                            Connections</span>
+                                        <div class="flex items-end gap-2">
+                                            <span class="text-3xl font-black text-[#232f3e]">8</span>
+                                            <span class="text-[10px] text-[#879196] font-bold mb-1">/ 100</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Mock Chart -->
+                                <div
+                                    class="h-32 w-full bg-[#fafafa] border-2 border-[#eaeded] relative overflow-hidden group">
+                                    <div class="absolute inset-x-0 bottom-0 h-full flex items-end px-2 gap-1">
+                                        <div v-for="i in 20" :key="i"
+                                            class="flex-1 bg-amber-500/20 group-hover:bg-amber-500/40 transition-all"
+                                            :style="{ height: Math.random() * 80 + 20 + '%' }"></div>
+                                    </div>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span
+                                            class="text-[9px] font-black text-[#879196] uppercase tracking-[0.2em] bg-white px-3 py-1 border border-[#eaeded] shadow-sm">load_delta_last_6h</span>
+                                    </div>
+                                </div>
+                                <button
+                                    class="w-full mt-6 py-3 border-2 border-[#232f3e] text-[10px] font-black uppercase tracking-widest hover:bg-[#232f3e] hover:text-white transition-all">View
+                                    CloudWatch Metrics →</button>
+                            </div>
+                        </div>
+
+                        <!-- Snapshots Preview -->
+                        <div class="border-4 border-[#232f3e] bg-white">
+                            <div
+                                class="px-8 py-4 border-b-4 border-[#232f3e] bg-[#232f3e] flex justify-between items-center">
+                                <h2 class="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em]">
+                                    Snapshot_Summary</h2>
+                                <button @click="router.push(`/rds/databases/${dbId}/snapshots`)"
+                                    class="text-[9px] font-black text-amber-500 hover:underline uppercase tracking-widest">View
+                                    all</button>
+                            </div>
+                            <div class="p-8">
+                                <div v-if="rdsStore.snapshots.length === 0" class="py-12 text-center">
+                                    <p class="text-[10px] font-black text-[#879196] uppercase tracking-widest mb-4">No
+                                        snapshots registered.</p>
+                                    <button @click="router.push(`/rds/databases/${dbId}/snapshots/create`)"
+                                        class="px-6 py-3 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all">Take
+                                        First Snapshot</button>
+                                </div>
+                                <div v-else class="space-y-4">
+                                    <div v-for="snap in rdsStore.snapshots.slice(0, 3)" :key="snap.id"
+                                        class="p-4 border-2 border-[#eaeded] hover:border-amber-500 transition-colors cursor-pointer group">
+                                        <div class="flex justify-between items-start mb-1">
+                                            <span
+                                                class="text-xs font-black text-[#232f3e] uppercase font-mono truncate mr-4">{{
+                                                    snap.name }}</span>
+                                            <span
+                                                class="text-[8px] font-black text-emerald-600 uppercase tracking-widest">{{
+                                                    snap.status }}</span>
+                                        </div>
+                                        <div
+                                            class="text-[9px] text-[#879196] font-medium uppercase tracking-widest italic group-hover:text-amber-600">
+                                            Created: {{ new Date(snap.createdAt).toLocaleDateString() }}</div>
+                                    </div>
+                                    <p
+                                        class="text-[9px] font-black text-[#879196] uppercase tracking-widest text-center italic mt-6">
+                                        Showing latest manual snapshots</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
 

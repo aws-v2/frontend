@@ -29,10 +29,44 @@ export interface RdsSnapshot {
     createdAt: string
 }
 
+export interface RdsVolume {
+    id: string
+    name: string
+    sizeGb: number
+    status: string
+    createdAt: string
+}
+
+export interface RdsAggregateMetrics {
+    summary: {
+        totalDatabases: number
+        totalCpuUsage: number
+        totalMemoryUsage: number
+        totalConnections: number
+        totalDiskUsage: number
+        unitCpu: string
+        unitMemory: string
+        unitDisk: string
+    }
+    breakdown: Array<{
+        name: string
+        cpu: number
+        memory: number
+        status: string
+    }>
+    history: Array<{
+        timestamp: string
+        cpu: number
+        memory: number
+    }>
+}
+
 export const useRdsStore = defineStore('rds', () => {
     const databases = ref<RdsDatabase[]>([])
     const currentDatabase = ref<RdsDatabase | null>(null)
     const snapshots = ref<RdsSnapshot[]>([])
+    const volumes = ref<RdsVolume[]>([])
+    const aggregateMetrics = ref<RdsAggregateMetrics | null>(null)
     const isLoading = ref(false)
     const error = ref<string | null>(null)
 
@@ -55,11 +89,19 @@ export const useRdsStore = defineStore('rds', () => {
     })
 
     const mapSnapshot = (s: any): RdsSnapshot => ({
-        id: s.id || s.Id || '',
+        id: s.id || s.Id || s.ID || '',
         name: s.name || s.Name || '',
         dbId: s.dbId || s.DatabaseID || '',
         status: s.status || s.Status || 'available',
         createdAt: s.createdAt || s.CreatedAt || s.created_at,
+    })
+
+    const mapVolume = (v: any): RdsVolume => ({
+        id: v.id || v.Id || v.ID || '',
+        name: v.name || v.Name || '',
+        sizeGb: v.sizeGb || v.SizeGB || 0,
+        status: v.status || v.Status || 'available',
+        createdAt: v.createdAt || v.CreatedAt || v.created_at,
     })
 
     const fetchDatabases = async () => {
@@ -134,7 +176,10 @@ export const useRdsStore = defineStore('rds', () => {
     const createSnapshot = async (dbId: string, name: string) => {
         isLoading.value = true
         try {
-            const response = await apiClient.post(`/rds/databases/${dbId}/snapshots`, { name })
+            const response = await apiClient.post(`/rds/databases/${dbId}/snapshots`, {
+                name,
+                databaseId: dbId
+            })
             return response.data
         } catch (e) {
             console.error('RDS createSnapshot error:', e)
@@ -144,10 +189,90 @@ export const useRdsStore = defineStore('rds', () => {
         }
     }
 
+    const restoreDatabase = async (snapshotId: string, newDbId: string) => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.post('/rds/databases/restore', {
+                snapshotId,
+                databaseId: newDbId
+            })
+            await fetchDatabases()
+            return response.data
+        } catch (e) {
+            console.error('RDS restore error:', e)
+            throw e
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const deleteSnapshot = async (snapshotId: string) => {
+        try {
+            await apiClient.delete(`/rds/snapshots/${snapshotId}`)
+            snapshots.value = snapshots.value.filter(s => s.id !== snapshotId)
+        } catch (e) {
+            console.error('RDS snapshot delete error:', e)
+            throw e
+        }
+    }
+
+    const fetchVolumes = async () => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.get<any>('/rds/volumes')
+            const raw = Array.isArray(response.data)
+                ? response.data
+                : response.data?.data || response.data?.volumes || []
+            volumes.value = raw.map(mapVolume)
+        } catch (e) {
+            console.error('RDS fetchVolumes error:', e)
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const createRdsVolume = async (payload: { name: string; sizeGb: number }) => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.post('/rds/volumes', payload)
+            await fetchVolumes()
+            return response.data
+        } catch (e) {
+            console.error('RDS createVolume error:', e)
+            throw e
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const deleteRdsVolume = async (id: string) => {
+        try {
+            await apiClient.delete(`/rds/volumes/${id}`)
+            volumes.value = volumes.value.filter(v => v.id !== id)
+        } catch (e) {
+            console.error('RDS volume delete error:', e)
+            throw e
+        }
+    }
+
+    const fetchAggregateMetrics = async () => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.get<any>('/rds/databases/metrics/aggregate')
+            aggregateMetrics.value = response.data?.data || response.data
+        } catch (e) {
+            console.error('RDS fetchAggregateMetrics error:', e)
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     return {
         databases,
         currentDatabase,
         snapshots,
+        volumes,
+        aggregateMetrics,
         isLoading,
         error,
         fetchDatabases,
@@ -156,5 +281,11 @@ export const useRdsStore = defineStore('rds', () => {
         deleteDatabase,
         fetchSnapshots,
         createSnapshot,
+        restoreDatabase,
+        deleteSnapshot,
+        fetchVolumes,
+        createRdsVolume,
+        deleteRdsVolume,
+        fetchAggregateMetrics,
     }
 })

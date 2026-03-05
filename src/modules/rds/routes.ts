@@ -3,7 +3,9 @@ import type { RouteRecordRaw } from 'vue-router'
 const rdsRoutes: RouteRecordRaw[] = [
     {
         path: '/rds',
-        redirect: '/rds/databases',
+        name: 'rds-landing',
+        component: () => import('./views/RDSPublicView.vue'),
+        meta: { requiresAuth: false, hideNavbar: true },
     },
     {
         path: '/rds/databases',

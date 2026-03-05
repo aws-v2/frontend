@@ -4,7 +4,7 @@ import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useToastStore } from '@/shared/store/toastStore'
 
 defineProps<{
-    activeLink?: 'compute' | 'storage' | 'gaming' | 'ai' | 'pricing' | 'docs',
+    activeLink?: 'compute' | 'storage' | 'database' | 'gaming' | 'ai' | 'pricing' | 'docs',
     hasPrototypeBadge?: boolean,
     buttonText?: string,
     buttonLink?: string
@@ -30,6 +30,17 @@ const handleS3Click = () => {
         router.push({ name: 's3-buckets' })
     } else {
         router.push({ name: 's3-landing' })
+    }
+}
+
+const handleRDSClick = () => {
+    // Smart Navigation: Check auth before choosing destination
+    const isAuthenticated = authStore.isAuthenticated || !!localStorage.getItem('auth_token')
+
+    if (isAuthenticated) {
+        router.push({ name: 'rds-databases' })
+    } else {
+        router.push({ name: 'rds-landing' })
     }
 }
 </script>
@@ -58,6 +69,10 @@ const handleS3Click = () => {
                 <a @click="handleS3Click" class="transition-colors cursor-pointer"
                     :class="activeLink === 'storage' ? 'text-[#ff9900]' : 'hover:text-[#ff9900]'">
                     Storage
+                </a>
+                <a @click="handleRDSClick" class="transition-colors cursor-pointer"
+                    :class="activeLink === 'database' ? 'text-[#ff9900]' : 'hover:text-[#ff9900]'">
+                    Database
                 </a>
                 <button @click="handleComingSoon"
                     class="transition-colors text-[#ff9900]/40 hover:text-[#ff9900]/60 flex items-center gap-1.5">

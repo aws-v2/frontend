@@ -19,6 +19,10 @@ export interface RdsDatabase {
     physicalDbName?: string
     roleName?: string
     password?: string
+    vpcId?: string
+    privateIp?: string
+    publicConnectionString?: string
+    publicPort?: number
 }
 
 export interface RdsSnapshot {
@@ -86,6 +90,10 @@ export const useRdsStore = defineStore('rds', () => {
         physicalDbName: d.physicalDbName || d.PhysicalDbName,
         roleName: d.roleName || d.RoleName,
         password: d.password || d.Password,
+        vpcId: d.vpcId || d.vpc_id || d.VpcId,
+        privateIp: d.privateIp || d.private_ip || d.host,
+        publicConnectionString: d.publicConnectionString || d.PublicConnectionString,
+        publicPort: d.publicPort || d.public_port || d.PublicPort,
     })
 
     const mapSnapshot = (s: any): RdsSnapshot => ({
@@ -126,6 +134,8 @@ export const useRdsStore = defineStore('rds', () => {
         try {
             const response = await apiClient.get<any>(`/rds/databases/${id}`)
             const d = response.data?.data || response.data
+
+
             if (d) currentDatabase.value = mapDb(d)
         } catch (e) {
             console.error('RDS fetchById error:', e)

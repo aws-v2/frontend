@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import apiClient from '@/shared/api/apiClient'
+import type { Vpc } from '@/shared/types/vpc'
 
 export interface Instance {
     id: string
@@ -150,6 +151,7 @@ export const useComputeStore = defineStore('compute', () => {
     const volumeTags = ref<Tag[]>([])
     const volumeSnapshots = ref<Snapshot[]>([])
     const currentVolume = ref<Volume | null>(null)
+    const vpcs = ref<Vpc[]>([])
     const currentTemplate = ref<Template | null>(null)
 
     const fetchInstances = async () => {
@@ -670,6 +672,49 @@ export const useComputeStore = defineStore('compute', () => {
         }
     }
 
+    const fetchVpcs = async () => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.get<any>('/ec2/vpcs')
+            const raw = Array.isArray(response.data)
+                ? response.data
+                : response.data?.data || response.data?.vpcs || []
+            vpcs.value = raw
+        } catch (e: any) {
+            console.error('Compute fetchVpcs error:', e)
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const changeInstanceVpc = async (instanceId: string, vpcId: string) => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.put(`/compute/instances/${instanceId}/vpc`, { vpc_id: vpcId })
+            await fetchInstance(instanceId)
+            return response.data
+        } catch (e) {
+            console.error('Compute changeInstanceVpc error:', e)
+            throw e
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const createVpc = async (name: string) => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.post('/ec2/vpcs', { name })
+            await fetchVpcs()
+            return response.data?.data || response.data
+        } catch (e) {
+            console.error('Compute createVpc error:', e)
+            throw e
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     return {
         instances,
         currentInstance,
@@ -734,6 +779,10 @@ export const useComputeStore = defineStore('compute', () => {
         createVolumeSnapshot,
         fetchVolumeSnapshots,
         currentTemplate,
-        fetchTemplate
+        fetchTemplate,
+        vpcs,
+        fetchVpcs,
+        changeInstanceVpc,
+        createVpc
     }
 })

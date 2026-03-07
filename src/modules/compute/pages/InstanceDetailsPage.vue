@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useComputeStore } from '../store/computeStore'
 import { useToastStore } from '@/shared/store/toastStore'
 import ConnectInstanceModal from '../components/ConnectInstanceModal.vue'
+import ChangeVpcModal from '@/shared/components/ChangeVpcModal.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -13,6 +14,7 @@ const instanceId = computed(() => route.params.id as string)
 
 const activeTab = ref('details')
 const isConnectModalOpen = ref(false)
+const isVpcModalOpen = ref(false)
 
 const handleConnect = () => {
   isConnectModalOpen.value = true
@@ -36,6 +38,7 @@ onMounted(async () => {
   await computeStore.fetchInstanceStatusChecks(instanceId.value)
   await computeStore.fetchInstanceMetrics(instanceId.value)
   await computeStore.fetchInstanceTags(instanceId.value)
+  await computeStore.fetchVpcs()
   console.log('[DEBUG] Security groups loaded:', computeStore.instanceSecurityGroups)
 })
 
@@ -147,6 +150,33 @@ const toggleAutoRefresh = () => {
     }, 5000)
   } else {
     if (refreshInterval) clearInterval(refreshInterval)
+  }
+}
+
+// VPC Logic
+const handleVpcRefresh = async () => {
+  await computeStore.fetchVpcs()
+}
+
+const handleVpcCreate = async (name: string) => {
+  try {
+    await computeStore.createVpc(name)
+    toastStore.addToast('VPC created successfully', 'success')
+  } catch (error: any) {
+    const message = error.response?.data?.message || error.message || 'Failed to create VPC'
+    toastStore.addToast(message, 'error')
+  }
+}
+
+const handleVpcChange = async (vpcId: string) => {
+  try {
+    await computeStore.changeInstanceVpc(instanceId.value, vpcId)
+    toastStore.addToast('VPC assignment update initiated', 'success')
+    isVpcModalOpen.value = false
+    await computeStore.fetchInstance(instanceId.value)
+  } catch (error: any) {
+    const message = error.response?.data?.message || error.message || 'Failed to update VPC assignment'
+    toastStore.addToast(message, 'error')
   }
 }
 
@@ -461,10 +491,16 @@ const handleSnapshotCreate = async () => {
           <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-16">
             <!-- Node_Network_Architecture -->
             <div class="space-y-8">
-              <h3 class="text-xl font-black text-[#232f3e] flex items-center gap-4 uppercase tracking-tight">
-                <span class="w-1.5 h-6 bg-blue-600"></span>
-                Node_Network_Architecture
-              </h3>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="w-1.5 h-6 bg-blue-600"></span>
+                  <h3 class="text-xl font-black text-[#232f3e] uppercase tracking-tight flex-1 ml-4">
+                    Node_Network_Architecture
+                  </h3>
+                  <button @click="isVpcModalOpen = true"
+                    class="text-[9px] font-black text-blue-600 border border-blue-600/20 px-3 py-1 hover:bg-blue-600 hover:text-white transition-all uppercase tracking-widest">
+                    Change_VPC
+                  </button>
+                </div>
               <div class="space-y-4">
                 <div v-for="item in [
                   { label: 'VPC_MAP_ID', value: computeStore.currentInstance.vpc_id || 'VPC-7B2A91D0_MAPPED' },
@@ -946,8 +982,13 @@ const handleSnapshotCreate = async () => {
     </div>
 
     <!-- Connect Modal -->
-    <ConnectInstanceModal :isOpen="isConnectModalOpen" :instance="computeStore.currentInstance"
+    <ConnectInstanceModal :is-open="isConnectModalOpen" :instance-id="instanceId" :public-ip="computeStore.currentInstance?.publicIp"
       @close="isConnectModalOpen = false" />
+
+    <ChangeVpcModal :is-open="isVpcModalOpen" :resource-id="instanceId"
+      :current-vpc-id="computeStore.currentInstance?.vpc_id" :vpcs="computeStore.vpcs"
+      :is-loading="computeStore.isLoading" @close="isVpcModalOpen = false" @refresh="handleVpcRefresh"
+      @create="handleVpcCreate" @change="handleVpcChange" />
     <!-- Snapshot Modal -->
     <div v-if="isSnapshotModalOpen"
       class="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-[#232f3e]/60 backdrop-blur-sm">

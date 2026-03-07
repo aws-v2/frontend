@@ -1,15 +1,8 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import apiClient from '@/shared/api/apiClient'
+import type { Vpc } from '@/shared/types/vpc'
 
-export interface RdsVpc {
-    id: string
-    name: string
-    cidr_block: string
-    region: string
-    status: string
-    createdAt: string
-}
 
 export interface RdsDatabase {
     id: string
@@ -80,7 +73,7 @@ export const useRdsStore = defineStore('rds', () => {
     const snapshots = ref<RdsSnapshot[]>([])
     const volumes = ref<RdsVolume[]>([])
     const aggregateMetrics = ref<RdsAggregateMetrics | null>(null)
-    const vpcs = ref<RdsVpc[]>([])
+    const vpcs = ref<Vpc[]>([])
     const isLoading = ref(false)
     const error = ref<string | null>(null)
 

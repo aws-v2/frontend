@@ -4,7 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useRdsStore } from '../store/rdsStore'
 import { useDocsStore } from '../../docs/store/docsStore'
 import PublicNavbar from '@/shared/components/PublicNavbar.vue'
-import ChangeVpcModal from '../components/ChangeVpcModal.vue'
+import ChangeVpcModal from '@/shared/components/ChangeVpcModal.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -16,7 +16,17 @@ const db = computed(() => rdsStore.currentDatabase)
 
 const isVpcModalOpen = ref(false)
 
-const handleVpcChanged = async () => {
+const handleVpcRefresh = async () => {
+    await rdsStore.fetchVpcs()
+}
+
+const handleVpcCreate = async (name: string) => {
+    await rdsStore.createVpc(name)
+}
+
+const handleVpcChange = async (vpcId: string) => {
+    await rdsStore.changeVpc(dbId.value, vpcId)
+    isVpcModalOpen.value = false
     await rdsStore.fetchDatabaseById(dbId.value)
 }
 
@@ -45,6 +55,7 @@ const maskedPassword = computed(() => {
 onMounted(async () => {
     await rdsStore.fetchDatabaseById(dbId.value)
     await rdsStore.fetchSnapshots(dbId.value)
+    await rdsStore.fetchVpcs()
 })
 
 const statusClass = (status: string) => {
@@ -584,10 +595,14 @@ const handleDelete = async () => {
         <ChangeVpcModal
             v-if="db"
             :is-open="isVpcModalOpen"
-            :db-id="db.id"
-            :current-vpc-id="db.vpcId"
+            :resource-id="dbId"
+            :current-vpc-id="db?.vpcId"
+            :vpcs="rdsStore.vpcs"
+            :is-loading="rdsStore.isLoading"
             @close="isVpcModalOpen = false"
-            @changed="handleVpcChanged"
+            @refresh="handleVpcRefresh"
+            @create="handleVpcCreate"
+            @change="handleVpcChange"
         />
     </div>
 </template>

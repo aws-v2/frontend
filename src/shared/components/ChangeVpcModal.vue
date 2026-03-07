@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { onMounted, ref, computed } from 'vue'
-import { useRdsStore } from '../store/rdsStore'
+import type { Vpc } from '../types/vpc'
 
 const props = defineProps<{
     isOpen: boolean
-    dbId: string
+    resourceId: string
     currentVpcId?: string
+    vpcs: Vpc[]
+    isLoading: boolean
 }>()
 
-const emit = defineEmits(['close', 'changed'])
-const rdsStore = useRdsStore()
+const emit = defineEmits(['close', 'refresh', 'create', 'change'])
 
 const searchQuery = ref('')
 const selectedVpc = ref(props.currentVpcId || '')
@@ -17,19 +18,9 @@ const isCreating = ref(false)
 const newVpcName = ref('')
 const error = ref('')
 
-const refreshVpcs = async () => {
-    await rdsStore.fetchVpcs()
-}
-
-onMounted(() => {
-    if (rdsStore.vpcs.length === 0) {
-        rdsStore.fetchVpcs()
-    }
-})
-
 const filteredVpcs = computed(() => {
-    if (!searchQuery.value) return rdsStore.vpcs
-    return rdsStore.vpcs.filter(v => 
+    if (!searchQuery.value) return props.vpcs
+    return props.vpcs.filter(v => 
         (v.name && v.name.toLowerCase().includes(searchQuery.value.toLowerCase())) ||
         (v.id && v.id.toLowerCase().includes(searchQuery.value.toLowerCase()))
     )
@@ -45,36 +36,48 @@ const handleClose = () => {
     }, 300)
 }
 
-const handleSelect = async () => {
+const handleSelect = () => {
     if (!selectedVpc.value) return
-    error.value = ''
-    try {
-        await rdsStore.changeVpc(props.dbId, selectedVpc.value)
-        emit('changed')
-        handleClose()
-    } catch (err: any) {
-        error.value = err?.response?.data?.message || err?.message || 'Failed to change VPC'
-    }
+    emit('change', selectedVpc.value)
 }
 
-const handleCreate = async () => {
+const handleCreate = () => {
     if (!newVpcName.value) {
         error.value = 'Name is required'
         return
     }
     error.value = ''
-    try {
-        const vpc = await rdsStore.createVpc(newVpcName.value)
-        // Auto-select the newly created VPC
-        if (vpc && vpc.id) {
-            selectedVpc.value = vpc.id
-        }
-        isCreating.value = false
-        newVpcName.value = ''
-    } catch (err: any) {
-         error.value = err?.response?.data?.message || err?.message || 'Failed to create VPC'
-    }
+    emit('create', newVpcName.value)
+    
+    // We don't close the form here yet, wait for vpcs to update
+    // The parent should handle resetting isCreating if successful
 }
+
+const refreshVpcs = () => {
+    emit('refresh')
+}
+
+// Watch for props change to update selectedVpc if needed
+import { watch } from 'vue'
+watch(() => props.currentVpcId, (newId) => {
+    if (newId) selectedVpc.value = newId
+})
+
+watch(() => props.vpcs, (newVpcs, oldVpcs) => {
+    // If we were in the middle of creating a VPC and the list changed
+    if (isCreating.value && newVpcs && oldVpcs && newVpcs.length > oldVpcs.length) {
+        // Find the new VPC (the one that wasn't in oldVpcs)
+        const oldIds = new Set(oldVpcs.map(v => v.id))
+        const newlyAdded = newVpcs.find(v => !oldIds.has(v.id))
+        
+        if (newlyAdded) {
+            selectedVpc.value = newlyAdded.id
+            isCreating.value = false
+            newVpcName.value = ''
+            error.value = ''
+        }
+    }
+}, { deep: true })
 </script>
 
 <template>
@@ -134,9 +137,9 @@ const handleCreate = async () => {
                             </div>
                         </div>
                         <div class="mt-6 flex justify-end">
-                            <button @click="handleCreate" :disabled="rdsStore.isLoading"
+                            <button @click="handleCreate" :disabled="isLoading"
                                 class="px-6 py-3 bg-[#232f3e] text-white text-[10px] font-black uppercase tracking-widest hover:bg-amber-500 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2">
-                                <span v-if="rdsStore.isLoading" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                <span v-if="isLoading" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                                 <span v-else>Create VPC</span>
                             </button>
                         </div>
@@ -148,7 +151,7 @@ const handleCreate = async () => {
                     <div class="flex flex-col md:flex-row items-center justify-between p-6 border-b-2 border-[#eaeded] bg-white gap-6">
                         <div class="flex items-center gap-6 w-full max-w-2xl">
                             <span class="text-[11px] font-black text-[#545b64] px-4 py-2 border-2 border-[#eaeded] whitespace-nowrap uppercase tracking-widest">
-                                VPCs <span class="text-amber-500">({{ filteredVpcs.length }}/{{ rdsStore.vpcs.length }})</span>
+                                VPCs <span class="text-amber-500">({{ filteredVpcs.length }}/{{ vpcs.length }})</span>
                             </span>
                             <div class="relative w-full group">
                                 <svg class="w-6 h-6 absolute left-5 top-1/2 -translate-y-1/2 text-[#545b64] group-focus-within:text-amber-500 transition-colors"
@@ -162,8 +165,8 @@ const handleCreate = async () => {
                         <div class="flex items-center gap-4">
                             <button @click="refreshVpcs"
                                 class="text-[#545b64] hover:text-amber-500 transition-all p-2 bg-white border-2 border-[#eaeded] hover:border-amber-500 active:rotate-180 duration-500"
-                                :disabled="rdsStore.isLoading">
-                                <svg class="w-6 h-6" :class="{ 'animate-spin': rdsStore.isLoading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                :disabled="isLoading">
+                                <svg class="w-6 h-6" :class="{ 'animate-spin': isLoading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>
                             </button>
@@ -227,12 +230,12 @@ const handleCreate = async () => {
             <div class="bg-[#fafafa] px-10 py-8 border-t-2 border-[#eaeded] flex justify-end gap-6 shadow-inner relative">
                 <button @click="handleClose" class="px-10 py-3 text-[11px] font-black text-[#545b64] hover:text-amber-500 uppercase tracking-widest transition-all active:scale-95">Cancel</button>
                 <button @click="handleSelect" 
-                    :disabled="!selectedVpc || selectedVpc === props.currentVpcId || rdsStore.isLoading" 
+                    :disabled="!selectedVpc || selectedVpc === props.currentVpcId || isLoading" 
                     :class="selectedVpc && selectedVpc !== props.currentVpcId
                         ? 'bg-[#232f3e] text-white hover:bg-black shadow-2xl' 
                         : 'bg-[#fafafa] text-[#eaeded] border-2 border-[#eaeded] cursor-not-allowed'"
                     class="px-12 py-3 text-[11px] font-black transition-all duration-300 uppercase tracking-widest active:scale-95 flex items-center gap-2">
-                    <span v-if="rdsStore.isLoading && selectedVpc !== props.currentVpcId" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                    <span v-if="isLoading" class="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
                     Assign VPC
                 </button>
             </div>

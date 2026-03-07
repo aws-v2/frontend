@@ -2,6 +2,15 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import apiClient from '@/shared/api/apiClient'
 
+export interface RdsVpc {
+    id: string
+    name: string
+    cidr_block: string
+    region: string
+    status: string
+    createdAt: string
+}
+
 export interface RdsDatabase {
     id: string
     name: string
@@ -71,6 +80,7 @@ export const useRdsStore = defineStore('rds', () => {
     const snapshots = ref<RdsSnapshot[]>([])
     const volumes = ref<RdsVolume[]>([])
     const aggregateMetrics = ref<RdsAggregateMetrics | null>(null)
+    const vpcs = ref<RdsVpc[]>([])
     const isLoading = ref(false)
     const error = ref<string | null>(null)
 
@@ -277,6 +287,49 @@ export const useRdsStore = defineStore('rds', () => {
         }
     }
 
+    const fetchVpcs = async () => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.get<any>('/rds/vpcs')
+            const raw = Array.isArray(response.data)
+                ? response.data
+                : response.data?.data || response.data?.vpcs || []
+            vpcs.value = raw
+        } catch (e: any) {
+            console.error('RDS fetchVpcs error:', e)
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const changeVpc = async (dbId: string, vpcId: string) => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.put(`/rds/databases/${dbId}/vpc`, { vpc_id: vpcId })
+            await fetchDatabaseById(dbId)
+            return response.data
+        } catch (e) {
+            console.error('RDS changeVpc error:', e)
+            throw e
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const createVpc = async (name: string) => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.post('/rds/vpcs', { name })
+            await fetchVpcs()
+            return response.data?.data || response.data
+        } catch (e) {
+            console.error('RDS createVpc error:', e)
+            throw e
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     return {
         databases,
         currentDatabase,
@@ -297,5 +350,9 @@ export const useRdsStore = defineStore('rds', () => {
         createRdsVolume,
         deleteRdsVolume,
         fetchAggregateMetrics,
+        vpcs,
+        fetchVpcs,
+        changeVpc,
+        createVpc,
     }
 })

@@ -4,6 +4,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { useRdsStore } from '../store/rdsStore'
 import { useDocsStore } from '../../docs/store/docsStore'
 import PublicNavbar from '@/shared/components/PublicNavbar.vue'
+import ChangeVpcModal from '../components/ChangeVpcModal.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -13,9 +14,11 @@ const docsStore = useDocsStore()
 const dbId = computed(() => route.params.id as string)
 const db = computed(() => rdsStore.currentDatabase)
 
+const isVpcModalOpen = ref(false)
 
-
-
+const handleVpcChanged = async () => {
+    await rdsStore.fetchDatabaseById(dbId.value)
+}
 
 const copiedField = ref<string | null>(null)
 let copiedTimeout: ReturnType<typeof setTimeout> | null = null
@@ -332,9 +335,12 @@ const handleDelete = async () => {
                                 Networking</h2>
                             <div class="space-y-6">
                                 <div>
-                                    <span
-                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">VPC
-                                        ID</span>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="block text-[9px] font-black text-[#879196] uppercase tracking-widest">VPC ID</span>
+                                        <button v-if="db" @click="isVpcModalOpen = true" class="text-[8px] font-black text-[#879196] uppercase tracking-widest hover:text-amber-500 transition-colors border border-[#eaeded] hover:border-amber-500 px-2 py-0.5">
+                                            Change VPC
+                                        </button>
+                                    </div>
                                     <div class="flex items-center gap-2 group cursor-pointer"
                                         @click="copyToClipboard(db.publicConnectionString || 'default vpc', 'vpcId')">
                                         <span class="text-sm font-mono text-[#232f3e] break-all">{{ db.vpcId || '—'
@@ -574,6 +580,15 @@ const handleDelete = async () => {
                     SYSTEMS INC.</div>
             </div>
         </footer>
+
+        <ChangeVpcModal
+            v-if="db"
+            :is-open="isVpcModalOpen"
+            :db-id="db.id"
+            :current-vpc-id="db.vpcId"
+            @close="isVpcModalOpen = false"
+            @changed="handleVpcChanged"
+        />
     </div>
 </template>
 

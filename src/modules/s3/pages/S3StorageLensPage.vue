@@ -45,7 +45,8 @@ const chartPath = computed(() => {
     const range = maxVal - minVal || 1
 
     if (data.length === 1) {
-        const y = height - ((data[0].storage - minVal) / range) * (height - padding * 2) - padding
+        const firstVal = data[0]?.storage ?? 0
+        const y = height - ((firstVal - minVal) / range) * (height - padding * 2) - padding
         return `0,${y} 100,${y}`
     }
 

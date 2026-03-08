@@ -2,12 +2,116 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { useRdsStore } from '../store/rdsStore'
+import type { RdsScalingPolicy } from '../store/rdsStore'
 import { useDocsStore } from '../../docs/store/docsStore'
 import PublicNavbar from '@/shared/components/PublicNavbar.vue'
 
 const router = useRouter()
 const rdsStore = useRdsStore()
 const docsStore = useDocsStore()
+
+// --- Scaling Policy State ---
+const isScalingCrudModalOpen = ref(false)
+const scalingCrudMode = ref<'list' | 'create' | 'edit'>('list')
+const selectedScalingPolicy = ref<RdsScalingPolicy | null>(null)
+
+const scalingForm = ref({
+    target_id: '',
+    metric_name: 'CPU',
+    target_value: 80.0,
+    scale_down_value: 30.0,
+    max_instances: 1,
+    scale_out_cooldown: 300,
+    scale_in_cooldown: 600
+})
+const scalingFormError = ref('')
+
+const openScalingCrudModal = async () => {
+    isScalingCrudModalOpen.value = true
+    scalingCrudMode.value = 'list'
+    await rdsStore.fetchScalingPolicies()
+}
+
+const closeScalingCrudModal = () => {
+    isScalingCrudModalOpen.value = false
+    selectedScalingPolicy.value = null
+}
+
+const goToAddScalingPolicy = () => {
+    scalingCrudMode.value = 'create'
+    scalingForm.value = {
+        target_id: '',
+        metric_name: 'CPU',
+        target_value: 80.0,
+        scale_down_value: 30.0,
+        max_instances: 1,
+        scale_out_cooldown: 300,
+        scale_in_cooldown: 600
+    }
+    scalingFormError.value = ''
+}
+
+const goToEditScalingPolicy = (policy: RdsScalingPolicy) => {
+    scalingCrudMode.value = 'edit'
+    selectedScalingPolicy.value = policy
+    scalingForm.value = {
+        target_id: policy.target_id,
+        metric_name: policy.metric_name,
+        target_value: policy.target_value,
+        scale_down_value: policy.scale_down_value,
+        max_instances: policy.max_instances,
+        scale_out_cooldown: policy.scale_out_cooldown,
+        scale_in_cooldown: policy.scale_in_cooldown
+    }
+    scalingFormError.value = ''
+}
+
+const deleteScalingPolicy = async (id: string) => {
+    if (confirm('Are you sure you want to delete this scaling policy?')) {
+        await rdsStore.deleteScalingPolicy(id)
+    }
+}
+
+const submitScalingPolicy = async () => {
+    if (!scalingForm.value.target_id) {
+        scalingFormError.value = 'Database ID is required'
+        return
+    }
+    if (scalingForm.value.target_value <= 0) {
+        scalingFormError.value = 'Target Value must be greater than 0'
+        return
+    }
+    if (scalingForm.value.scale_down_value >= scalingForm.value.target_value) {
+        scalingFormError.value = 'Scale-In Value must be less than Target Value'
+        return
+    }
+
+    try {
+        if (scalingCrudMode.value === 'edit' && selectedScalingPolicy.value) {
+            await rdsStore.updateScalingPolicy(selectedScalingPolicy.value.id, {
+                target_value: Number(scalingForm.value.target_value),
+                scale_down_value: Number(scalingForm.value.scale_down_value),
+                max_instances: Number(scalingForm.value.max_instances),
+                scale_out_cooldown: Number(scalingForm.value.scale_out_cooldown),
+                scale_in_cooldown: Number(scalingForm.value.scale_in_cooldown)
+            })
+        } else {
+            await rdsStore.createScalingPolicy({
+                target_type: 'instance',
+                target_id: scalingForm.value.target_id,
+                metric_name: scalingForm.value.metric_name,
+                target_value: Number(scalingForm.value.target_value),
+                scale_down_value: Number(scalingForm.value.scale_down_value),
+                max_instances: Number(scalingForm.value.max_instances),
+                scale_out_cooldown: Number(scalingForm.value.scale_out_cooldown),
+                scale_in_cooldown: Number(scalingForm.value.scale_in_cooldown)
+            })
+        }
+        scalingCrudMode.value = 'list'
+    } catch (e: any) {
+        scalingFormError.value = e.message || 'Failed to save policy'
+    }
+}
 
 onMounted(async () => {
     await rdsStore.fetchDatabases()
@@ -220,9 +324,13 @@ const goBack = () => router.push('/dashboard')
                             Port</span>
                         <span class="text-sm font-black text-[#232f3e]">5432 / 3306</span>
                     </div>
-                    <div class="ml-auto">
+                    <div class="ml-auto flex items-center gap-4">
+                        <button @click="openScalingCrudModal"
+                            class="px-6 py-3 bg-amber-500 text-white border-2 border-amber-500 text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 hover:border-amber-600 transition-all shadow-[4px_4px_0px_#232f3e] active:translate-y-1 active:shadow-none">
+                            Scaling Policies
+                        </button>
                         <button @click="rdsStore.fetchDatabases()"
-                            class="px-6 py-3 border-2 border-[#232f3e] text-[#232f3e] text-[10px] font-black uppercase tracking-widest hover:bg-[#232f3e] hover:text-white transition-all">
+                            class="px-6 py-3 border-2 border-[#232f3e] text-[#232f3e] text-[10px] font-black uppercase tracking-widest hover:bg-[#232f3e] hover:text-white transition-all shadow-[4px_4px_0px_#232f3e] active:translate-y-1 active:shadow-none">
                             ↺ Refresh
                         </button>
                     </div>
@@ -574,6 +682,152 @@ const goBack = () => router.push('/dashboard')
                     </div>
                 </div>
 
+            </div>
+        </div>
+
+        <!-- Scaling CRUD Modal -->
+        <div v-if="isScalingCrudModalOpen" class="fixed inset-0 z-[200] flex items-start justify-center pt-20">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-[#232f3e]/60 backdrop-blur-sm" @click="closeScalingCrudModal"></div>
+
+            <!-- Modal Content -->
+            <div class="relative bg-white w-full max-w-4xl shadow-2xl flex flex-col border-4 border-[#232f3e] font-urbanist max-h-[80vh]">
+                <!-- Header -->
+                <div class="flex items-center justify-between px-10 py-8 border-b-2 border-[#eaeded] bg-[#fafafa]">
+                    <div>
+                        <h2 class="text-3xl font-black text-[#232f3e] tracking-tighter uppercase leading-tight">
+                            RDS Scaling Policies
+                        </h2>
+                        <p class="text-[10px] text-amber-500 font-black uppercase tracking-[0.2em] mt-2">
+                            Manage Vertical Scaling Rules
+                        </p>
+                    </div>
+                    <button @click="closeScalingCrudModal"
+                        class="text-[#545b64] hover:text-amber-500 transition-all p-2 bg-white border-2 border-[#eaeded] hover:border-amber-500 active:scale-95">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Body: List Mode -->
+                <div v-if="scalingCrudMode === 'list'" class="p-10 flex-1 overflow-y-auto bg-white custom-scrollbar flex flex-col gap-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-black text-[#232f3e] uppercase">Active Policies</h3>
+                        <button @click="goToAddScalingPolicy"
+                            class="px-6 py-3 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all shadow-[4px_4px_0px_#232f3e] active:translate-y-1 active:shadow-none">
+                            + Create Policy
+                        </button>
+                    </div>
+
+                    <div v-if="rdsStore.isLoading" class="py-12 text-center text-[#879196] text-[10px] uppercase font-black tracking-widest animate-pulse">
+                        Loading Policies...
+                    </div>
+                    <div v-else-if="rdsStore.scalingPolicies.length === 0" class="py-12 text-center border-2 border-dashed border-[#eaeded]">
+                        <p class="text-[10px] font-black tracking-widest uppercase text-[#879196] italic">No scaling policies found.</p>
+                    </div>
+                    <div v-else class="overflow-x-auto border-2 border-[#eaeded]">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-[#fafafa] border-b-2 border-[#eaeded]">
+                                <tr>
+                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">Target DB</th>
+                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">Metric</th>
+                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">Scale Up / Down</th>
+                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="policy in rdsStore.scalingPolicies" :key="policy.id" class="border-b border-[#eaeded] hover:bg-[#fafafa]">
+                                    <td class="p-4">
+                                        <span class="font-mono text-xs text-[#232f3e] font-bold">{{ rdsStore.databases.find(d => d.id === policy.target_id)?.name || policy.target_id }}</span>
+                                    </td>
+                                    <td class="p-4 font-bold text-xs text-[#545b64]">{{ policy.metric_name }}</td>
+                                    <td class="p-4 font-mono text-xs text-[#545b64]">{{ policy.target_value }}% / {{ policy.scale_down_value }}%</td>
+                                    <td class="p-4 text-right space-x-4">
+                                        <button @click="goToEditScalingPolicy(policy)" class="text-[10px] font-black text-amber-600 hover:text-amber-700 uppercase tracking-widest">Edit</button>
+                                        <button @click="deleteScalingPolicy(policy.id)" class="text-[10px] font-black text-[#545b64] hover:text-red-600 uppercase tracking-widest">Delete</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Body: Form Mode -->
+                <div v-else class="p-10 flex-1 overflow-y-auto bg-white custom-scrollbar flex flex-col gap-8">
+                    <div class="flex items-center gap-4 mb-2">
+                        <button @click="scalingCrudMode = 'list'" class="text-[#879196] hover:text-[#232f3e] transition-colors p-2 bg-[#fafafa] border border-[#eaeded]">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                        </button>
+                        <h3 class="text-xl font-black text-[#232f3e] uppercase">
+                            {{ scalingCrudMode === 'edit' ? 'Edit Scaling Policy' : 'Create Scaling Policy' }}
+                        </h3>
+                    </div>
+
+                    <div v-if="scalingFormError" class="p-4 border-2 border-red-200 bg-red-50 text-red-600 font-bold text-[10px] uppercase tracking-wider flex items-center justify-between">
+                        <span>{{ scalingFormError }}</span>
+                        <button @click="scalingFormError = ''" class="hover:text-red-800">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Database Instance</label>
+                            <select v-model="scalingForm.target_id" :disabled="scalingCrudMode === 'edit'" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors appearance-none disabled:opacity-50">
+                                <option value="" disabled>Select Database...</option>
+                                <option v-for="db in rdsStore.databases" :key="db.id" :value="db.id">{{ db.name }} ({{ db.id }})</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Target Metric</label>
+                            <select v-model="scalingForm.metric_name" :disabled="scalingCrudMode === 'edit'" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-black text-xs text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors appearance-none disabled:opacity-50">
+                                <option value="CPU">CPU Utilization</option>
+                                <option value="MEMORY">Memory Utilization</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3" title="Trigger scale-up when above this value">Scale-Out Threshold (%)</label>
+                            <div class="relative">
+                                <input v-model.number="scalingForm.target_value" type="number" step="1" min="1" max="100" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[#879196]">%</span>
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3" title="Trigger scale-down when below this value">Scale-In Threshold (%)</label>
+                            <div class="relative">
+                                <input v-model.number="scalingForm.scale_down_value" type="number" step="1" min="1" max="100" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-[#879196]">%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Scale Out Cooldown (sec)</label>
+                            <input v-model.number="scalingForm.scale_out_cooldown" type="number" step="30" min="60" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Max Vertical Level (Limit)</label>
+                            <input v-model.number="scalingForm.max_instances" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Scale In Cooldown (sec)</label>
+                        <input v-model.number="scalingForm.scale_in_cooldown" type="number" step="30" min="60" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                    </div>
+                    
+                    <div class="mt-4 flex justify-end gap-6">
+                        <button @click="scalingCrudMode = 'list'" class="px-8 py-3 text-[10px] font-black text-[#545b64] hover:text-amber-500 uppercase tracking-widest transition-all">Cancel</button>
+                        <button @click="submitScalingPolicy" :disabled="rdsStore.isLoading" class="px-10 py-3 text-[10px] font-black text-white bg-[#232f3e] hover:bg-black transition-all uppercase tracking-widest disabled:opacity-50 shadow-[4px_4px_0px_#eaeded]">
+                            {{ rdsStore.isLoading ? 'Processing...' : (scalingCrudMode === 'edit' ? 'Update Policy' : 'Create Policy') }}
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 

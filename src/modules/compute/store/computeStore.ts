@@ -124,6 +124,40 @@ export interface Tag {
     value: string
 }
 
+export interface ScalingPolicy {
+    id: string
+    user_id: string
+    target_type: string
+    target_id: string
+    metric_name: string
+    target_value: number
+    scale_down_value: number
+    max_instances: number
+    scale_out_cooldown: number
+    scale_in_cooldown: number
+    created_at: string
+    updated_at: string
+}
+
+export interface CreateScalingPolicyPayload {
+    target_type: string
+    target_id: string
+    metric_name: string
+    target_value: number
+    scale_down_value: number
+    max_instances: number
+    scale_out_cooldown: number
+    scale_in_cooldown: number
+}
+
+export interface UpdateScalingPolicyPayload {
+    target_value: number
+    scale_down_value: number
+    max_instances: number
+    scale_out_cooldown: number
+    scale_in_cooldown: number
+}
+
 export const useComputeStore = defineStore('compute', () => {
     const instances = ref<Instance[]>([])
     const currentInstance = ref<Instance | null>(null)
@@ -153,6 +187,7 @@ export const useComputeStore = defineStore('compute', () => {
     const currentVolume = ref<Volume | null>(null)
     const vpcs = ref<Vpc[]>([])
     const currentTemplate = ref<Template | null>(null)
+    const scalingPolicies = ref<ScalingPolicy[]>([])
 
     const fetchInstances = async () => {
         isLoading.value = true
@@ -715,6 +750,57 @@ export const useComputeStore = defineStore('compute', () => {
         }
     }
 
+    const fetchScalingPolicies = async () => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.get<any>('/ec2/scaling-policies')
+            scalingPolicies.value = response.data?.data || []
+        } catch (error) {
+            console.error('Failed to fetch scaling policies:', error)
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const createScalingPolicy = async (payload: CreateScalingPolicyPayload) => {
+        isLoading.value = true
+        try {
+            await apiClient.post('/ec2/scaling-policies', payload)
+            await fetchScalingPolicies()
+        } catch (error) {
+            console.error('Failed to create scaling policy:', error)
+            throw error
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const updateScalingPolicy = async (id: string, payload: UpdateScalingPolicyPayload) => {
+        isLoading.value = true
+        try {
+            await apiClient.put(`/ec2/scaling-policies/${id}`, payload)
+            await fetchScalingPolicies()
+        } catch (error) {
+            console.error('Failed to update scaling policy:', error)
+            throw error
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const deleteScalingPolicy = async (id: string) => {
+        isLoading.value = true
+        try {
+            await apiClient.delete(`/ec2/scaling-policies/${id}`)
+            scalingPolicies.value = scalingPolicies.value.filter(p => p.id !== id)
+        } catch (error) {
+            console.error('Failed to delete scaling policy:', error)
+            throw error
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     return {
         instances,
         currentInstance,
@@ -783,6 +869,11 @@ export const useComputeStore = defineStore('compute', () => {
         vpcs,
         fetchVpcs,
         changeInstanceVpc,
-        createVpc
+        createVpc,
+        scalingPolicies,
+        fetchScalingPolicies,
+        createScalingPolicy,
+        updateScalingPolicy,
+        deleteScalingPolicy
     }
 })

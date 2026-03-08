@@ -130,6 +130,12 @@ const computeRoutes: RouteRecordRaw[] = [
         name: 'ssh-key-details',
         component: () => import('./pages/SSHKeyDetailsPage.vue'),
         meta: { requiresAuth: false }
+    },
+    {
+        path: '/compute/scaling-policies',
+        name: 'scaling-policies-list',
+        component: () => import('./pages/ScalingPoliciesListPage.vue'),
+        meta: { requiresAuth: false }
     }
 ]
 

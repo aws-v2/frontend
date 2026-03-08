@@ -85,6 +85,7 @@ onMounted(async () => {
             computeStore.fetchSnapshots(),
             computeStore.fetchTemplates(),
             computeStore.fetchSSHKeys(),
+            computeStore.fetchScalingPolicies(),
             lambdaStore.fetchFunctions()
         ])
 
@@ -489,6 +490,31 @@ const getStatusColor = (type: string) => {
                                             computeStore.sshKeys.length }}</p>
                                         <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">Secure
                                             Access Keys</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Scaling Policies Card -->
+                            <div
+                                class="bg-white border-2 border-[#232f3e] p-8 hover:shadow-[10px_10px_0px_#eaeded] transition-all group">
+                                <div class="flex justify-between items-start mb-8">
+                                    <p class="text-[10px] font-black text-[#879196] tracking-widest uppercase italic">
+                                        Scaling_Policies</p>
+                                    <button @click="router.push({ name: 'scaling-policies-list' })"
+                                        class="text-[9px] font-black text-blue-600 uppercase border-b border-blue-600">Rules
+                                        &rarr;</button>
+                                </div>
+                                <div class="flex items-center gap-6">
+                                    <div
+                                        class="w-12 h-12 border-2 border-[#232f3e] flex items-center justify-center bg-[#fafafa]">
+                                        <svg class="w-6 h-6 text-[#232f3e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                        </svg>
+                                    </div>
+                                    <div>
+                                        <p class="text-2xl font-black text-[#232f3e] leading-none mb-1">{{
+                                            computeStore.scalingPolicies?.length || 0 }}</p>
+                                        <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">Auto Scale Rules</p>
                                     </div>
                                 </div>
                             </div>

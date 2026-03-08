@@ -982,7 +982,7 @@ const handleSnapshotCreate = async () => {
     </div>
 
     <!-- Connect Modal -->
-    <ConnectInstanceModal :is-open="isConnectModalOpen" :instance-id="instanceId" :public-ip="computeStore.currentInstance?.publicIp"
+    <ConnectInstanceModal :is-open="isConnectModalOpen" :instance="computeStore.currentInstance"
       @close="isConnectModalOpen = false" />
 
     <ChangeVpcModal :is-open="isVpcModalOpen" :resource-id="instanceId"

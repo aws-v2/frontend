@@ -43,6 +43,41 @@ export interface RdsVolume {
     createdAt: string
 }
 
+export interface RdsScalingPolicy {
+    id: string
+    user_id: string
+    target_type: string
+    target_id: string
+    metric_name: string
+    target_value: number
+    scale_down_value: number
+    max_instances: number
+    scale_out_cooldown: number
+    scale_in_cooldown: number
+    status?: string
+    created_at?: string
+    updated_at?: string
+}
+
+export interface CreateRdsScalingPolicyPayload {
+    target_type: string
+    target_id: string
+    metric_name: string
+    target_value: number
+    scale_down_value: number
+    max_instances: number
+    scale_out_cooldown: number
+    scale_in_cooldown: number
+}
+
+export interface UpdateRdsScalingPolicyPayload {
+    target_value: number
+    scale_down_value: number
+    max_instances: number
+    scale_out_cooldown: number
+    scale_in_cooldown: number
+}
+
 export interface RdsAggregateMetrics {
     summary: {
         totalDatabases: number
@@ -74,6 +109,7 @@ export const useRdsStore = defineStore('rds', () => {
     const volumes = ref<RdsVolume[]>([])
     const aggregateMetrics = ref<RdsAggregateMetrics | null>(null)
     const vpcs = ref<Vpc[]>([])
+    const scalingPolicies = ref<RdsScalingPolicy[]>([])
     const isLoading = ref(false)
     const error = ref<string | null>(null)
 
@@ -323,6 +359,62 @@ export const useRdsStore = defineStore('rds', () => {
         }
     }
 
+    const fetchScalingPolicies = async (dbId?: string) => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.get<any>('/rds/scaling-policies')
+            const raw = response.data?.data || response.data || []
+            let filtered = Array.isArray(raw) ? raw : []
+            if (dbId) {
+                filtered = filtered.filter((p: any) => p.target_id === dbId)
+            }
+            scalingPolicies.value = filtered
+        } catch (e) {
+            console.error('RDS fetchScalingPolicies error:', e)
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const createScalingPolicy = async (payload: CreateRdsScalingPolicyPayload) => {
+        isLoading.value = true
+        try {
+            await apiClient.post('/rds/scaling-policies', payload)
+            await fetchScalingPolicies()
+        } catch (e) {
+            console.error('RDS createScalingPolicy error:', e)
+            throw e
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const updateScalingPolicy = async (id: string, payload: UpdateRdsScalingPolicyPayload) => {
+        isLoading.value = true
+        try {
+            await apiClient.put(`/rds/scaling-policies/${id}`, payload)
+            await fetchScalingPolicies()
+        } catch (e) {
+            console.error('RDS updateScalingPolicy error:', e)
+            throw e
+        } finally {
+            isLoading.value = false
+        }
+    }
+
+    const deleteScalingPolicy = async (id: string) => {
+        isLoading.value = true
+        try {
+            await apiClient.delete(`/rds/scaling-policies/${id}`)
+            scalingPolicies.value = scalingPolicies.value.filter(p => p.id !== id)
+        } catch (e) {
+            console.error('RDS deleteScalingPolicy error:', e)
+            throw e
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     return {
         databases,
         currentDatabase,
@@ -347,5 +439,10 @@ export const useRdsStore = defineStore('rds', () => {
         fetchVpcs,
         changeVpc,
         createVpc,
+        scalingPolicies,
+        fetchScalingPolicies,
+        createScalingPolicy,
+        updateScalingPolicy,
+        deleteScalingPolicy,
     }
 })

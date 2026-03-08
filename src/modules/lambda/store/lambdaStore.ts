@@ -159,6 +159,19 @@ export const useLambdaStore = defineStore('lambda', () => {
         }
     }
 
+    const deletePolicy = async (id: string) => {
+        isLoading.value = true
+        try {
+            const response = await apiClient.delete(`/lambda/policies/${id}`)
+            return response.data
+        } catch (error) {
+            console.error(`Failed to delete policy ${id}:`, error)
+            throw error
+        } finally {
+            isLoading.value = false
+        }
+    }
+
     return {
         functions,
         currentFunction,
@@ -170,6 +183,7 @@ export const useLambdaStore = defineStore('lambda', () => {
         registerFunction,
         invokeFunction,
         fetchMetrics,
-        updateConfiguration
+        updateConfiguration,
+        deletePolicy
     }
 })

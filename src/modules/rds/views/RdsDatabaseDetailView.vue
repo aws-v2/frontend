@@ -5,6 +5,7 @@ import { useRdsStore } from '../store/rdsStore'
 import { useDocsStore } from '../../docs/store/docsStore'
 import PublicNavbar from '@/shared/components/PublicNavbar.vue'
 import ChangeVpcModal from '@/shared/components/ChangeVpcModal.vue'
+import RdsScalingPolicyModal from '../components/RdsScalingPolicyModal.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -56,7 +57,46 @@ onMounted(async () => {
     await rdsStore.fetchDatabaseById(dbId.value)
     await rdsStore.fetchSnapshots(dbId.value)
     await rdsStore.fetchVpcs()
+    await rdsStore.fetchScalingPolicies(dbId.value)
 })
+
+// Scaling Policies logic
+const isScalingModalOpen = ref(false)
+const selectedPolicy = ref<any>(null)
+
+const openCreateScalingPolicy = () => {
+    selectedPolicy.value = null
+    isScalingModalOpen.value = true
+}
+
+const openEditScalingPolicy = (policy: any) => {
+    selectedPolicy.value = policy
+    isScalingModalOpen.value = true
+}
+
+const handleScalingSubmit = async (payload: any) => {
+    try {
+        if (selectedPolicy.value) {
+            await rdsStore.updateScalingPolicy(selectedPolicy.value.id, payload)
+        } else {
+            await rdsStore.createScalingPolicy(payload)
+        }
+        isScalingModalOpen.value = false
+        await rdsStore.fetchScalingPolicies(dbId.value)
+    } catch (e) {
+        console.error('Failed to save scaling policy', e)
+    }
+}
+
+const handleDeletePolicy = async (policyId: string) => {
+    if (!confirm('Are you sure you want to delete this scaling policy?')) return
+    try {
+        await rdsStore.deleteScalingPolicy(policyId)
+        await rdsStore.fetchScalingPolicies(dbId.value)
+    } catch (e) {
+        console.error('Failed to delete scaling policy', e)
+    }
+}
 
 const statusClass = (status: string) => {
     switch (status?.toLowerCase()) {
@@ -144,7 +184,7 @@ const handleDelete = async () => {
                                 <div class="flex items-center gap-4 mb-3">
                                     <h1
                                         class="text-5xl font-black text-[#232f3e] tracking-tighter uppercase leading-none truncate">
-                                        {{ db.name }}</h1>
+                                        {{ db?.name }}</h1>
                                     <button @click="docsStore.openHelp('rds', 'rds-clusters')"
                                         class="flex items-center gap-2 px-3 py-1.5 bg-white border-2 border-[#232f3e] text-[9px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-white transition-all shadow-[3px_3px_0px_#232f3e] active:translate-y-0.5 active:shadow-none translate-y-[-2px]">
                                         <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"
@@ -233,7 +273,7 @@ const handleDelete = async () => {
                                         class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Private
                                         IP / Host</span>
                                     <div class="flex items-center gap-2 group cursor-pointer"
-                                        @click="copyToClipboard(db.host || db.privateIp || db.endpoint, 'host')">
+                                        @click="copyToClipboard(db.host || db.privateIp || db.endpoint || '', 'host')">
                                         <span class="text-sm font-mono text-[#232f3e]">{{ db.host || db.privateIp ||
                                             db.endpoint || '—' }}</span>
                                         <svg v-if="!isCopied('host')"
@@ -280,7 +320,7 @@ const handleDelete = async () => {
                                             class="text-[8px] font-black text-[#879196] uppercase tracking-widest hover:text-amber-600 transition-colors border border-[#eaeded] hover:border-amber-500 px-2 py-0.5">
                                             {{ showPassword ? 'Hide' : 'Show' }}
                                         </button>
-                                        <button @click="copyToClipboard(db.password, 'password')"
+                                        <button @click="copyToClipboard(db.password || '', 'password')"
                                             class="text-[8px] font-black text-[#879196] uppercase tracking-widest hover:text-amber-600 transition-colors border border-[#eaeded] hover:border-amber-500 px-2 py-0.5">
                                             {{ isCopied('password') ? '✓ Copied' : 'Copy' }}
                                         </button>
@@ -325,7 +365,7 @@ const handleDelete = async () => {
                                 <div>
                                     <span
                                         class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Region</span>
-                                    <span class="text-sm font-black text-[#232f3e] uppercase">{{ extractRegion(db.arn)
+                                    <span class="text-sm font-black text-[#232f3e] uppercase">{{ extractRegion(db.arn || '')
                                     }}</span>
                                 </div>
                                 <div>
@@ -399,17 +439,14 @@ const handleDelete = async () => {
                                 </div>
                                 <div>
                                     <span
-                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Status</span>
-                                    <span
                                         class="inline-flex items-center gap-2 px-3 py-1 border text-[10px] font-black uppercase tracking-widest"
-                                        :class="statusClass(db.status || 'available')">
+                                        :class="statusClass(db?.status || 'available')">
                                         <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
-                                        {{ db.status || 'available' }}
+                                        {{ db?.status || 'available' }}
                                     </span>
                                 </div>
                             </div>
                         </div>
-                    </div>
 
                     <!-- Connection Strings -->
                     <div class="grid md:grid-cols-2 gap-0 border-4 border-[#232f3e] mb-12">
@@ -429,7 +466,7 @@ const handleDelete = async () => {
                             </div>
                             <div class="p-8 bg-[#fafafa]">
                                 <code class="block font-mono text-sm text-[#232f3e] bg-white border-2 border-[#eaeded] p-5 break-all leading-relaxed relative group cursor-pointer hover:border-amber-500 transition-colors"
-                                    @click="copyToClipboard(db.connectionString, 'vpcConn')">
+                                    @click="copyToClipboard(db.connectionString || '', 'vpcConn')">
                                     <div
                                         class="absolute right-3 top-3 text-[8px] font-black uppercase tracking-widest transition-all"
                                         :class="isCopied('vpcConn') ? 'text-emerald-500 opacity-100' : 'text-[#879196] opacity-0 group-hover:opacity-100'">
@@ -576,6 +613,93 @@ const handleDelete = async () => {
                         </div>
                     </div>
 
+                    <!-- Vertical Scaling Policies Section -->
+                    <div class="border-4 border-[#232f3e] bg-white mb-12">
+                        <div class="px-10 py-6 border-b-4 border-[#232f3e] bg-[#fafafa] flex justify-between items-center transition-colors group">
+                            <div>
+                                <h2 class="text-[10px] font-black text-[#232f3e] uppercase tracking-[0.3em] mb-1">Vertical_Scaling_Policies</h2>
+                                <p class="text-[9px] text-[#879196] font-black uppercase tracking-widest group-hover:text-amber-600 transition-colors">Autonomous Resource Optimization</p>
+                            </div>
+                            <button @click="openCreateScalingPolicy"
+                                class="px-6 py-2 bg-[#232f3e] text-white text-[10px] font-black uppercase tracking-widest hover:bg-amber-500 transition-all shadow-[4px_4px_0px_#eaeded] active:translate-y-1 active:shadow-none translate-y-[-2px]">
+                                Add Policy
+                            </button>
+                        </div>
+                        <div class="p-10">
+                            <div v-if="rdsStore.scalingPolicies.length === 0" class="py-16 text-center bg-[#fafafa] border-2 border-dashed border-[#eaeded]">
+                                <p class="text-[10px] font-black text-[#879196] uppercase tracking-widest">No scaling policies configured for this instance.</p>
+                                <button @click="openCreateScalingPolicy" class="mt-6 text-amber-600 text-[9px] font-black uppercase tracking-widest hover:underline">Configure your first rule →</button>
+                            </div>
+                            <div v-else class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                                <div v-for="policy in rdsStore.scalingPolicies" :key="policy.id"
+                                    class="border-2 border-[#eaeded] hover:border-[#232f3e] transition-all p-8 relative group bg-white shadow-sm hover:shadow-xl">
+                                    <div class="flex justify-between items-start mb-8">
+                                        <div class="flex items-center gap-4">
+                                            <div class="w-10 h-10 bg-[#232f3e] text-amber-500 flex items-center justify-center font-black text-xs border-2 border-amber-500/20 shadow-[3px_3px_0px_#eaeded]">
+                                                {{ policy.metric_name[0] }}
+                                            </div>
+                                            <div>
+                                                <h3 class="text-xs font-black text-[#232f3e] uppercase tracking-tighter">{{ policy.metric_name }} Optimization</h3>
+                                                <span class="text-[8px] font-bold text-[#879196] uppercase tracking-widest">RULE_ID: {{ policy.id.split('-')[0] }}</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex gap-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0">
+                                            <button @click="openEditScalingPolicy(policy)" class="p-2 bg-[#fafafa] border border-[#eaeded] hover:border-amber-500 hover:text-amber-600 transition-all shadow-sm">
+                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                                            </button>
+                                            <button @click="handleDeletePolicy(policy.id)" class="p-2 bg-[#fafafa] border border-[#eaeded] hover:border-red-500 hover:text-red-600 transition-all shadow-sm">
+                                                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="grid grid-cols-3 gap-8 pb-6 border-b-2 border-[#eaeded] mb-6">
+                                        <div class="p-4 bg-[#f8f9fa] border border-[#eaeded] hover:bg-amber-50 transition-colors">
+                                            <span class="block text-[8px] font-black text-[#879196] uppercase tracking-[0.2em] mb-2">Scale-Out @</span>
+                                            <div class="flex items-baseline gap-1">
+                                                <span class="text-3xl font-black text-[#232f3e]">{{ policy.target_value }}</span>
+                                                <span class="text-[10px] font-black text-[#879196]">%</span>
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-[#f8f9fa] border border-[#eaeded] hover:bg-blue-50 transition-colors">
+                                            <span class="block text-[8px] font-black text-[#879196] uppercase tracking-[0.2em] mb-2">Scale-In @</span>
+                                            <div class="flex items-baseline gap-1">
+                                                <span class="text-3xl font-black text-[#232f3e]">{{ policy.scale_down_value }}</span>
+                                                <span class="text-[10px] font-black text-[#879196]">%</span>
+                                            </div>
+                                        </div>
+                                        <div class="p-4 bg-[#f8f9fa] border border-[#eaeded] hover:bg-purple-50 transition-colors">
+                                            <span class="block text-[8px] font-black text-[#879196] uppercase tracking-[0.2em] mb-2">Max Tier</span>
+                                            <div class="flex items-baseline gap-1">
+                                                <span class="text-3xl font-black text-[#232f3e]">{{ policy.max_instances }}</span>
+                                                <span class="text-[10px] font-black text-[#879196]">lvl</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="flex justify-between items-center bg-[#fafafa] px-4 py-2 border border-[#eaeded]">
+                                        <div class="flex items-center gap-6">
+                                            <div class="flex flex-col">
+                                                <span class="text-[7px] font-black text-[#879196] uppercase tracking-widest">Cooldown_Out</span>
+                                                <span class="text-[10px] font-black text-[#232f3e]">{{ policy.scale_out_cooldown }}s</span>
+                                            </div>
+                                            <div class="w-px h-6 bg-[#eaeded]"></div>
+                                            <div class="flex flex-col">
+                                                <span class="text-[7px] font-black text-[#879196] uppercase tracking-widest">Cooldown_In</span>
+                                                <span class="text-[10px] font-black text-[#232f3e]">{{ policy.scale_in_cooldown }}s</span>
+                                            </div>
+                                        </div>
+                                        <div class="flex items-center gap-2">
+                                            <span class="w-2 h-2 bg-emerald-500 rounded-full animate-pulse shadow-sm"></span>
+                                            <span class="text-[8px] font-black text-emerald-600 uppercase tracking-widest">Active</span>
+                                        </div>
+                                    </div>
+                                    <div class="absolute -right-2 -top-2 px-2 py-0.5 bg-amber-500 text-white text-[7px] font-black uppercase tracking-widest transform rotate-12 shadow-sm">Target</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>
@@ -604,7 +728,18 @@ const handleDelete = async () => {
             @create="handleVpcCreate"
             @change="handleVpcChange"
         />
+
+        <RdsScalingPolicyModal
+            v-if="db"
+            :is-open="isScalingModalOpen"
+            :is-loading="rdsStore.isLoading"
+            :policy="selectedPolicy"
+            :databaseId="dbId"
+            @close="isScalingModalOpen = false"
+            @submit="handleScalingSubmit"
+        />
     </div>
+</div>
 </template>
 
 <style scoped>

@@ -12,9 +12,6 @@ const isMenuOpen = ref(false)
 // Determine the current vertical based on the route
 const currentVertical = computed(() => {
     if (route.path.startsWith('/s3')) return { name: 'Storage', color: 'text-emerald-400', bg: 'bg-emerald-500' }
-    if (route.path.startsWith('/compute') || route.path.startsWith('/lambda')) return { name: 'Compute', color: 'text-blue-400', bg: 'bg-blue-500' }
-    if (route.path.startsWith('/sagemaker')) return { name: 'AI', color: 'text-pink-400', bg: 'bg-pink-500' }
-    if (route.path.startsWith('/gaming') || route.path.startsWith('/gamelift')) return { name: 'Gaming', color: 'text-purple-400', bg: 'bg-purple-500' }
     return null
 })
 
@@ -28,35 +25,44 @@ const handleLogout = () => {
 const toggleMenu = () => {
     isMenuOpen.value = !isMenuOpen.value
 }
+
+const isDarkMode = computed(() => !!route.meta.isDarkNavbar)
 </script>
 
 <template>
-    <template v-if="!isLandingPage">
-        <nav class="sticky top-0 z-[100] h-20 bg-[#05080F]/90 backdrop-blur-xl border-b border-white/5 font-sans">
-            <div class="max-w-7xl mx-auto px-6 h-full flex items-center justify-between">
+    <template v-if="!isLandingPage && !route.meta.hideNavbar">
+        <nav class="fixed top-0 w-full z-[100] h-20 font-urbanist transition-all"
+            :class="isDarkMode ? 'bg-[#05080F] border-b border-white/5' : 'bg-white border-b-2 border-[#eaeded]'">
+            <div class="max-w-[1600px] mx-auto px-6 h-full flex items-center justify-between">
 
                 <!-- Left: Branding & Context -->
                 <div class="flex items-center gap-8">
-                    <router-link to="/dashboard" class="flex items-center gap-3 group">
-                        <div
-                            class="w-8 h-8 relative flex items-center justify-center bg-white/5 border border-white/10 rounded overflow-hidden group-hover:bg-white/10 transition-colors">
-                            <span class="font-bold font-display text-white">S</span>
+                    <router-link to="/" class="flex items-center gap-3 group">
+                        <div class="w-10 h-10 flex items-center justify-center font-black text-xl hover:scale-105 transition-transform"
+                            :class="isDarkMode ? 'bg-blue-500 text-white shadow-[0_0_20px_rgba(59,130,246,0.2)]' : 'bg-[#232f3e] text-[#ff9900]'">
+                            S
                         </div>
-                        <span class="text-lg font-bold tracking-tight text-white font-display">Serwin<span
-                                class="text-indigo-500">_Console</span></span>
+                        <div class="flex items-center font-black text-2xl tracking-tighter"
+                            :class="isDarkMode ? 'text-white' : 'text-[#232f3e]'">
+                            Serwin<span :class="isDarkMode ? 'text-slate-400' : 'text-[#545b64]'"
+                                class="font-normal">Sys</span>
+                        </div>
                     </router-link>
 
-                    <div v-if="currentVertical" class="hidden md:flex items-center gap-3 pl-4 border-l border-white/10">
+                    <div v-if="currentVertical" class="hidden md:flex items-center gap-3 pl-4 border-l-2"
+                        :class="isDarkMode ? 'border-white/10' : 'border-[#eaeded]'">
                         <div class="w-2 h-2 rounded-full" :class="currentVertical.bg"></div>
-                        <span class="text-xs font-bold uppercase tracking-wider text-slate-400">{{ currentVertical.name
+                        <span class="text-[10px] font-black uppercase tracking-[0.2em]"
+                            :class="isDarkMode ? 'text-slate-400' : 'text-[#879196]'">{{
+                                currentVertical.name
                             }}</span>
                     </div>
 
                     <!-- Mega Menu Trigger -->
-                    <button @click="toggleMenu"
-                        class="ml-4 p-2 rounded-lg hover:bg-white/5 text-slate-400 hover:text-white transition-colors">
+                    <button @click="toggleMenu" class="ml-4 p-2 rounded-none transition-all"
+                        :class="isDarkMode ? 'bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:border-white/20' : 'bg-[#fafafa] border border-[#eaeded] text-[#545b64] hover:text-[#232f3e] hover:border-[#232f3e]'">
                         <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                 d="M4 6h16M4 12h16M4 18h16" />
                         </svg>
                     </button>
@@ -66,18 +72,20 @@ const toggleMenu = () => {
                 <div class="hidden lg:flex flex-1 max-w-lg mx-12">
                     <div class="w-full relative group">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                            <svg class="h-4 w-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors"
+                            <svg class="h-4 w-4 transition-colors"
+                                :class="isDarkMode ? 'text-slate-500 group-focus-within:text-blue-400' : 'text-[#879196] group-focus-within:text-[#ff9900]'"
                                 fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                     d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                             </svg>
                         </div>
                         <input type="text"
-                            class="block w-full pl-10 pr-3 py-2 border border-white/10 rounded-lg leading-5 bg-white/5 text-slate-300 placeholder-slate-500 focus:outline-none focus:bg-black focus:border-indigo-500/50 focus:ring-1 focus:ring-indigo-500/50 sm:text-xs transition-all font-medium"
+                            class="block w-full pl-10 pr-3 py-2 rounded-none sm:text-xs transition-all font-black uppercase tracking-widest outline-none"
+                            :class="isDarkMode ? 'bg-white/5 border-2 border-white/10 text-white placeholder-slate-500 focus:border-blue-500/50' : 'bg-white border-2 border-[#eaeded] text-[#232f3e] placeholder-[#879196] focus:border-[#232f3e]'"
                             placeholder="Detailed search (Press '/')" />
                         <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                            <span
-                                class="text-slate-600 text-xs font-mono border border-white/10 rounded px-1.5 py-0.5">/</span>
+                            <span class="text-[10px] font-black border px-1.5 py-0.5"
+                                :class="isDarkMode ? 'text-slate-500 border-white/10' : 'text-[#879196] border-[#eaeded]'">/</span>
                         </div>
                     </div>
                 </div>
@@ -86,31 +94,42 @@ const toggleMenu = () => {
                 <div class="flex items-center gap-6">
                     <div v-if="authStore.isAuthenticated" class="flex items-center gap-6">
 
+                        <!-- Console Button -->
+                        <router-link to="/dashboard"
+                            class="hidden md:flex items-center px-4 py-2 bg-[#ff9900] text-[#232f3e] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#232f3e] hover:text-[#ff9900] transition-all border-b-2 border-transparent">
+                            Console
+                        </router-link>
+
                         <!-- Quick Stats (Desktop) -->
-                        <div
-                            class="hidden xl:flex items-center gap-6 text-xs text-slate-500 border-r border-white/10 pr-6">
+                        <div class="hidden xl:flex items-center gap-6 text-[10px] pr-6 font-black uppercase tracking-widest border-r-2"
+                            :class="isDarkMode ? 'text-slate-400 border-white/10' : 'text-[#879196] border-[#eaeded]'">
                             <div class="flex flex-col items-end">
-                                <span class="font-bold text-emerald-500">99.99%</span>
-                                <span class="text-[10px] uppercase tracking-wider">Health</span>
+                                <span class="text-emerald-500 font-black">99.99%</span>
+                                <span class="text-[9px] opacity-60">Health</span>
                             </div>
                             <div class="flex flex-col items-end">
-                                <span class="font-bold text-white">us-east-1</span>
-                                <span class="text-[10px] uppercase tracking-wider">Region</span>
+                                <span class="font-black"
+                                    :class="isDarkMode ? 'text-white' : 'text-[#232f3e]'">ke-nbo-ak</span>
+                                <span class="text-[9px] opacity-60">Region</span>
                             </div>
                         </div>
 
                         <!-- Profile Dropdown -->
-                        <div class="relative group h-16 flex items-center cursor-pointer">
+                        <div class="relative group h-full flex items-center cursor-pointer">
                             <div class="flex items-center gap-3">
                                 <div class="text-right hidden sm:block">
-                                    <div class="text-xs font-bold text-white">{{ authStore.email?.split('@')[0] }}</div>
-                                    <div class="text-[10px] text-slate-500 uppercase tracking-widest">{{ authStore.email
+                                    <div class="text-xs font-black uppercase"
+                                        :class="isDarkMode ? 'text-white' : 'text-[#232f3e]'">{{
+                                            authStore.email?.split('@')[0] }}</div>
+                                    <div class="text-[9px] uppercase tracking-widest font-medium"
+                                        :class="isDarkMode ? 'text-slate-500' : 'text-[#879196]'">{{
+                                            authStore.email
                                         }}</div>
                                 </div>
-                                <div
-                                    class="w-9 h-9 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 p-[1px]">
-                                    <div
-                                        class="w-full h-full rounded-full bg-[#05080F] flex items-center justify-center font-bold text-xs text-white">
+                                <div class="w-9 h-9 p-[1px] transition-colors"
+                                    :class="isDarkMode ? 'bg-blue-500 group-hover:bg-white' : 'bg-[#232f3e] group-hover:bg-[#ff9900]'">
+                                    <div class="w-full h-full flex items-center justify-center font-black text-xs"
+                                        :class="isDarkMode ? 'bg-[#0D1117] text-white' : 'bg-[#fafafa] text-[#232f3e]'">
                                         {{ authStore.email?.charAt(0).toUpperCase() }}
                                     </div>
                                 </div>
@@ -118,31 +137,30 @@ const toggleMenu = () => {
 
                             <!-- Dropdown Menu -->
                             <div
-                                class="absolute right-0 top-14 w-60 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform origin-top-right">
-                                <div class="glass-panel rounded-xl mt-2 overflow-hidden flex flex-col p-1">
+                                class="absolute right-0 top-full w-60 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 transform translate-y-2 group-hover:translate-y-0">
+                                <div
+                                    class="bg-white border-2 border-[#232f3e] mt-2 overflow-hidden flex flex-col p-1 shadow-2xl">
                                     <router-link to="/account"
-                                        class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-lg text-sm text-slate-300 hover:text-white transition-colors">
+                                        class="flex items-center gap-3 px-4 py-3 hover:bg-[#fafafa] text-xs font-black uppercase tracking-widest text-[#545b64] hover:text-[#232f3e] transition-colors">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
                                         Account
                                     </router-link>
                                     <router-link to="/settings"
-                                        class="flex items-center gap-3 px-4 py-3 hover:bg-white/5 rounded-lg text-sm text-slate-300 hover:text-white transition-colors">
+                                        class="flex items-center gap-3 px-4 py-3 hover:bg-[#fafafa] text-xs font-black uppercase tracking-widest text-[#545b64] hover:text-[#232f3e] transition-colors">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                                 d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                         </svg>
                                         Settings
                                     </router-link>
-                                    <div class="h-px bg-white/5 my-1"></div>
+                                    <div class="h-[2px] bg-[#eaeded] my-1"></div>
                                     <button @click="handleLogout"
-                                        class="flex items-center gap-3 px-4 py-3 hover:bg-red-500/10 hover:text-red-400 rounded-lg text-sm text-slate-300 transition-colors w-full text-left">
+                                        class="flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-xs font-black uppercase tracking-widest text-red-600 transition-colors w-full text-left">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                                 d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                                         </svg>
                                         Sign Out
@@ -155,113 +173,78 @@ const toggleMenu = () => {
                     <!-- Unauthenticated View -->
                     <div v-else class="flex items-center gap-4">
                         <router-link to="/login"
-                            class="text-xs font-bold uppercase tracking-widest text-slate-400 hover:text-white transition-colors">Login</router-link>
-                        <router-link to="/register"
-                            class="px-5 py-2 bg-white text-black text-xs font-bold uppercase tracking-widest hover:bg-indigo-50 transition-colors rounded-lg">
-                            Console
-                        </router-link>
+                            class="px-5 py-2.5 bg-[#232f3e] text-[#ff9900] text-xs font-black uppercase tracking-widest hover:bg-[#ff9900] hover:text-[#232f3e] transition-all">Login</router-link>
                     </div>
                 </div>
             </div>
         </nav>
 
-        <!-- Full Screen Mega Menu Overlay -->
         <Transition name="fade">
             <div v-if="isMenuOpen"
-                class="fixed inset-0 z-[150] bg-[#05080F]/95 backdrop-blur-3xl flex items-center justify-center p-6"
+                class="fixed inset-0 z-[150] bg-white/90 backdrop-blur-2xl flex items-center justify-center p-6"
                 @click="isMenuOpen = false">
-                <div class="max-w-5xl w-full" @click.stop>
-                    <div class="flex justify-between items-center mb-16">
-                        <h2 class="text-3xl font-bold font-display text-white">Platform Services</h2>
+                <!-- Subtle Grid in Modal -->
+                <div
+                    class="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none [mask-image:radial-gradient(ellipse_at_center,black_70%,transparent_100%)]">
+                </div>
+                <div class="max-w-5xl w-full relative z-10" @click.stop>
+                    <div class="flex justify-between items-center mb-16 px-4">
+                        <h2 class="text-4xl font-black text-[#232f3e] uppercase tracking-tighter">S3 <span
+                                class="text-[#ff9900]">Services</span></h2>
                         <button @click="isMenuOpen = false"
-                            class="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white">
+                            class="p-4 bg-white border-2 border-[#eaeded] text-[#232f3e] hover:border-[#ff9900] hover:text-[#ff9900] transition-all shadow-sm">
                             <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
                                     d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                     </div>
 
                     <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        <!-- Compute Card -->
-                        <router-link to="/compute" @click="isMenuOpen = false"
-                            class="group glass-card p-8 rounded-2xl relative overflow-hidden">
-                            <div
-                                class="absolute inset-0 bg-gradient-to-br from-blue-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                            </div>
-                            <div class="relative z-10">
-                                <div
-                                    class="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center text-blue-400 mb-6 group-hover:scale-110 transition-transform">
-                                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M13 10V3L4 14h7v7l9-11h-7z" />
-                                    </svg>
-                                </div>
-                                <h3 class="text-xl font-bold text-white mb-2">Compute & Lambda</h3>
-                                <p class="text-sm text-slate-400 leading-relaxed">Serverless functions and auto-scaling
-                                    bare metal nodes.</p>
-                            </div>
-                        </router-link>
-
                         <!-- Storage Card -->
-                        <router-link to="/s3" @click="isMenuOpen = false"
-                            class="group glass-card p-8 rounded-2xl relative overflow-hidden">
+                        <router-link to="/s3/buckets" @click="isMenuOpen = false"
+                            class="group bg-white border-2 border-[#eaeded] hover:border-[#ff9900] p-8 transition-all shadow-sm hover:shadow-xl relative overflow-hidden">
                             <div
-                                class="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                class="absolute inset-0 bg-[#ff9900]/5 opacity-0 group-hover:opacity-100 transition-opacity">
                             </div>
                             <div class="relative z-10">
                                 <div
-                                    class="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center text-emerald-400 mb-6 group-hover:scale-110 transition-transform">
+                                    class="w-12 h-12 bg-[#fafafa] border border-[#eaeded] flex items-center justify-center text-[#ff9900] mb-6 group-hover:scale-110 group-hover:border-[#ff9900]/30 transition-transform">
                                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4" />
                                     </svg>
                                 </div>
-                                <h3 class="text-xl font-bold text-white mb-2">Hyper Storage</h3>
-                                <p class="text-sm text-slate-400 leading-relaxed">S3-compatible object storage and
+                                <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tighter mb-3">Hyper
+                                    Storage</h3>
+                                <p class="text-sm text-[#545b64] font-medium leading-relaxed">S3-compatible object
+                                    storage and
                                     managed RDS databases.</p>
                             </div>
                         </router-link>
 
-                        <!-- Gaming Card -->
-                        <router-link to="/gaming" @click="isMenuOpen = false"
-                            class="group glass-card p-8 rounded-2xl relative overflow-hidden">
+                        <!-- Compute Card (Disabled) -->
+                        <div
+                            class="bg-[#fafafa] border-2 border-[#eaeded] p-8 opacity-60 grayscale cursor-not-allowed relative overflow-hidden">
                             <div
-                                class="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                                class="absolute top-4 right-4 bg-[#232f3e] text-white text-[10px] font-black px-2 py-1 uppercase tracking-tighter">
+                                Coming Soon
                             </div>
                             <div class="relative z-10">
                                 <div
-                                    class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center text-purple-400 mb-6 group-hover:scale-110 transition-transform">
+                                    class="w-12 h-12 bg-white border border-[#eaeded] flex items-center justify-center text-[#879196] mb-6">
                                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M11 17a1 1 0 001.447.894l4-2A1 1 0 0017 15" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                     </svg>
                                 </div>
-                                <h3 class="text-xl font-bold text-white mb-2">GameLift Edge</h3>
-                                <p class="text-sm text-slate-400 leading-relaxed">Low-latency multiplayer server fleet
-                                    management.</p>
+                                <h3 class="text-2xl font-black text-[#879196] uppercase tracking-tighter mb-3">Compute
+                                </h3>
+                                <p class="text-sm text-[#879196] font-medium leading-relaxed">High-performance instances
+                                    and
+                                    serverless functions.</p>
                             </div>
-                        </router-link>
-
-                        <!-- SageMaker Card -->
-                        <router-link to="/sagemaker" @click="isMenuOpen = false"
-                            class="group glass-card p-8 rounded-2xl relative overflow-hidden">
-                            <div
-                                class="absolute inset-0 bg-gradient-to-br from-pink-500/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
-                            </div>
-                            <div class="relative z-10">
-                                <div
-                                    class="w-12 h-12 bg-pink-500/20 rounded-xl flex items-center justify-center text-pink-400 mb-6 group-hover:scale-110 transition-transform">
-                                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                    </svg>
-                                </div>
-                                <h3 class="text-xl font-bold text-white mb-2">SageMaker AI</h3>
-                                <p class="text-sm text-slate-400 leading-relaxed">Build, train, and deploy machine
-                                    learning models at scale.</p>
-                            </div>
-                        </router-link>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -271,10 +254,10 @@ const toggleMenu = () => {
 
 <style scoped>
 .glass-panel {
-    @apply bg-[#0B0F19]/90 backdrop-blur-xl border border-white/5 shadow-2xl;
+    @apply bg-white/[0.03] backdrop-blur-3xl border border-white/5 shadow-2xl;
 }
 
 .glass-card {
-    @apply bg-[#0B0F19]/50 border border-white/5 shadow-lg;
+    @apply bg-white/[0.02] backdrop-blur-2xl border border-white/5 shadow-lg;
 }
 </style>

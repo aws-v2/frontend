@@ -7,86 +7,44 @@ const copied = ref(false)
 
 const snippets = [
     {
-        lang: 'Node',
-        langColor: 'text-green-600',
-        title: 'Node.js SDK',
-        fullTitle: 'Connect using AWS SDK for JavaScript (v3)',
-        code: `import { S3Client, ListObjectsV3Command } from "@aws-sdk/client-s3";
+        lang: 'Java',
+        langColor: 'text-[#ff9900]',
+        title: 'Java SDK',
+        fullTitle: 'Connect using AWS SDK for Java (v2)',
+        code: `import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Request;
+import software.amazon.awssdk.services.s3.model.ListObjectsV2Response;
+import software.amazon.awssdk.services.s3.model.S3Object;
 
-const client = new S3Client({ 
-  region: "us-east-1",
-  credentials: {
-    accessKeyId: "YOUR_ACCESS_KEY",
-    secretAccessKey: "YOUR_SECRET_KEY"
-  }
-});
+public class S3Example {
+    public static void main(String[] args) {
+        // Configure credentials
+        AwsBasicCredentials credentials = AwsBasicCredentials.create(
+            "YOUR_ACCESS_KEY",
+            "YOUR_SECRET_KEY"
+        );
 
-const command = new ListObjectsV3Command({
-  Bucket: "YOUR_BUCKET_NAME",
-});
+        // Create S3 client
+        S3Client s3Client = S3Client.builder()
+            .region(Region.US_EAST_1)
+            .credentialsProvider(StaticCredentialsProvider.create(credentials))
+            .build();
 
-try {
-  const data = await client.send(command);
-  console.log(data);
-} catch (error) {
-  console.error(error);
-}`
-    },
-    {
-        lang: 'Python',
-        langColor: 'text-blue-600',
-        title: 'Boto3',
-        fullTitle: 'Connect using Boto3 (Python)',
-        code: `import boto3
+        // List objects in bucket
+        ListObjectsV2Request request = ListObjectsV2Request.builder()
+            .bucket("YOUR_BUCKET_NAME")
+            .build();
 
-s3 = boto3.client(
-    's3',
-    region_name='us-east-1',
-    aws_access_key_id='YOUR_ACCESS_KEY',
-    aws_secret_access_key='YOUR_SECRET_KEY'
-)
-
-# List objects in the bucket
-response = s3.list_objects_v2(Bucket='YOUR_BUCKET_NAME')
-
-for obj in response.get('Contents', []):
-    print(obj['Key'])`
-    },
-    {
-        lang: 'Flutter',
-        langColor: 'text-cyan-500',
-        title: 'Amplify',
-        fullTitle: 'Connect using AWS Amplify for Flutter',
-        code: "import 'package:amplify_flutter/amplify_flutter.dart';\n" +
-              "import 'package:amplify_storage_s3/amplify_storage_s3.dart';\n\n" +
-              "Future<void> listS3Objects() async {\n" +
-              "  try {\n" +
-              "    final result = await Amplify.Storage.list();\n" +
-              "    for (var item in result.items) {\n" +
-              "      print('Found item: ${item.key}');\n" +
-              "    }\n" +
-              "  } on StorageException catch (e) {\n" +
-              "    print('Error listing items: ${e.message}');\n" +
-              "  }\n" +
-              "}"
-    },
-    {
-        lang: 'Kotlin',
-        langColor: 'text-purple-600',
-        title: 'Android',
-        fullTitle: 'Connect using AWS SDK for Kotlin (Android)',
-        code: `import aws.sdk.kotlin.services.s3.S3Client
-import aws.sdk.kotlin.services.s3.model.ListObjectsV2Request
-
-suspend fun listObjects(bucketName: String) {
-    S3Client { region = "us-east-1" }.use { s3 ->
-        val request = ListObjectsV2Request {
-            bucket = bucketName
+        ListObjectsV2Response response = s3Client.listObjectsV2(request);
+        
+        for (S3Object object : response.contents()) {
+            System.out.println("Object key: " + object.key());
         }
-        val response = s3.listObjectsV2(request)
-        response.contents?.forEach {
-            println("Object key: \${it.key}")
-        }
+
+        s3Client.close();
     }
 }`
     }
@@ -107,28 +65,47 @@ const copyCode = () => {
 </script>
 
 <template>
-    <div class="border border-[var(--aws-blue)] bg-blue-50/10 rounded-sm p-4">
-        <div class="flex items-center gap-2 mb-2">
-            <h3 class="text-lg font-bold text-[var(--aws-blue)]">Developer Quick Connect</h3>
-            <span
-                class="text-[10px] bg-[var(--aws-blue)] text-white px-1.5 py-0.5 rounded font-bold uppercase">New</span>
+    <div class="bg-white border-2 border-[#eaeded] shadow-sm overflow-hidden group p-8 relative">
+        <div
+            class="absolute -top-10 -right-10 w-32 h-32 bg-[#ff9900]/5 rounded-full blur-3xl transition-all group-hover:bg-[#ff9900]/10">
         </div>
-        <p class="text-xs text-gray-600 mb-4">Select a language to get pre-configured code snippets for this bucket.</p>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="flex items-center gap-6 mb-8 relative z-10">
+            <div
+                class="w-14 h-14 bg-[#fafafa] border-2 border-[#eaeded] text-[#ff9900] flex items-center justify-center shadow-lg shadow-black/5 rotate-3 group-hover:rotate-0 transition-transform duration-500">
+                <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-3xl font-black text-[#232f3e] tracking-tighter uppercase italic">Developer Quick Connect
+                </h3>
+                <p class="text-[10px] text-[#ff9900] font-black uppercase tracking-[0.2em] mt-0.5 italic">Rapid
+                    Integration Snippets</p>
+            </div>
+        </div>
+
+        <p class="text-[13px] text-[#545b64] mb-10 leading-relaxed font-bold uppercase tracking-tight italic">
+            Select your preferred environment to get pre-configured code snippets for immediate bucket connectivity.
+        </p>
+
+        <div class="flex justify-center relative z-10">
             <div v-for="snippet in snippets" :key="snippet.lang" @click="openSnippet(snippet)"
-                class="group border border-gray-300 rounded-sm bg-white p-3 hover:border-[var(--aws-blue)] hover:shadow-sm cursor-pointer transition-all">
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-2 font-bold text-gray-800 text-sm">
-                        <span class="font-mono" :class="snippet.langColor">{{ snippet.lang }}</span>
+                class="group border-2 border-[#eaeded] bg-[#fafafa] p-8 hover:border-[#ff9900] cursor-pointer transition-all active:scale-[0.98] shadow-sm hover:shadow-xl hover:shadow-[#ff9900]/10 italic w-full max-w-md">
+                <div class="flex items-center justify-between mb-6">
+                    <div
+                        class="px-4 py-1.5 border-2 border-[#eaeded] bg-white font-black text-[10px] tracking-[0.2em] uppercase italic group-hover:border-[#ff9900] transition-colors">
+                        <span :class="snippet.langColor">{{ snippet.lang }}</span>
                     </div>
-                    <svg class="w-3 h-3 text-gray-400 group-hover:text-[var(--aws-blue)] transition-colors" fill="none"
+                    <svg class="w-6 h-6 text-[#eaeded] group-hover:text-[#ff9900] transition-colors" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                             d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
                     </svg>
                 </div>
-                <div class="text-[10px] text-gray-500 font-medium">
+                <div
+                    class="text-[11px] text-[#545b64] font-black uppercase tracking-widest group-hover:text-[#232f3e] transition-colors">
                     {{ snippet.title }}
                 </div>
             </div>
@@ -136,50 +113,56 @@ const copyCode = () => {
 
         <!-- Code Modal -->
         <div v-if="showModal"
-            class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-            <div class="bg-white rounded-sm shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+            class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-[#232f3e]/60 backdrop-blur-sm transition-all">
+            <div
+                class="bg-white border-4 border-[#232f3e] shadow-2xl w-full max-w-4xl flex flex-col max-h-[90vh] overflow-hidden relative">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-[#ff9900]/5 -mr-16 -mt-16 rounded-full blur-3xl"></div>
+
                 <!-- Modal Header -->
-                <div class="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                <div class="p-10 border-b-2 border-[#eaeded] flex justify-between items-center bg-[#fafafa] relative">
                     <div>
-                        <h3 class="text-base font-bold text-gray-900">{{ activeSnippet?.fullTitle }}</h3>
-                        <p class="text-[11px] text-gray-500">Ready-to-use boilerplate for your application</p>
+                        <h3 class="text-3xl font-black text-[#232f3e] tracking-tighter uppercase italic">{{
+                            activeSnippet?.fullTitle }}</h3>
+                        <p class="text-[10px] text-[#ff9900] font-black uppercase tracking-[0.2em] mt-2 italic">
+                            Deployment Boilerplate</p>
                     </div>
-                    <button @click="showModal = false" class="text-gray-400 hover:text-gray-600 p-1">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    <button @click="showModal = false"
+                        class="w-12 h-12 bg-white border-2 border-[#eaeded] flex items-center justify-center text-[#545b64] hover:text-[#ff9900] hover:border-[#ff9900] transition-all active:scale-95 italic">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
                                 d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
                 <!-- Modal Content -->
-                <div class="flex-1 overflow-auto p-0 bg-[#1e1e1e]">
-                    <div class="relative group">
+                <div class="flex-1 overflow-auto p-0 bg-white">
+                    <div class="relative group h-full">
+                        <div class="absolute top-0 left-0 w-1 bg-[#ff9900] h-full"></div>
                         <pre
-                            class="p-6 text-[11px] font-mono leading-relaxed text-blue-300 overflow-x-auto"><code>{{ activeSnippet?.code }}</code></pre>
+                            class="p-10 text-[13px] font-mono leading-relaxed text-[#232f3e] overflow-x-auto selection:bg-[#ff9900]/20 custom-scrollbar"><code>{{ activeSnippet?.code }}</code></pre>
 
                         <!-- Copy Button inside code area -->
                         <button @click="copyCode"
-                            class="absolute top-4 right-4 px-3 py-1.5 rounded-sm text-[11px] font-bold transition-all flex items-center gap-1.5 shadow-lg"
-                            :class="copied ? 'bg-green-600 text-white' : 'bg-gray-700/80 text-gray-200 hover:bg-gray-600'">
-                            <svg v-if="!copied" class="w-3.5 h-3.5" fill="none" stroke="currentColor"
-                                viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            class="absolute top-8 right-8 px-8 py-3 text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-3 shadow-xl italic"
+                            :class="copied ? 'bg-[#ff9900] text-[#232f3e]' : 'bg-[#232f3e] text-white hover:bg-black'">
+                            <svg v-if="!copied" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                     d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                             </svg>
-                            <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
                                     d="M5 13l4 4L19 7" />
                             </svg>
-                            {{ copied ? 'Copied!' : 'Copy Code' }}
+                            {{ copied ? 'Snippet Copied' : 'Copy Snippet' }}
                         </button>
                     </div>
                 </div>
 
                 <!-- Modal Footer -->
-                <div class="p-3 border-t border-gray-200 bg-gray-50 flex justify-end gap-2 text-[11px]">
+                <div class="p-8 border-t-2 border-[#eaeded] bg-[#fafafa] flex justify-end">
                     <button @click="showModal = false"
-                        class="px-4 py-1.5 font-bold text-gray-600 hover:text-gray-900 border border-gray-300 rounded-sm bg-white shadow-sm">
+                        class="px-12 py-3 text-[11px] font-black uppercase tracking-widest text-[#545b64] hover:text-[#ff9900] transition-colors italic">
                         Close
                     </button>
                 </div>
@@ -187,3 +170,22 @@ const copyCode = () => {
         </div>
     </div>
 </template>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: #fafafa;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #eaeded;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #ff9900;
+}
+</style>

@@ -10,6 +10,9 @@ import rdsRoutes from '@/modules/rds/routes'
 import sagemakerRoutes from '@/modules/sagemaker/routes'
 import computeRoutes from '@/modules/compute/routes'
 import gameliftRoutes from '@/modules/gamelift/routes'
+import servicesRoutes from '@/modules/services/routes'
+import docsRoutes from '@/modules/docs/routes'
+import accountRoutes from '@/modules/account/routes'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -23,12 +26,21 @@ const router = createRouter({
     ...rdsRoutes,
     ...sagemakerRoutes,
     ...computeRoutes,
-    ...gameliftRoutes
+    ...gameliftRoutes,
+    ...servicesRoutes,
+    ...docsRoutes,
+    ...accountRoutes
   ],
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
+
+  // Wait for auth to initialize if it hasn't yet
+  if (authStore.isAuthenticated === null) {
+    await authStore.initAuth()
+  }
+
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
   const isPublicOnly = to.matched.some((record) => record.meta.publicOnly)
   const isMfaPage = to.name === 'mfa'

@@ -39,14 +39,14 @@ const formatDate = (dateString?: string) => {
     if (!dateString) return '-'
     const date = new Date(dateString)
     return date.toLocaleString('en-US', {
-        month: 'long',
+        month: 'short',
         day: 'numeric',
         year: 'numeric',
         hour: 'numeric',
         minute: 'numeric',
         second: 'numeric',
         hour12: true
-    }) + ' (UTC+03:00)'
+    })
 }
 
 const formatSize = (bytes?: number) => {
@@ -90,191 +90,238 @@ const handleSaveObjectLock = (enabled: boolean) => {
     toastStore.addToast('Object Lock settings updated successfully', 'success')
 }
 
+const navigateBack = () => {
+    // If we have a prefix, we should go back to the folder view
+    const lastSlashIndex = objectKey.value.lastIndexOf('/')
+    if (lastSlashIndex !== -1) {
+        const prefix = objectKey.value.substring(0, lastSlashIndex + 1)
+        router.push({
+            name: 's3-folder-contents',
+            params: {
+                bucketName: bucketName.value,
+                prefix: prefix
+            }
+        })
+    } else {
+        router.push(`/s3/buckets/${bucketName.value}?tab=overview`)
+    }
+}
+
 </script>
 
 <template>
-    <div class="min-h-screen bg-white font-sans pb-24">
-        <!-- Breadcrumbs -->
-        <div class="h-10 border-b border-gray-200 bg-white flex items-center px-4 text-[11px] gap-2 text-gray-500">
-            <span @click="router.push('/s3')" class="hover:text-[var(--aws-blue)] hover:underline cursor-pointer">
-                Amazon S3
-            </span>
-            <span>></span>
-            <span @click="router.push('/s3/buckets')"
-                class="hover:text-[var(--aws-blue)] hover:underline cursor-pointer">
-                Buckets
-            </span>
-            <span>></span>
-            <span @click="router.push(`/s3/buckets/${bucketName}`)"
-                class="hover:text-[var(--aws-blue)] hover:underline cursor-pointer">
-                {{ bucketName }}
-            </span>
-            <span>></span>
-            <span class="text-gray-900 font-bold">{{ objectKey }}</span>
+    <div
+        class="min-h-screen bg-white text-[#232f3e] pb-32 font-urbanist relative overflow-hidden selection:bg-[#ff9900]/30 selection:text-[#232f3e]">
+        <!-- Subtle Grid -->
+        <div
+            class="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]">
         </div>
 
-        <div class="p-8 px-10">
+        <!-- Breadcrumbs -->
+        <div
+            class="h-12 border-b border-[#eaeded] bg-white flex items-center px-8 text-[11px] gap-2 text-[#545b64] relative z-10 font-black uppercase tracking-widest italic">
+            <span @click="router.push('/s3')" class="hover:text-[#ff9900] cursor-pointer transition-colors">
+                Amazon S3
+            </span>
+            <span class="text-[#eaeded] font-normal not-italic mx-1">/</span>
+            <span @click="router.push('/s3/buckets')" class="hover:text-[#ff9900] cursor-pointer transition-colors">
+                Buckets
+            </span>
+            <span class="text-[#eaeded] font-normal not-italic mx-1">/</span>
+            <span @click="navigateBack" class="hover:text-[#ff9900] cursor-pointer transition-colors">
+                {{ bucketName }}
+            </span>
+            <span class="text-[#eaeded] font-normal not-italic mx-1">/</span>
+            <span class="text-[#232f3e] truncate max-w-[300px]">{{ objectKey }}</span>
+        </div>
+
+        <div class="relative z-10 p-8 px-8 md:px-24 pt-16 max-w-[1800px] mx-auto">
             <!-- Header -->
-            <div class="flex justify-between items-start mb-6">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900 flex items-baseline gap-2">
-                        {{ objectKey }}
+            <div
+                class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-8 mb-12 border-b-2 border-[#eaeded] pb-8">
+                <div class="space-y-2">
+                    <h1
+                        class="text-5xl font-black text-[#232f3e] flex items-baseline gap-4 tracking-tighter uppercase italic break-all">
+                        {{ objectKey.split('/').pop() }}
                         <span
-                            class="text-[10px] text-[var(--aws-blue)] hover:underline cursor-pointer uppercase font-bold tracking-tight">
-                            Info
+                            class="text-[10px] text-[#ff9900] bg-[#fafafa] px-3 py-1 border-2 border-[#eaeded] hover:border-[#ff9900] cursor-pointer uppercase font-black tracking-[0.2em] transition-all not-italic whitespace-nowrap">
+                            Object Details
                         </span>
                     </h1>
                 </div>
-                <div class="flex gap-2">
+                <div class="flex flex-wrap gap-3">
                     <button @click="copyToClipboard(s3Uri, 'S3 URI')"
-                        class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-full hover:bg-gray-50 flex items-center gap-1">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                        </svg>
+                        class="px-6 py-2.5 bg-white border-2 border-[#eaeded] text-[#232f3e] text-xs font-black uppercase tracking-widest hover:border-[#ff9900] transition-all active:scale-95 italic">
                         Copy S3 URI
                     </button>
                     <button
-                        class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-full hover:bg-gray-50 flex items-center gap-1">
-                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                        </svg>
+                        class="px-6 py-2.5 bg-white border-2 border-[#eaeded] text-[#232f3e] text-xs font-black uppercase tracking-widest hover:border-[#ff9900] transition-all active:scale-95 italic">
                         Download
                     </button>
-                    <button class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-full hover:bg-gray-50">
+                    <button
+                        class="px-6 py-2.5 bg-white border-2 border-[#eaeded] text-[#232f3e] text-xs font-black uppercase tracking-widest hover:border-[#ff9900] transition-all active:scale-95 italic">
                         Open ↗
                     </button>
-                    <div class="relative">
-                        <button
-                            class="px-3 py-1 text-xs font-bold border border-[var(--aws-blue)] text-white bg-[var(--aws-blue)] rounded-full flex items-center gap-1">
-                            Object actions
-                            <svg class="w-3.5 h-3.5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
-                    </div>
+                    <button
+                        class="px-8 py-2.5 bg-[#ff9900] text-[#232f3e] text-xs font-black uppercase tracking-widest hover:bg-[#ff9900]/90 transition-all flex items-center justify-center gap-3 shadow-lg shadow-[#ff9900]/20 active:scale-95">
+                        Object actions
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
                 </div>
             </div>
 
             <!-- Tabs -->
-            <div class="border-b border-gray-200 flex gap-8 mb-6">
+            <div class="flex gap-12 mb-12 border-b-2 border-[#eaeded] pb-0">
                 <button v-for="tab in tabs" :key="tab" @click="activeTab = tab.toLowerCase()"
-                    class="pb-2 text-sm font-bold border-b-2 transition-colors px-1" :class="activeTab === tab.toLowerCase()
-                        ? 'border-[var(--aws-blue)] text-[var(--aws-blue)]'
-                        : 'border-transparent text-gray-600 hover:text-gray-900'
+                    class="relative pb-6 text-xs font-black uppercase tracking-[0.2em] transition-all" :class="activeTab === tab.toLowerCase()
+                        ? 'text-[#ff9900]'
+                        : 'text-[#545b64] hover:text-[#232f3e]'
                         ">
                     {{ tab }}
+                    <div v-if="activeTab === tab.toLowerCase()"
+                        class="absolute bottom-[-2px] left-0 right-0 h-1 bg-[#ff9900]"></div>
                 </button>
             </div>
 
             <!-- Tab Content (Properties) -->
-            <div v-if="activeTab === 'properties'" class="space-y-6">
+            <div v-if="activeTab === 'properties'"
+                class="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 <!-- Object Overview -->
-                <div class="border border-gray-200 rounded-sm bg-white overflow-hidden">
-                    <div class="p-4">
-                        <h2 class="text-lg font-bold text-gray-900 mb-4">Object overview</h2>
-                        <div class="grid grid-cols-2 gap-x-12 gap-y-6">
+                <div class="bg-white border-2 border-[#eaeded] shadow-sm overflow-hidden">
+                    <div class="p-8 bg-[#fafafa] border-b-2 border-[#eaeded]">
+                        <h2 class="text-[12px] font-black text-[#ff9900] uppercase tracking-[0.2em] italic">Object
+                            overview</h2>
+                    </div>
+                    <div class="p-8 pt-10">
+                        <div class="grid grid-cols-1 xl:grid-cols-2 gap-y-10 xl:gap-x-24">
                             <!-- Column 1 -->
-                            <div class="space-y-6">
-                                <div>
-                                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">Owner
+                            <div class="space-y-8">
+                                <div class="group">
+                                    <p
+                                        class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-3 italic">
+                                        Owner</p>
+                                    <p
+                                        class="text-[13px] text-[#232f3e] font-bold break-all leading-relaxed uppercase tracking-tight italic">
+                                        a80eb1031764ce392d55d37678e6efc4eecab7506f540e81ffbf2390f7ebc7f7
                                     </p>
-                                    <p class="text-xs text-gray-900 break-all">
-                                        a80eb1031764ce392d55d37678e6efc4eecab7506f540e81ffbf2390f7ebc7f7</p>
                                 </div>
-                                <div>
-                                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">AWS
-                                        Region</p>
-                                    <p class="text-xs text-gray-900">Europe (Stockholm) eu-north-1</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div class="group">
+                                        <p
+                                            class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-3 italic">
+                                            Region</p>
+                                        <p
+                                            class="text-[13px] text-[#232f3e] font-black uppercase tracking-tight italic">
+                                            Europe (Stockholm) eu-north-1</p>
+                                    </div>
+                                    <div class="group">
+                                        <p
+                                            class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-3 italic">
+                                            Last modified</p>
+                                        <p
+                                            class="text-[13px] text-[#232f3e] font-black uppercase tracking-tight italic">
+                                            {{ formatDate(s3Store.currentFile?.last_modified) }}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">Last
-                                        modified</p>
-                                    <p class="text-xs text-gray-900">{{ formatDate(s3Store.currentFile?.last_modified)
-                                    }}</p>
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <div class="group">
+                                        <p
+                                            class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-3 italic">
+                                            Size</p>
+                                        <p
+                                            class="text-[13px] text-[#232f3e] font-black uppercase tracking-tight italic">
+                                            {{ formatSize(s3Store.currentFile?.size) }}</p>
+                                    </div>
+                                    <div class="group">
+                                        <p
+                                            class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-3 italic">
+                                            Type</p>
+                                        <p
+                                            class="text-[13px] text-[#232f3e] font-black uppercase tracking-tight italic">
+                                            {{ s3Store.currentFile?.mime_type || 'Object' }}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">Size
-                                    </p>
-                                    <p class="text-xs text-gray-900">{{ formatSize(s3Store.currentFile?.size) }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">Type
-                                    </p>
-                                    <p class="text-xs text-gray-900">{{ s3Store.currentFile?.mime_type || 'zip' }}</p>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">Key</p>
+                                <div class="group relative">
+                                    <p
+                                        class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-3 italic">
+                                        Key</p>
                                     <div @click="copyToClipboard(objectKey, 'Key')"
-                                        class="flex items-center gap-1 cursor-pointer group">
-                                        <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-[var(--aws-blue)]"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        class="flex items-center gap-3 cursor-pointer group/link bg-[#fafafa] border-2 border-[#eaeded] p-4 hover:border-[#ff9900] transition-all">
+                                        <svg class="w-4 h-4 text-[#545b64] group-hover/link:text-[#ff9900]" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                                 d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                                         </svg>
-                                        <p class="text-xs text-[var(--aws-blue)] font-bold group-hover:underline">{{
-                                            objectKey }}</p>
+                                        <p
+                                            class="text-[12px] text-[#232f3e] font-black group-hover/link:text-[#ff9900] break-all uppercase tracking-tight italic">
+                                            {{ objectKey }}</p>
                                     </div>
                                 </div>
                             </div>
                             <!-- Column 2 -->
-                            <div class="space-y-6">
-                                <div>
-                                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">S3 URI
-                                    </p>
+                            <div class="space-y-8">
+                                <div class="group">
+                                    <p
+                                        class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-3 italic">
+                                        S3 URI</p>
                                     <div @click="copyToClipboard(s3Uri, 'S3 URI')"
-                                        class="flex items-center gap-1 cursor-pointer group">
-                                        <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-[var(--aws-blue)]"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        class="flex items-center gap-3 cursor-pointer group/link bg-[#fafafa] border-2 border-[#eaeded] p-4 hover:border-[#ff9900] transition-all">
+                                        <svg class="w-4 h-4 text-[#545b64] group-hover/link:text-[#ff9900]" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                                 d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                                         </svg>
                                         <p
-                                            class="text-xs text-[var(--aws-blue)] font-bold group-hover:underline break-all">
+                                            class="text-[12px] text-[#232f3e] font-black group-hover/link:text-[#ff9900] break-all uppercase tracking-tight italic">
                                             {{ s3Uri }}</p>
                                     </div>
                                 </div>
-                                <div>
-                                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">Amazon
-                                        Resource Name (ARN)</p>
+                                <div class="group">
+                                    <p
+                                        class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-3 italic">
+                                        Amazon Resource Name (ARN)</p>
                                     <div @click="copyToClipboard(arn, 'ARN')"
-                                        class="flex items-center gap-1 cursor-pointer group">
-                                        <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-[var(--aws-blue)]"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        class="flex items-center gap-3 cursor-pointer group/link bg-[#fafafa] border-2 border-[#eaeded] p-4 hover:border-[#ff9900] transition-all">
+                                        <svg class="w-4 h-4 text-[#545b64] group-hover/link:text-[#ff9900]" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                                 d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                                         </svg>
                                         <p
-                                            class="text-xs text-[var(--aws-blue)] font-bold group-hover:underline break-all">
+                                            class="text-[12px] text-[#232f3e] font-black group-hover/link:text-[#ff9900] break-all uppercase tracking-tight italic">
                                             {{ arn }}</p>
                                     </div>
                                 </div>
-                                <div>
-                                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">Entity
-                                        tag (ETag)</p>
-                                    <div class="flex items-center gap-1 group">
-                                        <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor"
+                                <div class="group">
+                                    <p
+                                        class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-3 italic">
+                                        Entity tag (ETag)</p>
+                                    <div class="flex items-center gap-3 bg-[#fafafa] border-2 border-[#eaeded] p-4">
+                                        <svg class="w-4 h-4 text-[#eaeded]" fill="none" stroke="currentColor"
                                             viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
-                                        </svg>
-                                        <p class="text-xs text-gray-900 break-all">519a8b3308872b0ed015963c9f3fc623</p>
-                                    </div>
-                                </div>
-                                <div>
-                                    <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">Object
-                                        URL</p>
-                                    <div @click="copyToClipboard(objectUrl, 'Object URL')"
-                                        class="flex items-center gap-1 cursor-pointer group">
-                                        <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-[var(--aws-blue)]"
-                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                                 d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                                         </svg>
                                         <p
-                                            class="text-xs text-[var(--aws-blue)] font-bold group-hover:underline break-all">
+                                            class="text-[12px] text-[#232f3e] font-black break-all uppercase tracking-tight italic">
+                                            519a8b3308872b0ed015963c9f3fc623</p>
+                                    </div>
+                                </div>
+                                <div class="group">
+                                    <p
+                                        class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-3 italic">
+                                        Object URL</p>
+                                    <div @click="copyToClipboard(objectUrl, 'Object URL')"
+                                        class="flex items-center gap-3 cursor-pointer group/link bg-[#fafafa] border-2 border-[#eaeded] p-4 hover:border-[#ff9900] transition-all">
+                                        <svg class="w-4 h-4 text-[#545b64] group-hover/link:text-[#ff9900]" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+                                        </svg>
+                                        <p
+                                            class="text-[12px] text-[#232f3e] font-black group-hover/link:text-[#ff9900] break-all uppercase tracking-tight italic">
                                             {{ objectUrl }}</p>
                                     </div>
                                 </div>
@@ -283,231 +330,204 @@ const handleSaveObjectLock = (enabled: boolean) => {
                     </div>
                 </div>
 
-                <!-- Storage Class -->
-                <div class="border border-gray-200 rounded-sm bg-white overflow-hidden">
-                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                        <div>
-                            <h2 class="text-sm font-bold text-gray-900">Storage class</h2>
-                            <p class="text-[10px] text-gray-500">Amazon S3 offers a range of storage classes designed
-                                for different use cases. <span
-                                    class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn more ↗</span> or
-                                see <span class="text-[var(--aws-blue)] hover:underline cursor-pointer">Amazon S3
-                                    pricing ↗</span></p>
+                <!-- Feature Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <!-- Storage Class -->
+                    <div class="bg-white border-2 border-[#eaeded] shadow-sm overflow-hidden flex flex-col">
+                        <div class="p-6 border-b-2 border-[#eaeded] flex justify-between items-center bg-[#fafafa]">
+                            <h2 class="text-[12px] font-black text-[#232f3e] uppercase tracking-[0.2em] italic">Storage
+                                class</h2>
+                            <button @click="showStorageClassModal = true"
+                                class="px-5 py-2 text-[10px] font-black border-2 border-[#eaeded] text-[#232f3e] hover:border-[#ff9900] transition-all italic bg-white uppercase tracking-widest">
+                                Edit
+                            </button>
                         </div>
-                        <button @click="showStorageClassModal = true"
-                            class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">
-                            Edit
-                        </button>
+                        <div class="p-6 flex-1">
+                            <p
+                                class="text-[11px] text-[#545b64] leading-relaxed font-bold uppercase tracking-tight italic mb-6">
+                                Amazon S3 offers a range of storage classes designed for different use cases.
+                            </p>
+                            <div class="bg-[#fafafa] border-2 border-[#eaeded] p-6 italic">
+                                <p class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-2">Current
+                                    Class</p>
+                                <p class="text-xl font-black text-[#ff9900] tracking-tighter uppercase italic">
+                                    {{ s3Store.currentFile?.storage_class || 'Standard' }}
+                                </p>
+                            </div>
+                        </div>
                     </div>
-                    <div class="p-4">
-                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">Storage class</p>
-                        <p class="text-xs text-gray-900 font-medium">{{ s3Store.currentFile?.storage_class || 'Standard'
-                        }}</p>
-                    </div>
-                </div>
 
-                <!-- Encryption Settings -->
-                <div class="border border-gray-200 rounded-sm bg-white overflow-hidden">
-                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                        <div>
-                            <h2 class="text-sm font-bold text-gray-900 flex items-center gap-1">Server-side encryption
-                                settings <span
-                                    class="text-[10px] text-[var(--aws-blue)] font-bold uppercase tracking-tight">Info</span>
-                            </h2>
-                            <p class="text-[10px] text-gray-500">Server-side encryption protects data at rest.</p>
+                    <!-- Server-side encryption -->
+                    <div class="bg-white border-2 border-[#eaeded] shadow-sm overflow-hidden flex flex-col">
+                        <div class="p-6 border-b-2 border-[#eaeded] flex justify-between items-center bg-[#fafafa]">
+                            <h2 class="text-[12px] font-black text-[#232f3e] uppercase tracking-[0.2em] italic">
+                                Encryption settings</h2>
+                            <button @click="showEncryptionModal = true"
+                                class="px-5 py-2 text-[10px] font-black border-2 border-[#eaeded] text-[#232f3e] hover:border-[#ff9900] transition-all italic bg-white uppercase tracking-widest">
+                                Edit
+                            </button>
                         </div>
-                        <button @click="showEncryptionModal = true"
-                            class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">
-                            Edit
-                        </button>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">Encryption type
-                            <span
-                                class="text-[10px] text-[var(--aws-blue)] font-bold uppercase tracking-tight">Info</span>
-                        </p>
-                        <p class="text-xs text-gray-900 font-medium">Server-side encryption with Amazon S3 managed keys
-                            (SSE-S3)</p>
+                        <div class="p-6 flex-1">
+                            <p
+                                class="text-[11px] text-[#545b64] leading-relaxed font-bold uppercase tracking-tight italic mb-6">
+                                Server-side encryption protects data at rest.
+                            </p>
+                            <div class="bg-[#fafafa] border-2 border-[#eaeded] p-6 italic">
+                                <p class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-2">
+                                    Encryption Type</p>
+                                <p
+                                    class="text-[13px] font-black text-[#232f3e] tracking-tight uppercase italic leading-tight">
+                                    Server-side encryption with Amazon S3 managed keys (SSE-S3)
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Checksums -->
-                <div class="border border-gray-200 rounded-sm bg-white overflow-hidden">
-                    <div class="p-4 border-b border-gray-200">
-                        <h2 class="text-sm font-bold text-gray-900">Checksums</h2>
-                        <p class="text-[10px] text-gray-500">Checksums are used for data integrity verification of new
-                            objects. <span class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn more
-                                ↗</span></p>
+                <div class="bg-white border-2 border-[#eaeded] shadow-sm overflow-hidden">
+                    <div class="p-6 border-b-2 border-[#eaeded] bg-[#fafafa]">
+                        <h2 class="text-[12px] font-black text-[#232f3e] uppercase tracking-[0.2em] italic">Checksums
+                        </h2>
                     </div>
-                    <div class="p-4 grid grid-cols-3 gap-8">
-                        <div>
-                            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">Checksum
-                                function</p>
-                            <p class="text-xs text-gray-900 font-medium">CRC64NVME</p>
-                        </div>
-                        <div>
-                            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">Checksum type
+                    <div class="p-8 grid grid-cols-1 md:grid-cols-3 gap-12 pt-10">
+                        <div class="group">
+                            <p class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-3 italic">
+                                Function</p>
+                            <p class="text-[14px] text-[#232f3e] font-black uppercase tracking-tight italic">CRC64NVME
                             </p>
-                            <p class="text-xs text-gray-900 font-medium">Full object</p>
                         </div>
-                        <div>
-                            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">Checksum value
+                        <div class="group">
+                            <p class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-3 italic">Type
                             </p>
-                            <div class="flex items-center gap-1">
-                                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor"
+                            <p class="text-[14px] text-[#232f3e] font-black uppercase tracking-tight italic">Full object
+                            </p>
+                        </div>
+                        <div class="group">
+                            <p class="text-[10px] text-[#545b64] font-black uppercase tracking-[0.2em] mb-3 italic">
+                                Value</p>
+                            <div class="flex items-center gap-3">
+                                <svg class="w-4 h-4 text-[#eaeded]" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                         d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                                 </svg>
-                                <p class="text-xs text-gray-900 font-medium">OMt2K9lhp4g=</p>
+                                <p class="text-[14px] text-[#232f3e] font-black uppercase tracking-tight italic">
+                                    OMt2K9lhp4g=</p>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <!-- Tags -->
-                <div class="border border-gray-200 rounded-sm bg-white overflow-hidden">
-                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                        <div>
-                            <h2 class="text-sm font-bold text-gray-900">Tags ({{ s3Store.currentFile?.tags?.length || 0
-                            }})</h2>
-                            <p class="text-[10px] text-gray-500">Track storage cost of other criteria by tagging your
-                                objects. <span class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn more
-                                    ↗</span></p>
-                        </div>
+                <div class="bg-white border-2 border-[#eaeded] shadow-sm overflow-hidden">
+                    <div class="p-6 border-b-2 border-[#eaeded] flex justify-between items-center bg-[#fafafa]">
+                        <h2 class="text-[12px] font-black text-[#232f3e] uppercase tracking-[0.2em] italic">Tags ({{
+                            s3Store.currentFile?.tags?.length || 0 }})</h2>
                         <button @click="showTagsModal = true"
-                            class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">
+                            class="px-5 py-2 text-[10px] font-black border-2 border-[#eaeded] text-[#232f3e] hover:border-[#ff9900] transition-all italic bg-white uppercase tracking-widest">
                             Edit
                         </button>
                     </div>
-                    <div v-if="s3Store.currentFile?.tags?.length" class="p-4">
-                        <div
-                            class="flex text-[11px] font-bold text-gray-600 uppercase tracking-tight border-b border-gray-200 pb-2">
-                            <div class="w-1/2">Key</div>
-                            <div class="w-1/2">Value</div>
-                        </div>
-                        <div v-for="tag in s3Store.currentFile.tags" :key="tag.key"
-                            class="flex text-xs py-2 border-b border-gray-50 last:border-0">
-                            <div class="w-1/2 text-gray-900">{{ tag.key }}</div>
-                            <div class="w-1/2 text-gray-900">{{ tag.value }}</div>
+                    <div v-if="s3Store.currentFile?.tags?.length" class="p-8">
+                        <div class="border-2 border-[#eaeded] overflow-hidden">
+                            <table class="w-full text-left italic">
+                                <thead class="bg-[#fafafa] border-b-2 border-[#eaeded]">
+                                    <tr class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">
+                                        <th class="px-6 py-4 border-r-2 border-[#eaeded]">Key</th>
+                                        <th class="px-6 py-4">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="tag in s3Store.currentFile.tags" :key="tag.key"
+                                        class="text-[12px] text-[#232f3e] font-black border-b-2 border-[#eaeded] last:border-0 hover:bg-[#fafafa] transition-colors uppercase tracking-tight">
+                                        <td class="px-6 py-4 border-r-2 border-[#eaeded]">{{ tag.key }}</td>
+                                        <td class="px-6 py-4">{{ tag.value }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
-                    <div v-else class="p-8 text-center text-xs text-gray-500 italic">
-                        No tags associated with this resource.
+                    <div v-else class="p-16 text-center italic">
+                        <p class="text-[11px] text-[#545b64] font-black uppercase tracking-[0.2em]">No tags associated
+                            with this resource.</p>
                     </div>
                 </div>
 
                 <!-- Metadata -->
-                <div class="border border-gray-200 rounded-sm bg-white overflow-hidden">
-                    <div class="p-4 border-b border-gray-200">
-                        <h2 class="text-sm font-bold text-gray-900">Metadata (1)</h2>
-                        <p class="text-[10px] text-gray-500">Metadata is optional information provided as a name-value
-                            (key-value) pair. <span class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn
-                                more ↗</span></p>
+                <div class="bg-white border-2 border-[#eaeded] shadow-sm overflow-hidden">
+                    <div class="p-6 border-b-2 border-[#eaeded] bg-[#fafafa]">
+                        <h2 class="text-[12px] font-black text-[#232f3e] uppercase tracking-[0.2em] italic">Metadata
+                        </h2>
                     </div>
-                    <div class="p-4">
-                        <div
-                            class="flex text-[11px] font-bold text-gray-600 uppercase tracking-tight border-b border-gray-200 pb-2">
-                            <div class="w-1/3">Type</div>
-                            <div class="w-1/3">Key</div>
-                            <div class="w-1/3">Value</div>
+                    <div class="p-8">
+                        <div class="border-2 border-[#eaeded] overflow-hidden">
+                            <table class="w-full text-left italic">
+                                <thead class="bg-[#fafafa] border-b-2 border-[#eaeded]">
+                                    <tr class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">
+                                        <th class="px-6 py-4 border-r-2 border-[#eaeded]">Type</th>
+                                        <th class="px-6 py-4 border-r-2 border-[#eaeded]">Key</th>
+                                        <th class="px-6 py-4">Value</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        class="text-[12px] text-[#232f3e] font-black border-b-2 border-[#eaeded] last:border-0 hover:bg-[#fafafa] transition-colors uppercase tracking-tight">
+                                        <td class="px-6 py-4 border-r-2 border-[#eaeded] text-[#545b64]">System defined
+                                        </td>
+                                        <td class="px-6 py-4 border-r-2 border-[#eaeded]">Content-Type</td>
+                                        <td class="px-6 py-4">{{ s3Store.currentFile?.mime_type ||
+                                            'application/octet-stream' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
-                        <div class="flex text-xs py-2">
-                            <div class="w-1/3 text-gray-900">System defined</div>
-                            <div class="w-1/3 text-gray-900">Content-Type</div>
-                            <div class="w-1/3 text-gray-900">{{ s3Store.currentFile?.mime_type || 'application/zip' }}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Object Lock -->
-                <div class="border border-gray-200 rounded-sm bg-white overflow-hidden">
-                    <div class="p-4 border-b border-gray-200">
-                        <h2 class="text-sm font-bold text-gray-900">Object Lock</h2>
-                        <p class="text-[10px] text-gray-500">Store objects using a write-once-read-many (WORM) model to
-                            help you prevent objects from being deleted or overwritten for a fixed amount of time or
-                            indefinitely. Object Lock works only in versioned buckets. <span
-                                class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn more ↗</span></p>
-                    </div>
-                    <div class="p-4">
-                        <p class="text-[10px] text-gray-500 font-bold uppercase tracking-tight mb-1">Object Lock</p>
-                        <p class="text-xs text-gray-900 font-medium">Disabled</p>
-                    </div>
-                    <div class="p-4 bg-blue-50/30 border-t border-blue-100 flex justify-between items-center">
-                        <div class="flex items-center gap-2 text-xs text-gray-700">
-                            <svg class="w-4 h-4 text-[var(--aws-blue)]" fill="currentColor" viewBox="0 0 20 20">
-                                <path fill-rule="evenodd"
-                                    d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                                    clip-rule="evenodd" />
-                            </svg>
-                            This bucket doesn't have Object Lock enabled. You can enable Object Lock for a versioned
-                            bucket under the bucket's <b>properties</b> tab. <span
-                                class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn more ↗</span>
-                        </div>
-                        <button @click="showObjectLockModal = true"
-                            class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors flex items-center gap-1">
-                            Edit Object Lock ↗
-                        </button>
                     </div>
                 </div>
             </div>
 
             <!-- Tab Content (Permissions) -->
-            <div v-else-if="activeTab === 'permissions'" class="space-y-6">
-                <div class="border border-gray-200 rounded-sm bg-white overflow-hidden">
-                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                        <h2 class="text-sm font-bold text-gray-900">Access control list (ACL)</h2>
+            <div v-else-if="activeTab === 'permissions'"
+                class="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div class="bg-white border-2 border-[#eaeded] shadow-sm overflow-hidden">
+                    <div class="p-6 border-b-2 border-[#eaeded] flex justify-between items-center bg-[#fafafa]">
+                        <h2 class="text-[12px] font-black text-[#232f3e] uppercase tracking-[0.2em] italic">Access
+                            control list (ACL)</h2>
                         <button
-                            class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">
+                            class="px-5 py-2 text-[10px] font-black border-2 border-[#eaeded] text-[#232f3e] hover:border-[#ff9900] transition-all italic bg-white uppercase tracking-widest">
                             Edit
                         </button>
                     </div>
-                    <div class="p-4">
-                        <p class="text-xs text-gray-600 mb-4">You can use ACLs to grant basic read/write permissions to
-                            other AWS accounts.</p>
-
-                        <div class="border border-gray-200 rounded-sm overflow-hidden">
-                            <table class="w-full text-left text-xs text-gray-900">
-                                <thead class="bg-gray-50 border-b border-gray-200">
-                                    <tr>
-                                        <th class="px-4 py-2 font-bold text-gray-700 uppercase tracking-tight">Grantee
-                                        </th>
-                                        <th class="px-4 py-2 font-bold text-gray-700 uppercase tracking-tight">Objects
-                                        </th>
-                                        <th class="px-4 py-2 font-bold text-gray-700 uppercase tracking-tight">Object
-                                            ACL</th>
+                    <div class="p-8">
+                        <p class="text-[11px] text-[#545b64] font-bold uppercase tracking-tight italic mb-8">
+                            You can use ACLs to grant basic read/write permissions to other AWS accounts.
+                        </p>
+                        <div class="border-2 border-[#eaeded] overflow-hidden">
+                            <table class="w-full text-left italic">
+                                <thead class="bg-[#fafafa] border-b-2 border-[#eaeded]">
+                                    <tr class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">
+                                        <th class="px-6 py-4 border-r-2 border-[#eaeded]">Grantee</th>
+                                        <th class="px-6 py-4 border-r-2 border-[#eaeded]">Objects</th>
+                                        <th class="px-6 py-4">Object ACL</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     <tr
-                                        class="border-b border-gray-100 last:border-0 hover:bg-gray-50 transition-colors">
-                                        <td class="px-4 py-3">
-                                            <p class="font-bold">Bucket owner (your AWS account)</p>
-                                            <p class="text-[10px] text-gray-500">
+                                        class="text-[12px] text-[#232f3e] font-black border-b-2 border-[#eaeded] last:border-0 hover:bg-[#fafafa] transition-colors italic">
+                                        <td class="px-6 py-4 border-r-2 border-[#eaeded]">
+                                            <p class="uppercase tracking-tight">Bucket owner (your account)</p>
+                                            <p class="text-[9px] text-[#545b64] mt-1 break-all">
                                                 a80eb1031764ce392d55d37678e6efc4eecab7506f540e81ffbf2390f7ebc7f7</p>
                                         </td>
-                                        <td class="px-4 py-3">
-                                            <div class="flex items-center gap-2">
-                                                <svg class="w-4 h-4 text-green-600 shrink-0" fill="currentColor"
-                                                    viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clip-rule="evenodd" />
-                                                </svg>
-                                                Read, Write
-                                            </div>
+                                        <td class="px-6 py-4 border-r-2 border-[#eaeded]">
+                                            <span
+                                                class="text-[#ff9900] font-black uppercase tracking-widest text-[10px]">Read,
+                                                Write</span>
                                         </td>
-                                        <td class="px-4 py-3">
-                                            <div class="flex items-center gap-2">
-                                                <svg class="w-4 h-4 text-green-600 shrink-0" fill="currentColor"
-                                                    viewBox="0 0 20 20">
-                                                    <path fill-rule="evenodd"
-                                                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                        clip-rule="evenodd" />
-                                                </svg>
-                                                Read, Write
-                                            </div>
+                                        <td class="px-6 py-4">
+                                            <span
+                                                class="text-[#ff9900] font-black uppercase tracking-widest text-[10px]">Read,
+                                                Write</span>
                                         </td>
                                     </tr>
                                 </tbody>
@@ -518,63 +538,69 @@ const handleSaveObjectLock = (enabled: boolean) => {
             </div>
 
             <!-- Tab Content (Versions) -->
-            <div v-else-if="activeTab === 'versions'" class="space-y-6">
-                <div class="border border-gray-200 rounded-sm bg-white overflow-hidden">
-                    <div class="p-4 border-b border-gray-200 flex justify-between items-center">
-                        <div>
-                            <h2 class="text-sm font-bold text-gray-900">Versions</h2>
-                            <p class="text-[10px] text-gray-500">Bucket versioning is enabled. You can see historical
-                                versions of this object below.</p>
-                        </div>
-                        <div class="flex gap-2">
+            <div v-else-if="activeTab === 'versions'"
+                class="space-y-12 animate-in fade-in slide-in-from-bottom-4 duration-500">
+                <div class="bg-white border-2 border-[#eaeded] shadow-sm overflow-hidden">
+                    <div class="p-6 border-b-2 border-[#eaeded] flex justify-between items-center bg-[#fafafa]">
+                        <h2 class="text-[12px] font-black text-[#232f3e] uppercase tracking-[0.2em] italic">Object
+                            Versions</h2>
+                        <div class="flex gap-3">
                             <button
-                                class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">
+                                class="px-5 py-2 text-[10px] font-black border-2 border-[#eaeded] text-[#232f3e] hover:border-[#ff9900] transition-all italic bg-white uppercase tracking-widest">
                                 Download
                             </button>
                             <button
-                                class="px-3 py-1 text-xs font-bold border border-gray-300 rounded-sm hover:bg-gray-50 transition-colors">
+                                class="px-5 py-2 text-[10px] font-black bg-[#232f3e] text-white hover:bg-rose-600 transition-all italic uppercase tracking-widest">
                                 Delete
                             </button>
                         </div>
                     </div>
 
-                    <div class="overflow-x-auto">
-                        <table class="w-full text-left text-xs text-gray-900">
-                            <thead class="bg-gray-50 border-b border-gray-200">
-                                <tr>
-                                    <th
-                                        class="px-4 py-2 font-bold text-gray-700 uppercase tracking-tight w-10 text-center">
-                                        <input type="checkbox" class="rounded-sm border-gray-300">
-                                    </th>
-                                    <th class="px-4 py-2 font-bold text-gray-700 uppercase tracking-tight">Version ID
-                                    </th>
-                                    <th class="px-4 py-2 font-bold text-gray-700 uppercase tracking-tight">Last modified
-                                    </th>
-                                    <th class="px-4 py-2 font-bold text-gray-700 uppercase tracking-tight">Size</th>
-                                    <th class="px-4 py-2 font-bold text-gray-700 uppercase tracking-tight">Storage class
-                                    </th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr
-                                    class="border-b border-gray-100 last:border-0 hover:bg-blue-50/30 cursor-pointer transition-colors">
-                                    <td class="px-4 py-3 text-center">
-                                        <input type="checkbox" checked class="rounded-sm border-gray-300">
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-bold">Current version</span>
-                                            <span
-                                                class="px-1.5 py-0.5 bg-blue-100 text-[9px] text-[var(--aws-blue)] font-bold rounded-sm uppercase tracking-tight">Latest</span>
-                                        </div>
-                                        <p class="text-[10px] text-gray-500 mt-0.5 font-mono">null</p>
-                                    </td>
-                                    <td class="px-4 py-3">{{ formatDate(s3Store.currentFile?.last_modified) }}</td>
-                                    <td class="px-4 py-3">{{ formatSize(s3Store.currentFile?.size) }}</td>
-                                    <td class="px-4 py-3">{{ s3Store.currentFile?.storage_class || 'Standard' }}</td>
-                                </tr>
-                            </tbody>
-                        </table>
+                    <div class="p-0">
+                        <div class="border-t-0 overflow-hidden">
+                            <table class="w-full text-left italic">
+                                <thead class="bg-[#fafafa] border-b-2 border-[#eaeded]">
+                                    <tr class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">
+                                        <th class="px-6 py-4 border-r-2 border-[#eaeded] w-16 text-center italic">
+                                            <div
+                                                class="w-5 h-5 border-2 border-[#eaeded] bg-white flex items-center justify-center mx-auto">
+                                            </div>
+                                        </th>
+                                        <th class="px-6 py-4 border-r-2 border-[#eaeded]">Version ID</th>
+                                        <th class="px-6 py-4 border-r-2 border-[#eaeded]">Last modified</th>
+                                        <th class="px-6 py-4 border-r-2 border-[#eaeded]">Size</th>
+                                        <th class="px-6 py-4">Storage class</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr
+                                        class="text-[13px] text-[#232f3e] font-black border-b-2 border-[#eaeded] last:border-0 hover:bg-[#fafafa] transition-colors italic">
+                                        <td class="px-6 py-6 border-r-2 border-[#eaeded] text-center">
+                                            <div
+                                                class="w-5 h-5 border-2 border-[#ff9900] bg-[#ff9900]/10 flex items-center justify-center mx-auto">
+                                                <div class="w-2 h-2 bg-[#ff9900]"></div>
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-6 border-r-2 border-[#eaeded]">
+                                            <div class="flex items-center gap-3">
+                                                <span class="uppercase tracking-tight">Current version</span>
+                                                <span
+                                                    class="px-3 py-1 bg-[#ff9900] text-[#232f3e] text-[9px] font-black uppercase tracking-widest shadow-sm">Latest</span>
+                                            </div>
+                                            <p class="text-[10px] text-[#545b64] mt-2 font-mono uppercase">null</p>
+                                        </td>
+                                        <td
+                                            class="px-6 py-6 border-r-2 border-[#eaeded] uppercase text-[#545b64] text-[11px] font-bold">
+                                            {{ formatDate(s3Store.currentFile?.last_modified) }}</td>
+                                        <td class="px-6 py-6 border-r-2 border-[#eaeded] uppercase tracking-tight">{{
+                                            formatSize(s3Store.currentFile?.size) }}</td>
+                                        <td
+                                            class="px-6 py-6 font-black text-[#ff9900] text-[10px] uppercase tracking-[0.2em]">
+                                            {{ s3Store.currentFile?.storage_class || 'Standard' }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -595,3 +621,9 @@ const handleSaveObjectLock = (enabled: boolean) => {
     <EditObjectLockModal v-if="showObjectLockModal" :isOpen="showObjectLockModal" @close="showObjectLockModal = false"
         @save="handleSaveObjectLock" />
 </template>
+
+<style scoped>
+.font-urbanist {
+    font-family: 'Urbanist', sans-serif;
+}
+</style>

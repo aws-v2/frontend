@@ -1,299 +1,600 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
-import DatabaseActionsDropdown from '../components/DatabaseActionsDropdown.vue'
-import type { Database } from '../types/database'
+import { useRdsStore } from '../store/rdsStore'
+import { useDocsStore } from '../../docs/store/docsStore'
+import PublicNavbar from '@/shared/components/PublicNavbar.vue'
 
 const router = useRouter()
+const rdsStore = useRdsStore()
+const docsStore = useDocsStore()
 
-// Mock database data - showing different states
-const databases = ref<Database[]>([
-    {
-        id: '1',
-        identifier: 'database-1',
-        status: 'available',
-        role: 'Regional cluster',
-        engine: 'Aurora PostgreSQL',
-        regionAz: 'eu-north-1',
-        size: '1 instance',
-        createdAt: 'Serverless v2 (0.5-...',
-        vpc: 'none',
-        multiAz: false,
-        recommendations: 2
-    },
-    {
-        id: '2',
-        identifier: 'database-1-instance-1',
-        status: 'creating',
-        role: 'Writer instance',
-        engine: 'Aurora PostgreSQL',
-        regionAz: 'eu-north-1a',
-        size: 'Serverless v2 (0.5-...',
-        createdAt: 'Serverless v2 (0.5-...',
-        vpc: 'none',
-        multiAz: false
-    }
-])
-
-const isSuccessBannerVisible = ref(true)
-
-// Simulate status update
-onMounted(() => {
-    setTimeout(() => {
-        const instance = databases.value.find(db => db.status === 'creating')
-        if (instance) {
-            instance.status = 'available'
-            console.log('Database instance is now available')
-        }
-    }, 10000) // Change status after 10 seconds
+onMounted(async () => {
+    await rdsStore.fetchDatabases()
+    await rdsStore.fetchVolumes()
+    await rdsStore.fetchAggregateMetrics()
 })
 
-const selectedDatabases = ref<string[]>([])
-const showList = ref(true) // Toggle between empty state and list
+const searchQuery = ref('')
 
-const toggleSelectAll = () => {
-    if (selectedDatabases.value.length === databases.value.length) {
-        selectedDatabases.value = []
-    } else {
-        selectedDatabases.value = databases.value.map(db => db.id)
+const filtered = computed(() => {
+    const q = searchQuery.value.toLowerCase()
+    return rdsStore.databases.filter(db =>
+        db.name.toLowerCase().includes(q) || (db.engine || '').toLowerCase().includes(q)
+    )
+})
+
+const latestFive = computed(() => filtered.value.slice(0, 5))
+
+const aggregateStats = computed(() => rdsStore.aggregateMetrics?.summary || {
+    totalDatabases: 0,
+    totalCpuUsage: 0,
+    totalMemoryUsage: 0,
+    totalConnections: 0,
+    totalDiskUsage: 0,
+    unitCpu: '%',
+    unitMemory: 'MB',
+    unitDisk: 'GB'
+})
+
+const stats = computed(() => ({
+    total: rdsStore.databases.length,
+    available: rdsStore.databases.filter(i => i.status?.toLowerCase() === 'available').length,
+    creating: rdsStore.databases.filter(i => ['creating', 'modifying'].includes(i.status?.toLowerCase() || '')).length,
+    multiAZ: 0,
+}))
+
+const breakdown = computed(() => rdsStore.aggregateMetrics?.breakdown || [])
+const history = computed(() => rdsStore.aggregateMetrics?.history || [])
+
+const barChartData = computed(() => {
+    if (!breakdown.value.length) return []
+    const maxVal = Math.max(...breakdown.value.map(d => Math.max(d.cpu, (d.memory / 1024) * 10)), 5)
+    return breakdown.value.map((d, i) => ({
+        x: i * 60 + 40,
+        hCpu: (d.cpu / maxVal) * 80,
+        hMem: ((d.memory / 1024) * 10 / maxVal) * 80,
+        name: d.name
+    }))
+})
+
+const lineChartPaths = computed(() => {
+    if (!history.value.length) return { cpu: '', mem: '' }
+    const maxCpu = Math.max(...history.value.map(h => h.cpu), 1)
+    const maxMem = Math.max(...history.value.map(h => h.memory), 1)
+
+    const cpuPoints = history.value.map((h, i) => {
+        const x = (i / (history.value.length - 1)) * 400
+        const y = 120 - (h.cpu / maxCpu) * 100
+        return `${x},${y}`
+    })
+
+    const memPoints = history.value.map((h, i) => {
+        const x = (i / (history.value.length - 1)) * 400
+        const y = 120 - (h.memory / maxMem) * 100
+        return `${x},${y}`
+    })
+
+    return {
+        cpu: `M ${cpuPoints.join(' L ')}`,
+        mem: `M ${memPoints.join(' L ')}`
+    }
+})
+
+const statusClass = (status: string) => {
+    switch (status?.toLowerCase()) {
+        case 'available': return 'text-emerald-600 bg-emerald-50 border-emerald-200'
+        case 'creating': return 'text-amber-600 bg-amber-50 border-amber-200'
+        case 'modifying': return 'text-blue-600 bg-blue-50 border-blue-200'
+        case 'deleting': return 'text-red-600 bg-red-50 border-red-200'
+        case 'stopped': return 'text-[#879196] bg-[#fafafa] border-[#eaeded]'
+        default: return 'text-[#545b64] bg-[#fafafa] border-[#eaeded]'
     }
 }
 
-const toggleSelect = (id: string) => {
-    const index = selectedDatabases.value.indexOf(id)
-    if (index > -1) {
-        selectedDatabases.value.splice(index, 1)
-    } else {
-        selectedDatabases.value.push(id)
-    }
-}
-
-const getStatusColor = (status: Database['status']) => {
-    const colors = {
-        creating: 'text-orange-600 bg-orange-50',
-        available: 'text-green-600 bg-green-50',
-        'backing-up': 'text-blue-600 bg-blue-50',
-        modifying: 'text-yellow-600 bg-yellow-50',
-        deleting: 'text-red-600 bg-red-50',
-        stopped: 'text-gray-600 bg-gray-50'
-    }
-    return colors[status] || 'text-gray-600 bg-gray-50'
-}
-
-const handleAction = (actionId: string) => {
-    console.log('Action:', actionId, 'on databases:', selectedDatabases.value)
-    if (actionId === 'modify' && selectedDatabases.value.length === 1) {
-        const dbId = databases.value.find(db => db.id === selectedDatabases.value[0])?.identifier || selectedDatabases.value[0]
-        router.push(`/rds/modify/${dbId}`)
-    }
-}
-
-const createDatabase = () => {
-    router.push('/rds/create')
-}
-
-const refreshDatabases = () => {
-    console.log('Refreshing databases...')
-}
+const goBack = () => router.push('/dashboard')
 </script>
 
 <template>
-    <div class="min-h-screen bg-[var(--bg-console)]">
-        <!-- Breadcrumbs -->
-        <nav
-            class="bg-white border-b border-gray-200 px-6 py-2 flex items-center gap-2 text-xs font-medium text-gray-500">
-            <a href="#" @click.prevent="router.push('/dashboard')"
-                class="hover:text-[var(--aws-blue)] hover:underline uppercase tracking-wider text-[10px]">AWS</a>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            <span class="text-gray-900">RDS</span>
-            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path d="M9 5l7 7-7 7" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-            </svg>
-            <span class="text-gray-900">Databases</span>
-        </nav>
+    <div class="min-h-screen bg-white text-[#16191f] font-urbanist selection:bg-amber-500/20 selection:text-amber-900">
+        <PublicNavbar activeLink="compute" />
 
-        <div class="px-8 py-6">
-            <!-- Success Banner (shown after database creation) -->
-            <div v-if="databases.length > 0 && isSuccessBannerVisible"
-                class="bg-[#ebf5fb] border border-[#0073bb] rounded-sm p-4 mb-6 flex items-start gap-3">
-                <svg class="w-5 h-5 text-[#0073bb] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
-                        clip-rule="evenodd" />
-                </svg>
-                <div class="flex-grow">
-                    <p class="text-sm font-bold text-gray-900">Successfully created database database-1</p>
-                    <p class="text-xs text-gray-700 mt-1">You can use settings from database-1 to simplify configuration
-                        of suggested database add-ons while we finish creating your DB for you.</p>
-                </div>
-                <div class="flex items-center gap-3">
-                    <button
-                        class="bg-white border border-gray-300 px-4 py-1.5 rounded-sm text-xs font-bold text-gray-700 hover:bg-gray-50 transition-colors">
-                        View connection details
-                    </button>
-                    <button @click="isSuccessBannerVisible = false" class="text-gray-500 hover:text-gray-700 p-1">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path d="M6 18L18 6M6 6l12 12" stroke-width="2" stroke-linecap="round"
-                                stroke-linejoin="round" />
-                        </svg>
-                    </button>
-                </div>
+        <div class="relative pt-24 pb-40">
+            <!-- Grid Background -->
+            <div
+                class="absolute inset-0 bg-[linear-gradient(rgba(251,191,36,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(251,191,36,0.06)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none">
             </div>
 
-            <!-- Header -->
-            <div class="flex items-center justify-between mb-6">
-                <div>
-                    <h1 class="text-2xl font-bold text-gray-900 mb-1">Databases ({{ databases.length }})</h1>
-                    <p class="text-xs text-gray-600">Amazon RDS makes it easy to set up, operate, and scale a relational
-                        database in the cloud.</p>
-                </div>
-                <div class="flex gap-3">
-                    <button @click="refreshDatabases" class="btn-aws-secondary flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path
-                                d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                                stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                        </svg>
-                        Refresh
-                    </button>
-                    <button v-if="selectedDatabases.length === 1" @click="handleAction('modify')"
-                        class="btn-aws-secondary">
-                        Modify
-                    </button>
-                    <DatabaseActionsDropdown v-if="selectedDatabases.length > 0" @action="handleAction" />
-                    <button class="btn-aws-secondary">Restore from S3</button>
-                    <button @click="createDatabase" class="btn-aws-primary">Create database</button>
-                </div>
-            </div>
+            <div class="relative z-10 max-w-7xl mx-auto px-6">
 
-            <!-- Database List (when databases exist) -->
-            <div v-if="databases.length > 0" class="aws-card rounded-sm overflow-hidden">
-                <!-- Filter bar -->
-                <div class="bg-gray-50 border-b border-gray-200 px-4 py-3 flex items-center gap-4">
-                    <div class="flex-grow">
-                        <div class="relative">
-                            <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400"
-                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" stroke-width="2"
-                                    stroke-linecap="round" stroke-linejoin="round" />
+                <!-- Breadcrumbs -->
+                <nav class="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] mb-12">
+                    <button @click="goBack"
+                        class="text-[#879196] hover:text-amber-600 transition-colors">Dashboard</button>
+                    <span class="text-[#eaeded] font-light">/</span>
+                    <span class="text-amber-600 italic">Managed_Database</span>
+                </nav>
+
+                <!-- Header -->
+                <div
+                    class="flex flex-col lg:flex-row lg:items-end justify-between gap-10 mb-16 px-12 py-12 border-4 border-[#232f3e] bg-white relative overflow-hidden group">
+                    <div
+                        class="absolute right-0 top-0 w-80 h-80 bg-amber-500/5 -rotate-45 translate-x-32 -translate-y-40">
+                    </div>
+                    <div class="flex items-start gap-10">
+                        <div
+                            class="w-24 h-24 border-4 border-[#232f3e] flex items-center justify-center text-[#232f3e] group-hover:bg-amber-500 group-hover:text-white transition-all shadow-[8px_8px_0px_#232f3e]">
+                            <svg class="w-12 h-12" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
                             </svg>
-                            <input type="text" placeholder="Filter databases"
-                                class="pl-10 pr-4 py-1.5 text-xs border border-gray-300 rounded-sm w-64 focus:outline-none focus:ring-2 focus:ring-[var(--aws-blue)] focus:border-transparent" />
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-4 mb-4">
+                                <h1 class="text-6xl font-black text-[#232f3e] tracking-tighter uppercase leading-none">
+                                    Managed_Database</h1>
+                                <button @click="docsStore.openHelp('rds', 'rds-overview')"
+                                    class="flex items-center gap-2 px-4 py-2 bg-white border-2 border-[#232f3e] text-[10px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-white transition-all shadow-[4px_4px_0px_#232f3e] active:translate-y-0.5 active:shadow-none translate-y-[-4px]">
+                                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                    </svg>
+                                    Help_Center
+                                </button>
+                            </div>
+                            <div class="flex items-center gap-6">
+                                <p class="text-xl text-[#545b64] font-medium leading-relaxed max-w-xl">Centralized
+                                    control for relational fleet orchestration, point-in-time recovery, and elastic
+                                    performance.</p>
+                                <div class="w-px h-10 bg-[#eaeded]"></div>
+                                <div class="flex flex-col">
+                                    <span
+                                        class="text-[10px] font-black text-[#879196] uppercase tracking-widest">Service
+                                        Status</span>
+                                    <span
+                                        class="text-xs font-black text-emerald-600 uppercase tracking-widest flex items-center gap-1">
+                                        <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Fully Operational
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex gap-4">
+                        <!-- Broad info preview -->
+                        <div class="px-8 py-6 bg-[#fafafa] border-2 border-[#eaeded] min-w-[240px]">
+                            <span
+                                class="block text-[8px] font-black text-[#879196] uppercase tracking-[0.3em] mb-3">Recent_Event_Stream</span>
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-3">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-500"></span>
+                                    <span
+                                        class="text-[10px] font-bold text-[#545b64] uppercase truncate">Backup_Retention_Check</span>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>
+                                    <span
+                                        class="text-[10px] font-bold text-[#545b64] uppercase truncate">Patching_Window_Synced</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Table -->
-                <div class="overflow-x-auto">
-                    <table class="w-full text-xs">
-                        <thead class="bg-gray-50 border-b border-gray-200">
-                            <tr>
-                                <th class="py-2 px-4 text-left">
-                                    <input type="checkbox" :checked="selectedDatabases.length === databases.length"
-                                        @change="toggleSelectAll"
-                                        class="w-4 h-4 rounded border-gray-300 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)]" />
-                                </th>
-                                <th class="py-2 px-4 text-left font-bold text-gray-700">DB identifier</th>
-                                <th class="py-2 px-4 text-left font-bold text-gray-700">Status</th>
-                                <th class="py-2 px-4 text-left font-bold text-gray-700">Role</th>
-                                <th class="py-2 px-4 text-left font-bold text-gray-700">Engine</th>
-                                <th class="py-2 px-4 text-left font-bold text-gray-700">Region-az</th>
-                                <th class="py-2 px-4 text-left font-bold text-gray-700">Size</th>
-                                <th class="py-2 px-4 text-left font-bold text-gray-700">Recommendations</th>
-                                <th class="py-2 px-4 text-left font-bold text-gray-700">CPU</th>
-                                <th class="py-2 px-4 text-left font-bold text-gray-700">Created</th>
-                                <th class="py-2 px-4 text-left font-bold text-gray-700">VPC</th>
-                                <th class="py-2 px-4 text-left font-bold text-gray-700">Multi-AZ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="db in databases" :key="db.id"
-                                class="border-b border-gray-100 hover:bg-gray-50 transition-colors">
-                                <td class="py-3 px-4">
-                                    <input type="checkbox" :checked="selectedDatabases.includes(db.id)"
-                                        @change="toggleSelect(db.id)"
-                                        class="w-4 h-4 rounded border-gray-300 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)]" />
-                                </td>
-                                <td class="py-3 px-4">
-                                    <a href="#" class="text-[var(--aws-blue)] hover:underline font-medium">{{
-                                        db.identifier }}</a>
-                                </td>
-                                <td class="py-3 px-4">
-                                    <span
-                                        class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium"
-                                        :class="getStatusColor(db.status)">
-                                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
-                                        {{ db.status.charAt(0).toUpperCase() + db.status.slice(1) }}
-                                    </span>
-                                </td>
-                                <td class="py-3 px-4 text-gray-700">{{ db.role }}</td>
-                                <td class="py-3 px-4 text-gray-700">{{ db.engine }}</td>
-                                <td class="py-3 px-4 text-gray-700">{{ db.regionAz }}</td>
-                                <td class="py-3 px-4 text-gray-700">{{ db.size }}</td>
-                                <td class="py-3 px-4">
-                                    <span v-if="db.recommendations"
-                                        class="inline-flex items-center gap-1 text-[var(--aws-blue)]">
-                                        <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
-                                            <path
-                                                d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
-                                        </svg>
-                                        {{ db.recommendations }} recommendation
-                                    </span>
-                                    <span v-else class="text-gray-400">-</span>
-                                </td>
-                                <td class="py-3 px-4 text-gray-700">{{ db.cpu || '-' }}</td>
-                                <td class="py-3 px-4 text-gray-700">{{ db.createdAt }}</td>
-                                <td class="py-3 px-4 text-gray-700">{{ db.vpc }}</td>
-                                <td class="py-3 px-4 text-gray-700">{{ db.multiAz ? 'Yes' : 'No' }}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <!-- Stats Row -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-0 border-4 border-[#232f3e] mb-12">
+                    <div v-for="stat in [
+                        { label: 'Total Instances', value: stats.total, color: 'text-[#232f3e]' },
+                        { label: 'Available', value: stats.available, color: 'text-emerald-600' },
+                        { label: 'Provisioning', value: stats.creating, color: 'text-amber-600' },
+                        { label: 'Multi-AZ', value: stats.multiAZ, color: 'text-blue-600' },
+                    ]" :key="stat.label"
+                        class="p-8 border-r-4 last:border-r-0 border-[#232f3e] hover:bg-[#fafafa] transition-colors">
+                        <span
+                            class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-4 italic">{{
+                                stat.label }}</span>
+                        <span class="text-5xl font-black tracking-tighter uppercase" :class="stat.color">{{ stat.value
+                        }}</span>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Empty State (when no databases) -->
-            <div v-else class="aws-card p-12 rounded-sm text-center">
-                <div class="max-w-2xl mx-auto">
-                    <svg class="w-16 h-16 mx-auto mb-4 text-gray-400" fill="none" stroke="currentColor"
-                        viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
-                            d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-                    </svg>
-                    <h2 class="text-xl font-bold text-gray-900 mb-2">No databases</h2>
-                    <p class="text-sm text-gray-600 mb-6">You don't have any RDS database instances yet. Create your
-                        first
-                        database to get started.</p>
-                    <button @click="createDatabase" class="btn-aws-primary">Create database</button>
+                <!-- Metrics Strip -->
+                <div class="mb-12 p-10 border-4 border-[#eaeded] bg-[#fafafa] flex flex-wrap gap-10 items-center">
+                    <div>
+                        <span class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-1">Engine
+                            Mix</span>
+                        <div class="flex gap-3 mt-2">
+                            <span v-for="eng in ['PostgreSQL', 'MySQL', 'Aurora']" :key="eng"
+                                class="px-3 py-1 border-2 border-[#232f3e] text-[10px] font-black uppercase tracking-widest text-[#232f3e]">{{
+                                    eng }}</span>
+                        </div>
+                    </div>
+                    <div class="w-px h-12 bg-[#eaeded]"></div>
+                    <div>
+                        <span
+                            class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-1">Region</span>
+                        <span class="text-sm font-black text-[#232f3e] uppercase">eu-north-1</span>
+                    </div>
+                    <div class="w-px h-12 bg-[#eaeded]"></div>
+                    <div>
+                        <span class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-1">Default
+                            Port</span>
+                        <span class="text-sm font-black text-[#232f3e]">5432 / 3306</span>
+                    </div>
+                    <div class="ml-auto">
+                        <button @click="rdsStore.fetchDatabases()"
+                            class="px-6 py-3 border-2 border-[#232f3e] text-[#232f3e] text-[10px] font-black uppercase tracking-widest hover:bg-[#232f3e] hover:text-white transition-all">
+                            ↺ Refresh
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <!-- Info Cards -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
-                <div class="aws-card p-5 rounded-sm">
-                    <h3 class="text-sm font-bold text-gray-900 mb-2">Getting started</h3>
-                    <p class="text-xs text-gray-600 mb-3">Learn how to create and manage your first database instance.
-                    </p>
-                    <a href="#" class="text-xs font-bold text-[var(--aws-blue)] hover:underline">View tutorial →</a>
+                <!-- Fleet Telemetry Overview (Dashboard) -->
+                <div class="mb-16">
+                    <div class="flex items-center gap-4 mb-8">
+                        <div class="h-8 w-2 bg-amber-500"></div>
+                        <h2 class="text-3xl font-black text-[#232f3e] uppercase tracking-tighter italic">
+                            Fleet_Telemetry_Overview</h2>
+                    </div>
+
+                    <!-- Aggregate Stat Cards -->
+                    <div class="grid grid-cols-1 md:grid-cols-5 gap-6 mb-8">
+                        <div v-for="stat in [
+                            { label: 'Cloud_Nodes', value: aggregateStats.totalDatabases, unit: 'Nodes', color: 'text-[#232f3e]' },
+                            { label: 'Compute_Load', value: (aggregateStats.totalCpuUsage || 0).toFixed(1), unit: aggregateStats.unitCpu, color: 'text-[var(--aws-blue)]' },
+                            { label: 'Memory_Alloc', value: (aggregateStats.totalMemoryUsage || 0).toFixed(0), unit: aggregateStats.unitMemory, color: 'text-purple-600' },
+                            { label: 'Active_X-Links', value: aggregateStats.totalConnections || 0, unit: 'Sessions', color: 'text-emerald-600' },
+                            { label: 'Storage_Pool', value: (aggregateStats.totalDiskUsage || 0).toFixed(0), unit: aggregateStats.unitDisk, color: 'text-amber-600' },
+                        ]" :key="stat.label"
+                            class="bg-white border-4 border-[#232f3e] p-6 shadow-[6px_6px_0px_rgba(35,47,62,1)] hover:translate-x-1 hover:translate-y-1 hover:shadow-none transition-all cursor-crosshair">
+                            <span
+                                class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3 font-mono">//
+                                {{ stat.label }}</span>
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-4xl font-black tracking-tighter" :class="stat.color">{{ stat.value
+                                }}</span>
+                                <span class="text-[10px] font-bold text-[#879196] uppercase">{{ stat.unit }}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Charts Row -->
+                    <div class="grid lg:grid-cols-2 gap-8">
+                        <!-- Instance Resource Breakdown (Bar Chart) -->
+                        <div class="bg-white border-4 border-[#232f3e] p-10 relative overflow-hidden group">
+                            <div
+                                class="absolute inset-0 bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] [background-size:20px_20px] opacity-20 pointer-events-none">
+                            </div>
+                            <div class="relative z-10">
+                                <h3
+                                    class="text-xs font-black text-[#879196] uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                                    Resource_Breakdown_Map
+                                </h3>
+
+                                <div
+                                    class="h-[240px] w-full flex items-end justify-around gap-2 px-4 border-b-2 border-[#eaeded] relative">
+                                    <div v-if="!barChartData.length"
+                                        class="absolute inset-0 flex items-center justify-center">
+                                        <span
+                                            class="text-[10px] font-black text-[#879196] uppercase tracking-[0.3em]">No_Mapping_Data</span>
+                                    </div>
+                                    <!-- Bars -->
+                                    <div v-for="(bar, i) in barChartData" :key="i"
+                                        class="flex flex-col items-center group/bar w-12">
+                                        <div class="flex gap-1 items-end h-[180px]">
+                                            <!-- CPU Bar -->
+                                            <div :style="{ height: bar.hCpu + '%' }"
+                                                class="w-3 bg-[var(--aws-blue)] border border-[#232f3e] shadow-[2px_2px_0px_#232f3e] group-hover/bar:brightness-110 transition-all origin-bottom">
+                                            </div>
+                                            <!-- MEM Bar -->
+                                            <div :style="{ height: bar.hMem + '%' }"
+                                                class="w-3 bg-purple-500 border border-[#232f3e] shadow-[2px_2px_0px_#232f3e] group-hover/bar:brightness-110 transition-all origin-bottom">
+                                            </div>
+                                        </div>
+                                        <span
+                                            class="text-[9px] font-black text-[#879196] uppercase truncate w-full text-center mt-4 font-mono group-hover/bar:text-[#232f3e] transition-colors">{{
+                                                bar.name }}</span>
+                                    </div>
+
+                                    <!-- Guide Lines -->
+                                    <div class="absolute left-0 right-0 top-0 border-t border-[#eaeded] border-dashed">
+                                    </div>
+                                    <div
+                                        class="absolute left-0 right-0 top-1/2 border-t border-[#eaeded] border-dashed">
+                                    </div>
+                                </div>
+                                <div class="mt-6 flex gap-6 justify-center">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-2 h-2 bg-[var(--aws-blue)] border border-[#232f3e]"></div>
+                                        <span
+                                            class="text-[9px] font-black text-[#879196] uppercase tracking-widest">CPU_UTIL</span>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-2 h-2 bg-purple-500 border border-[#232f3e]"></div>
+                                        <span
+                                            class="text-[9px] font-black text-[#879196] uppercase tracking-widest">MEM_RESRV</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fleet Trend Analysis (Line Chart) -->
+                        <div class="bg-white border-4 border-[#232f3e] p-10 relative overflow-hidden group">
+                            <div
+                                class="absolute inset-0 bg-[linear-gradient(rgba(35,47,62,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(35,47,62,0.03)_1px,transparent_1px)] bg-[size:30px_30px] pointer-events-none">
+                            </div>
+                            <div class="relative z-10">
+                                <h3
+                                    class="text-xs font-black text-[#879196] uppercase tracking-[0.2em] mb-8 flex items-center gap-2">
+                                    <span class="w-1.5 h-1.5 bg-amber-500 rounded-full"></span>
+                                    Fleet_Trend_Orchestration
+                                </h3>
+
+                                <div class="h-[240px] w-full border-b-2 border-l-2 border-[#eaeded] relative pt-4">
+                                    <div v-if="!history.length"
+                                        class="absolute inset-0 flex items-center justify-center">
+                                        <span
+                                            class="text-[10px] font-black text-[#879196] uppercase tracking-[0.3em]">No_History_Stream</span>
+                                    </div>
+                                    <svg v-else viewBox="0 0 400 120" preserveAspectRatio="none"
+                                        class="w-full h-full overflow-visible">
+                                        <!-- CPU Trend -->
+                                        <path :d="lineChartPaths.cpu" fill="none" stroke="var(--aws-blue)"
+                                            stroke-width="4" stroke-linecap="round"
+                                            class="drop-shadow-[0_4px_8px_rgba(0,115,190,0.3)]" />
+                                        <!-- Memory Trend -->
+                                        <path :d="lineChartPaths.mem" fill="none" stroke="#a855f7" stroke-width="4"
+                                            stroke-linecap="round"
+                                            class="drop-shadow-[0_4px_8px_rgba(168,85,247,0.3)]" />
+                                    </svg>
+
+                                    <!-- Y-Axis Labels -->
+                                    <div
+                                        class="absolute -left-8 top-0 text-[8px] font-black text-[#879196]/40 uppercase tracking-tighter">
+                                        MAX</div>
+                                    <div
+                                        class="absolute -left-8 bottom-0 text-[8px] font-black text-[#879196]/40 uppercase tracking-tighter">
+                                        MIN</div>
+                                </div>
+                                <div
+                                    class="mt-6 flex justify-between items-center text-[10px] font-black uppercase text-[#879196] tracking-widest italic">
+                                    <span>T-60m</span>
+                                    <div class="flex gap-4">
+                                        <span class="flex items-center gap-1"><span
+                                                class="w-2 h-0.5 bg-[var(--aws-blue)]"></span> CPU_AVG</span>
+                                        <span class="flex items-center gap-1"><span
+                                                class="w-2 h-0.5 bg-purple-500"></span> MEM_AVG</span>
+                                    </div>
+                                    <span>REAL_TIME</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="aws-card p-5 rounded-sm">
-                    <h3 class="text-sm font-bold text-gray-900 mb-2">Database engines</h3>
-                    <p class="text-xs text-gray-600 mb-3">Choose from Aurora, MySQL, PostgreSQL, MariaDB, Oracle, and
-                        SQL Server.</p>
-                    <a href="#" class="text-xs font-bold text-[var(--aws-blue)] hover:underline">Learn more →</a>
+
+                <!-- DB Instances Table -->
+                <div
+                    class="border-4 border-[#232f3e] bg-white overflow-hidden shadow-[12px_12px_0px_rgba(35,47,62,0.05)]">
+                    <div
+                        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-6 px-10 py-8 border-b-4 border-[#232f3e] bg-[#fafafa]">
+                        <div>
+                            <h2 class="text-3xl font-black text-[#232f3e] uppercase tracking-tighter">Inventory_Registry
+                            </h2>
+                            <p
+                                class="text-[10px] font-black text-[#879196] uppercase tracking-[0.4em] mt-2 italic flex items-center gap-2">
+                                <span class="w-3 h-[2px] bg-amber-500"></span> Global instance orchestration
+                            </p>
+                        </div>
+                        <div class="flex items-center gap-6 w-full sm:w-auto">
+                            <input v-model="searchQuery" type="text" placeholder="Search registry..."
+                                class="px-4 py-3 border-4 border-[#232f3e] bg-white focus:ring-0 text-xs font-mono transition-all outline-none w-64 placeholder:text-[#879196]/50 shadow-[4px_4px_0px_rgba(234,237,238,0.5)]" />
+                            <button @click="router.push('/rds/create')"
+                                class="px-8 py-4 bg-amber-500 text-white font-black uppercase tracking-widest text-[10px] hover:bg-amber-600 transition-all shadow-[6px_6px_0px_#232f3e] active:translate-y-1 active:shadow-none whitespace-nowrap">
+                                + Deploy_Node
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Loading -->
+                    <div v-if="rdsStore.isLoading"
+                        class="py-16 text-center text-[10px] font-black tracking-widest uppercase text-[#879196] animate-pulse">
+                        FETCHING_INSTANCES...
+                    </div>
+
+                    <!-- Empty -->
+                    <div v-else-if="latestFive.length === 0" class="py-20 text-center">
+                        <div
+                            class="w-20 h-20 border-4 border-dashed border-[#eaeded] flex items-center justify-center mx-auto mb-8">
+                            <svg class="w-9 h-9 text-[#879196]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4" />
+                            </svg>
+                        </div>
+                        <p class="text-[10px] font-black tracking-widest uppercase text-[#879196] italic mb-6">No
+                            database instances provisioned.</p>
+                        <button @click="router.push('/rds/create')"
+                            class="px-10 py-5 bg-amber-500 text-white font-black uppercase tracking-widest text-xs hover:bg-amber-600 transition-all">
+                            + Create First Instance
+                        </button>
+                    </div>
+
+                    <!-- Table -->
+                    <div v-else class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b-2 border-[#232f3e] bg-[#fafafa]">
+                                    <th
+                                        class="py-4 px-6 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase">
+                                        Identifier</th>
+                                    <th
+                                        class="py-4 px-6 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase">
+                                        Status</th>
+                                    <th
+                                        class="py-4 px-6 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase">
+                                        Engine</th>
+                                    <th
+                                        class="py-4 px-6 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase">
+                                        DB User</th>
+                                    <th
+                                        class="py-4 px-6 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase">
+                                        Endpoint</th>
+                                    <th
+                                        class="py-4 px-6 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase text-right">
+                                        Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="db in latestFive" :key="db.id"
+                                    class="border-b border-[#eaeded] hover:bg-[#fafafa] transition-colors group">
+                                    <td class="py-4 px-6">
+                                        <button @click="router.push(`/rds/databases/${db.id}`)"
+                                            class="font-black text-sm text-[#232f3e] uppercase font-mono hover:text-amber-600 transition-colors text-left">
+                                            {{ db.name }}
+                                        </button>
+                                    </td>
+                                    <td class="py-4 px-6">
+                                        <span
+                                            class="inline-flex items-center gap-2 px-3 py-1 border text-[10px] font-black uppercase tracking-widest"
+                                            :class="statusClass(db.status || 'available')">
+                                            <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                                            {{ db.status || 'available' }}
+                                        </span>
+                                    </td>
+                                    <td class="py-4 px-6 text-xs font-bold text-[#545b64] uppercase">{{ db.engine ||
+                                        'PostgreSQL' }}</td>
+                                    <td class="py-4 px-6 text-xs font-mono text-[#545b64]">{{ db.user || '—' }}</td>
+                                    <td class="py-4 px-6 text-xs font-mono text-[#879196] truncate max-w-[200px]">{{
+                                        db.endpoint || '—' }}</td>
+                                    <td class="py-4 px-6 text-right whitespace-nowrap">
+                                        <button @click="router.push(`/rds/databases/${db.id}`)"
+                                            class="text-[10px] font-black text-amber-600 hover:text-amber-700 uppercase tracking-widest transition-colors mr-4">View</button>
+                                        <button @click="router.push(`/rds/modify/${db.id}`)"
+                                            class="text-[10px] font-black text-[#545b64] hover:text-amber-600 uppercase tracking-widest transition-colors mr-4">Modify</button>
+                                        <button @click="rdsStore.deleteDatabase(db.id)"
+                                            class="text-[10px] font-black text-[#545b64] hover:text-red-600 uppercase tracking-widest transition-colors">Delete</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                <div class="aws-card p-5 rounded-sm">
-                    <h3 class="text-sm font-bold text-gray-900 mb-2">Best practices</h3>
-                    <p class="text-xs text-gray-600 mb-3">Optimize performance, security, and cost for your databases.
-                    </p>
-                    <a href="#" class="text-xs font-bold text-[var(--aws-blue)] hover:underline">View guide →</a>
+
+                <!-- Storage Volumes Table -->
+                <div
+                    class="mt-16 border-4 border-[#232f3e] bg-white overflow-hidden shadow-[12px_12px_0px_rgba(35,47,62,0.05)]">
+                    <div
+                        class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-10 py-8 border-b-4 border-[#232f3e] bg-[#fafafa]">
+                        <div>
+                            <h2 class="text-3xl font-black text-[#232f3e] uppercase tracking-tighter">Storage_Volumes
+                            </h2>
+                            <p class="text-[10px] font-black text-[#879196] uppercase tracking-[0.2em] mt-1">Block
+                                registry for relational storage</p>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <button @click="router.push('/rds/volumes/create')"
+                                class="px-6 py-3 bg-[#232f3e] text-white font-black uppercase tracking-widest text-[10px] hover:bg-black transition-all shadow-[4px_4px_0px_#ff9900]">
+                                + Allocate_Volume
+                            </button>
+                            <button @click="router.push('/rds/volumes')"
+                                class="px-6 py-3 bg-white border-2 border-[#232f3e] text-[#232f3e] font-black uppercase tracking-widest text-[10px] hover:bg-gray-50 transition-all font-mono">
+                                VIEW_ALL_UNITS
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="border-b-2 border-[#232f3e] bg-[#fafafa]">
+                                    <th
+                                        class="py-4 px-10 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase font-mono">
+                                        Registry_ID</th>
+                                    <th
+                                        class="py-4 px-10 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase text-center font-mono">
+                                        State</th>
+                                    <th
+                                        class="py-4 px-10 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase text-center font-mono">
+                                        Capacity</th>
+                                    <th
+                                        class="py-4 px-10 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase text-right font-mono">
+                                        Op_Code</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-if="rdsStore.volumes.length === 0">
+                                    <td colspan="4" class="py-12 px-10 text-center">
+                                        <p
+                                            class="text-[10px] font-black uppercase tracking-widest text-[#879196] italic">
+                                            No block units mapped to this cluster.</p>
+                                    </td>
+                                </tr>
+                                <tr v-for="volume in rdsStore.volumes.slice(0, 5)" :key="volume.id"
+                                    class="border-b border-[#eaeded] hover:bg-[#fafafa] transition-colors group">
+                                    <td class="py-6 px-10">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-1.5 h-1.5 bg-amber-500 rounded-full"></div>
+                                            <span class="font-black text-sm text-[#232f3e] uppercase font-mono">{{
+                                                volume.name }}</span>
+                                        </div>
+                                    </td>
+                                    <td class="py-6 px-10 text-center">
+                                        <span
+                                            class="px-3 py-1 border text-[9px] font-black uppercase tracking-[0.1em] font-mono"
+                                            :class="volume.status === 'AVAILABLE' || volume.status === 'available' ? 'text-emerald-600 border-emerald-200 bg-emerald-50' : 'text-amber-600 border-amber-200 bg-amber-50'">
+                                            {{ volume.status }}
+                                        </span>
+                                    </td>
+                                    <td class="py-6 px-10 text-center">
+                                        <span class="text-sm font-black text-[#232f3e]">{{ volume.sizeGb }} GiB</span>
+                                    </td>
+                                    <td class="py-6 px-10 text-right">
+                                        <button @click="router.push('/rds/volumes')"
+                                            class="text-[9px] font-black text-[#232f3e] hover:text-amber-600 uppercase tracking-widest transition-colors font-mono border-b border-[#232f3e]/20 hover:border-amber-600">ORCHESTRATE_BLOCK</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
+
+                <!-- Info Grid -->
+                <div class="grid md:grid-cols-3 gap-0 border-4 border-[#eaeded] mt-12">
+                    <div v-for="card in [
+                        { title: 'Getting Started', desc: 'Learn how to create and manage your first RDS instance.', link: 'View Tutorial' },
+                        { title: 'Engine Options', desc: 'PostgreSQL, MySQL, Aurora, MariaDB — pick the right engine for your workload.', link: 'Learn More' },
+                        { title: 'Best Practices', desc: 'Optimize for performance, cost, and security in production workloads.', link: 'View Guide' },
+                    ]" :key="card.title"
+                        class="p-8 border-r-4 last:border-r-0 border-[#eaeded] hover:bg-[#fafafa] transition-colors">
+                        <h3 class="text-sm font-black text-[#232f3e] uppercase tracking-tight mb-3">{{ card.title }}
+                        </h3>
+                        <p class="text-xs text-[#545b64] font-medium leading-relaxed mb-4">{{ card.desc }}</p>
+                        <span
+                            class="text-[10px] font-black text-amber-600 uppercase tracking-widest cursor-pointer hover:text-amber-700">{{
+                                card.link }} →</span>
+                    </div>
+                </div>
+
             </div>
         </div>
+
+        <footer class="py-20 bg-white border-t-2 border-[#232f3e]">
+            <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-[#232f3e] flex items-center justify-center text-white font-black italic">S
+                    </div>
+                    <span class="font-black text-xl text-[#232f3e] tracking-tighter uppercase">SerwinForge</span>
+                </div>
+                <div class="text-[10px] text-[#879196] font-black uppercase tracking-widest italic">© 2026 SERWIN
+                    SYSTEMS INC.</div>
+            </div>
+        </footer>
     </div>
 </template>
 
 <style scoped>
-/* AWS Console specific styles */
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&display=swap');
+
+.font-urbanist {
+    font-family: 'Urbanist', sans-serif;
+}
 </style>

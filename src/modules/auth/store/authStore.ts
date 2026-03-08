@@ -16,35 +16,78 @@ export const useAuthStore = defineStore('auth', () => {
   const email = ref<string | null>(localStorage.getItem('auth_email'))
   const mfaEnabled = ref(localStorage.getItem('auth_mfa_enabled') === 'true')
   const mfaRequired = ref(localStorage.getItem('auth_mfa_required') === 'true')
-  const registrationComplete = ref(localStorage.getItem('auth_registration_complete') === 'true')
+  const registrationComplete = ref(false)
 
-  // Getters
-  const isAuthenticated = computed(() => !!token.value)
+  // New State for Three-Step Auth
+  const isAuthenticated = ref<boolean | null>(null)
+  const user = ref<any>(null)
+  const loading = ref(false)
+  const emailVerified = computed(() => user.value?.emailVerified || false)
 
   // Actions
+  async function initAuth() {
+    console.log('[Auth Store] Initializing authentication state...')
+
+    // Check local storage for existing session
+    const savedToken = localStorage.getItem('auth_token')
+    const savedEmail = localStorage.getItem('auth_email')
+
+    if (savedToken && savedEmail) {
+      token.value = savedToken
+      email.value = savedEmail
+      mfaEnabled.value = localStorage.getItem('auth_mfa_enabled') === 'true'
+      mfaRequired.value = localStorage.getItem('auth_mfa_required') === 'true'
+      registrationComplete.value = localStorage.getItem(`auth_reg_complete_${savedEmail}`) === 'true'
+
+      // Mark as authenticated
+      isAuthenticated.value = true
+      console.log('[Auth Store] Session restored for:', savedEmail)
+    } else {
+      isAuthenticated.value = false
+      console.log('[Auth Store] No session found.')
+    }
+  }
+
   function setSession(data: any) {
     console.log('Setting session with data:', data)
-    token.value = data.token || data.auth_token || data.jwt
+    // Support all common token keys
+    token.value = data.token || data.accessToken || data.auth_token || data.jwt || data.id_token
     email.value = data.email
 
     // Support both camelCase and snake_case from backend
     mfaEnabled.value = data.mfaEnabled === true || data.mfa_enabled === true
     mfaRequired.value = data.mfaRequired === true || data.mfa_required === true
-    // If backend provides this, use it, otherwise rely on local flow
+
+    // If backend provides this, use it, otherwise check local storage as fallback
     if (data.registrationComplete !== undefined) {
       registrationComplete.value = data.registrationComplete
+    } else if (email.value) {
+      registrationComplete.value = localStorage.getItem(`auth_reg_complete_${email.value}`) === 'true'
     }
 
     localStorage.setItem('auth_token', token.value || '')
     localStorage.setItem('auth_email', email.value || '')
     localStorage.setItem('auth_mfa_enabled', String(mfaEnabled.value))
     localStorage.setItem('auth_mfa_required', String(mfaRequired.value))
-    localStorage.setItem('auth_registration_complete', String(registrationComplete.value))
+
+    if (email.value && registrationComplete.value) {
+      localStorage.setItem(`auth_reg_complete_${email.value}`, 'true')
+    }
+
+    // Explicitly update authenticated state
+    isAuthenticated.value = !!token.value
   }
 
   function completeRegistration() {
     registrationComplete.value = true
-    localStorage.setItem('auth_registration_complete', 'true')
+    if (email.value) {
+      localStorage.setItem(`auth_reg_complete_${email.value}`, 'true')
+    }
+  }
+
+  function skipMfa() {
+    mfaRequired.value = false
+    localStorage.setItem('auth_mfa_required', 'false')
   }
 
   async function login(payload: any) {
@@ -135,36 +178,86 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function verifyPayment(payload: any) {
     try {
-      // Trying to call a non-existent endpoint to simulate failure
-      await apiClient.post('/auth/payment/verify', payload)
+      const response = await apiClient.post('/auth/payment/verify', payload)
+      return response.data
     } catch (error) {
-      console.warn('Payment verification endpoint not found, using dummy data strategy', error)
-      // Continue with dummy success
-      return { success: true, message: 'Dummy payment verified' }
+      console.error('Payment verification failed:', error)
+      throw error
+    }
+  }
+
+  async function verifyEmail(token: string) {
+    try {
+      loading.value = true
+      const response = await apiClient.get('/auth/verify-email', { params: { token } })
+      if (user.value) {
+        user.value.emailVerified = true
+      }
+      return response.data
+    } catch (error) {
+      console.error('Email verification failed:', error)
+      throw error
+    } finally {
+      loading.value = false
+    }
+  }
+
+  async function fetchUserProfile() {
+    try {
+      loading.value = true
+      // Simulating real API call
+      const response = await apiClient.get('/auth/me')
+      user.value = response.data
+      return response.data
+    } catch (error) {
+      console.error('Failed to fetch user profile:', error)
+      // Fallback/Mock for local dev if 404
+      user.value = {
+        fullName: email.value?.split('@')[0] || 'Member',
+        email: email.value,
+        organization: 'Serwin Systems Internal',
+        joinedAt: '2026-01-15',
+        emailVerified: user.value?.emailVerified || false,
+        paymentMethod: {
+          type: 'Visa',
+          last4: '4242',
+          expiry: '12/28'
+        }
+      }
+    } finally {
+      loading.value = false
     }
   }
 
   function logout() {
     token.value = null
     email.value = null
+    user.value = null
     mfaEnabled.value = false
     mfaRequired.value = false
     registrationComplete.value = false
+    isAuthenticated.value = false
 
     localStorage.removeItem('auth_token')
     localStorage.removeItem('auth_email')
     localStorage.removeItem('auth_mfa_enabled')
     localStorage.removeItem('auth_mfa_required')
-    localStorage.removeItem('auth_registration_complete')
+    // Note: We intentionally DO NOT remove auth_reg_complete_{email} 
+    // to remember that this user has completed registration on this device.
   }
 
   return {
     token,
     email,
+    user,
     mfaEnabled,
     mfaRequired,
     registrationComplete,
     isAuthenticated,
+    loading,
+    emailVerified,
+    initAuth,
+    fetchUserProfile,
     login,
     forgotPassword,
     enableMfa,
@@ -172,7 +265,9 @@ export const useAuthStore = defineStore('auth', () => {
     disableMfa,
     register,
     verifyPayment,
+    verifyEmail,
     completeRegistration,
+    skipMfa,
     loginWithGoogle,
     logout,
   }

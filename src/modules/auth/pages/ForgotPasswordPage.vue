@@ -2,6 +2,7 @@
 import { ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useToastStore } from '@/shared/store/toastStore'
+import PublicNavbar from '@/shared/components/PublicNavbar.vue'
 
 const authStore = useAuthStore()
 const toastStore = useToastStore()
@@ -27,58 +28,80 @@ const handleReset = async (e: Event) => {
 </script>
 
 <template>
-    <div class="auth-container">
-        <div class="w-full max-w-md">
-            <div class="auth-card space-y-6">
-                <div class="text-center">
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Forgot password</h1>
-                    <p class="text-sm text-gray-500 mt-2">Enter the email address associated with your account</p>
+    <div
+        class="min-h-screen flex flex-col bg-white text-[#16191f] font-urbanist selection:bg-[#ff9900]/30 selection:text-[#16191f]">
+
+        <PublicNavbar buttonText="Log in" buttonLink="/login" />
+
+        <!-- Spacer for fixed navbar -->
+        <div class="h-20"></div>
+
+        <main class="flex-1 flex items-center justify-center p-6 bg-[#fafafa]">
+            <div class="w-full max-w-md">
+                <!-- Card - Flat & Sharp -->
+                <div class="bg-white border-2 border-[#232f3e] p-10 shadow-none">
+                    <div class="mb-10 text-left">
+                        <h2 class="text-3xl font-black text-[#232f3e] mb-4 tracking-tighter uppercase">Reset Password
+                        </h2>
+                        <div class="w-12 h-2 bg-[#ff9900]"></div>
+                    </div>
+
+                    <div v-if="isSubmitted" class="space-y-8">
+                        <div class="p-6 bg-[#ff9900]/5 border-2 border-[#ff9900] text-[#16191f]">
+                            <p class="text-sm font-bold leading-relaxed">
+                                Instructions for resetting your password have been sent to <strong
+                                    class="text-[#232f3e]">{{ email }}</strong>.
+                                Please check your email.
+                            </p>
+                        </div>
+                        <router-link to="/login"
+                            class="block w-full text-center bg-[#232f3e] hover:bg-[#16191f] text-white font-black py-4 uppercase tracking-widest transition-all">
+                            Back to sign in
+                        </router-link>
+                    </div>
+
+                    <form v-else @submit="handleReset" class="space-y-8">
+                        <div class="space-y-3">
+                            <label class="text-[10px] font-black text-[#545b64] uppercase tracking-widest">Email
+                                Address</label>
+                            <input v-model="email" type="email"
+                                class="w-full bg-white border-2 border-[#eaeded] px-4 py-4 text-[#16191f] font-bold placeholder-[#879196] focus:outline-none focus:border-[#ff9900] transition-all rounded-none"
+                                placeholder="name@company.com" required>
+                        </div>
+
+                        <button type="submit" :disabled="isLoading"
+                            class="w-full bg-[#ff9900] hover:bg-[#ec7211] text-white font-black py-4 transition-all rounded-none uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span v-if="isLoading">Sending Link...</span>
+                            <span v-else>Send Reset Link</span>
+                        </button>
+
+                        <div class="pt-4 text-center">
+                            <p class="text-sm text-[#545b64] font-bold">
+                                Remember your password?
+                                <router-link to="/login"
+                                    class="text-[#0073bb] hover:text-[#ff9900] transition-colors ml-1 decoration-2 underline-offset-4">Sign
+                                    In</router-link>
+                            </p>
+                        </div>
+                    </form>
                 </div>
-
-                <div v-if="isSubmitted" class="space-y-6">
-                    <div
-                        class="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-sm">
-                        <p class="text-sm text-blue-800 dark:text-blue-300 leading-relaxed">
-                            Instructions for resetting your password have been sent to <strong>{{ email }}</strong>.
-                            Please check your email.
-                        </p>
-                    </div>
-                    <router-link to="/login" class="btn-aws-primary w-full py-2.5 block text-center">
-                        Back to sign in
-                    </router-link>
-                </div>
-
-                <form v-else @submit="handleReset" class="space-y-4">
-                    <div>
-                        <label class="aws-label">Email address</label>
-                        <input v-model="email" type="email" class="aws-input" placeholder="user@example.com" required>
-                    </div>
-
-                    <button type="submit" :disabled="isLoading"
-                        class="btn-aws-primary w-full py-2.5 mt-2 flex items-center justify-center gap-2">
-                        <svg v-if="isLoading" class="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4">
-                            </circle>
-                            <path class="opacity-75" fill="currentColor"
-                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z">
-                            </path>
-                        </svg>
-                        {{ isLoading ? 'Sending...' : 'Send reset link' }}
-                    </button>
-
-                    <div class="pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
-                        <p class="text-sm text-gray-600 dark:text-gray-400">
-                            Remember your password?
-                            <router-link to="/login" class="text-[var(--aws-blue)] font-bold hover:underline ml-1">Sign
-                                In</router-link>
-                        </p>
-                    </div>
-                </form>
             </div>
+        </main>
 
-            <div class="mt-8 text-center text-[10px] text-gray-400 uppercase tracking-widest font-medium">
-                &copy; 2026 Serwin Technologies or its affiliates.
-            </div>
-        </div>
+        <footer class="py-10 bg-white border-t border-[#eaeded] text-center">
+            <p class="text-[10px] text-[#879196] font-black uppercase tracking-[0.2em]">© 2026 SERWIN SYSTEMS INC.</p>
+        </footer>
     </div>
 </template>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&display=swap');
+
+.font-urbanist {
+    font-family: 'Urbanist', sans-serif;
+}
+
+.font-black {
+    font-weight: 900;
+}
+</style>

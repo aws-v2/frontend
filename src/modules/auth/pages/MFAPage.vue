@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { useToastStore } from '@/shared/store/toastStore'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import PublicNavbar from '@/shared/components/PublicNavbar.vue'
 
 const toastStore = useToastStore()
 const authStore = useAuthStore()
@@ -29,6 +30,8 @@ const handleComplete = async (e: Event) => {
 }
 
 const handleSkip = () => {
+    // Use the store method to clear MFA required flag and persist state
+    authStore.skipMfa()
     toastStore.addToast('MFA skipped for now.', 'info')
     router.push('/dashboard')
 }
@@ -50,42 +53,76 @@ const onKeyDown = (index: number, e: KeyboardEvent) => {
 </script>
 
 <template>
-    <div class="auth-container">
-        <div class="w-full max-w-md">
-            <div class="auth-card space-y-6">
-                <div class="text-center">
-                    <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Verify identity</h1>
-                    <p class="text-sm text-gray-500 mt-2">Enter the code from your authenticator app</p>
-                </div>
+    <div
+        class="min-h-screen flex flex-col bg-white text-[#16191f] font-urbanist selection:bg-[#ff9900]/30 selection:text-[#16191f]">
 
-                <form @submit="handleComplete" class="space-y-6">
-                    <div class="flex justify-between gap-2">
-                        <input v-for="(digit, i) in 6" :key="i" ref="inputs" v-model="code[i]" type="text" maxlength="1"
-                            class="w-12 h-14 border border-gray-300 dark:border-gray-600 rounded-sm text-center text-xl font-bold focus:outline-none focus:ring-1 focus:ring-[var(--aws-blue)] focus:border-[var(--aws-blue)] dark:bg-gray-800 dark:text-white transition-all"
-                            @input="onInput(i, $event)" @keydown="onKeyDown(i, $event)">
+        <PublicNavbar buttonText="Log in" buttonLink="/login" />
+
+        <!-- Spacer for fixed navbar -->
+        <div class="h-20"></div>
+
+        <main class="flex-1 flex items-center justify-center p-6 bg-[#fafafa]">
+            <div class="w-full max-w-md">
+                <!-- MFA Card - Flat & Sharp -->
+                <div class="bg-white border-2 border-[#232f3e] p-10 shadow-none">
+                    <div class="mb-10 text-left">
+                        <h2 class="text-3xl font-black text-[#232f3e] mb-4 tracking-tighter uppercase">Verify identity
+                        </h2>
+                        <div class="w-12 h-2 bg-[#ff9900]"></div>
+                        <p class="text-sm font-bold text-[#545b64] mt-6">Enter the code from your authenticator app</p>
                     </div>
 
-                    <button type="submit" class="btn-aws-primary w-full py-2.5">
-                        Verify
-                    </button>
+                    <form @submit="handleComplete" class="space-y-8">
+                        <div class="flex justify-between gap-2">
+                            <input v-for="(digit, i) in 6" :key="i" ref="inputs" v-model="code[i]" type="text"
+                                maxlength="1"
+                                class="w-12 h-14 bg-white border-2 border-[#eaeded] text-[#16191f] text-center text-xl font-bold focus:outline-none focus:border-[#ff9900] transition-all rounded-none"
+                                @input="onInput(i, $event)" @keydown="onKeyDown(i, $event)">
+                        </div>
 
-                    <button type="button" @click="handleSkip"
-                        class="w-full text-xs text-gray-500 dark:text-gray-400 hover:underline">
-                        Skip for now
-                    </button>
-                </form>
+                        <button type="submit" :disabled="isLoading"
+                            class="w-full bg-[#ff9900] hover:bg-[#ec7211] text-white font-black py-4 transition-all rounded-none uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed">
+                            <span v-if="isLoading">Verifying...</span>
+                            <span v-else>Verify & Continue</span>
+                        </button>
 
-                <div class="pt-6 border-t border-gray-100 dark:border-gray-700 text-center">
-                    <p class="text-sm text-gray-600 dark:text-gray-400">
-                        Lost access to your device?
-                        <a href="#" class="text-[var(--aws-blue)] font-bold hover:underline ml-1">Use recovery code</a>
-                    </p>
+                        <button type="button" @click="handleSkip"
+                            class="w-full text-xs font-bold text-[#0073bb] hover:text-[#ff9900] transition-colors uppercase tracking-widest">
+                            Skip for now
+                        </button>
+                    </form>
+
+                    <div class="mt-8 pt-8 border-t border-[#eaeded] text-center">
+                        <p class="text-sm font-bold text-[#545b64]">
+                            Lost access to your device?
+                            <a href="#"
+                                class="text-[#0073bb] hover:text-[#ff9900] transition-colors underline decoration-2 underline-offset-4 ml-1">
+                                Use recovery code
+                            </a>
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-8 text-center text-[10px] text-[#879196] font-black uppercase tracking-[0.2em]">
+                    &copy; 2026 SERWIN SYSTEMS INC.
                 </div>
             </div>
+        </main>
 
-            <div class="mt-8 text-center text-[10px] text-gray-400 uppercase tracking-widest font-medium">
-                &copy; 2026 Serwin Technologies or its affiliates.
-            </div>
-        </div>
+        <footer class="py-10 bg-white border-t border-[#eaeded] text-center">
+            <p class="text-[10px] text-[#879196] font-black uppercase tracking-[0.2em]">© 2026 SERWIN SYSTEMS INC.</p>
+        </footer>
     </div>
 </template>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&display=swap');
+
+.font-urbanist {
+    font-family: 'Urbanist', sans-serif;
+}
+
+.font-black {
+    font-weight: 900;
+}
+</style>

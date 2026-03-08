@@ -81,7 +81,7 @@ const handleCreateBucket = async () => {
 
     try {
         // TODO: Uncomment when backend is ready
-        const response = await apiClient.post('/api/v1/buckets/create-bucket', bucketData)
+        const response = await apiClient.post('/s3/buckets/create-bucket', bucketData)
         if (response.data.success) {
             toastStore.addToast(`Successfully created bucket "${bucketName.value}"`, 'success')
             router.push('/s3/buckets')
@@ -110,401 +110,307 @@ const handleBucketSelection = (selectedBucketName: string) => {
 </script>
 
 <template>
-    <div class="min-h-screen bg-white pb-24 font-sans">
+    <div
+        class="min-h-screen bg-white text-[#232f3e] pb-32 font-urbanist relative overflow-hidden selection:bg-[#ff9900]/30 selection:text-[#232f3e]">
+        <!-- Subtle Grid -->
+        <div
+            class="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]">
+        </div>
+
         <ChooseBucketModal :is-open="showChooseBucketModal" @close="showChooseBucketModal = false"
             @select="handleBucketSelection" />
 
-        <!-- Breadcrumbs bar -->
-        <div class="h-10 border-b border-gray-200 bg-white flex items-center px-4 text-[11px] gap-2 text-gray-400">
-            <span class="hover:underline cursor-pointer">Amazon S3</span>
-            <span>></span>
-            <span class="hover:underline cursor-pointer">Buckets</span>
-            <span>></span>
-            <span class="text-gray-900 font-medium">Create bucket</span>
+        <!-- Top Navigation / Breadcrumbs -->
+        <div
+            class="relative z-10 border-b-2 border-[#eaeded] bg-white/80 backdrop-blur-md px-8 md:px-24 py-4 flex items-center gap-3 text-[10px] uppercase font-black tracking-widest text-[#545b64]">
+            <span class="hover:text-[#ff9900] cursor-pointer transition-colors italic">S3 Storage</span>
+            <span class="text-[#eaeded]">/</span>
+            <span class="hover:text-[#ff9900] cursor-pointer transition-colors italic">Buckets</span>
+            <span class="text-[#eaeded]">/</span>
+            <span class="text-[#ff9900] italic">Create bucket</span>
         </div>
 
-        <div class="max-w-5xl mx-auto pt-8 px-4">
-            <div class="mb-8">
-                <h1 class="text-2xl font-bold text-gray-900 mb-1">Create bucket <span
-                        class="text-[10px] text-[var(--aws-blue)] hover:underline cursor-pointer uppercase font-bold tracking-tight">Info</span>
+        <div class="relative z-10 max-w-[1800px] mx-auto pt-24 px-8 md:px-24">
+            <div class="mb-16">
+                <div
+                    class="inline-flex items-center gap-2 mb-6 px-4 py-1.5 bg-[#ff9900]/5 border border-[#ff9900]/20 text-[#ff9900] text-[10px] font-black tracking-[0.2em] uppercase">
+                    <span class="w-1.5 h-1.5 bg-[#ff9900] animate-ping"></span>
+                    Provisioning Bucket
+                </div>
+                <h1 class="text-4xl md:text-6xl font-black text-[#232f3e] tracking-tighter mb-6 uppercase italic">
+                    Create <span class="text-[#ff9900]">bucket</span>
                 </h1>
-                <p class="text-xs text-gray-600">Buckets are containers for data stored in S3.</p>
-            </div>
-
-            <!-- General Configuration -->
-            <section class="border border-gray-200 rounded-sm mb-8 overflow-hidden">
-                <div class="bg-gray-50/50 px-6 py-3 border-b border-gray-200">
-                    <h2 class="text-lg font-bold text-gray-900">General configuration</h2>
-                </div>
-                <div class="p-8 space-y-8">
-                    <div>
-                        <label class="block text-xs font-bold text-gray-900 mb-2">AWS Region</label>
-                        <p class="text-xs text-gray-600 mb-2">{{ region }}</p>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-900 mb-4">Bucket type <span
-                                class="text-[var(--aws-blue)] hover:underline cursor-pointer ml-1">Info</span></label>
-                        <div class="grid grid-cols-2 gap-4">
-                            <label class="border-2 p-4 cursor-pointer transition-all"
-                                :class="bucketType === 'General purpose' ? 'border-[var(--aws-blue)] bg-blue-50/10' : 'border-gray-200 hover:border-gray-300'">
-                                <input type="radio" v-model="bucketType" value="General purpose" class="hidden">
-                                <div class="flex gap-3">
-                                    <div class="w-4 h-4 rounded-full border-2 mt-1 flex items-center justify-center"
-                                        :class="bucketType === 'General purpose' ? 'border-[var(--aws-blue)]' : 'border-gray-300'">
-                                        <div v-if="bucketType === 'General purpose'"
-                                            class="w-2 h-2 bg-[var(--aws-blue)] rounded-full"></div>
-                                    </div>
-                                    <div>
-                                        <p class="text-xs font-bold text-gray-900">General purpose</p>
-                                        <p class="text-[10px] text-gray-500 mt-1 leading-relaxed">Recommended for most
-                                            use cases and access patterns.</p>
-                                    </div>
-                                </div>
-                            </label>
-                            <label class="border-2 p-4 cursor-pointer transition-all opacity-50 grayscale"
-                                :class="bucketType === 'Directory' ? 'border-[var(--aws-blue)] bg-blue-50/10' : 'border-gray-200'">
-                                <input type="radio" v-model="bucketType" value="Directory" disabled class="hidden">
-                                <div class="flex gap-3">
-                                    <div
-                                        class="w-4 h-4 rounded-full border-2 mt-1 flex items-center justify-center border-gray-300">
-                                    </div>
-                                    <div>
-                                        <p class="text-xs font-bold text-gray-900">Directory</p>
-                                        <p class="text-[10px] text-gray-500 mt-1 leading-relaxed">Recommended for
-                                            low-latency use cases.</p>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-900 mb-1">Bucket name <span
-                                class="text-[var(--aws-blue)] hover:underline cursor-pointer ml-1">Info</span></label>
-                        <p class="text-[10px] text-gray-500 mb-3">Bucket names must be unique within the global
-                            namespace. Bucket names must also begin and end with a letter or number. Valid characters
-                            are a-z, 0-9, periods (.), and hyphens (-).</p>
-                        <input v-model="bucketName" type="text" placeholder="amzn-s3-demo-bucket"
-                            class="w-full max-w-2xl border border-gray-400 p-2 text-xs focus:ring-1 focus:ring-[var(--aws-blue)] outline-none rounded-sm">
-                    </div>
-
-                    <div>
-                        <label class="block text-xs font-bold text-gray-900 mb-1">Copy settings from existing bucket -
-                            optional</label>
-                        <p class="text-[10px] text-gray-500 mb-2">Only the bucket settings in the following
-                            configuration are copied.</p>
-                        <button @click="showChooseBucketModal = true"
-                            class="px-3 py-1 text-xs font-bold border border-[var(--aws-blue)] text-[var(--aws-blue)] hover:bg-blue-50/10 transition-colors rounded-sm bg-white">
-                            Choose bucket
-                        </button>
-                        <!-- <p class="text-[10px] text-gray-500 mt-1">Format: s3://bucket/prefix</p> -->
-                    </div>
-                </div>
-            </section>
-
-            <!-- Object Ownership -->
-            <section class="border border-gray-200 rounded-sm mb-8 overflow-hidden">
-                <div class="bg-gray-50/50 px-6 py-3 border-b border-gray-200">
-                    <h2 class="text-lg font-bold text-gray-900">Object Ownership <span
-                            class="text-[10px] text-[var(--aws-blue)] hover:underline cursor-pointer uppercase font-bold tracking-tight ml-2">Info</span>
-                    </h2>
-                </div>
-                <div class="p-8">
-                    <p class="text-xs text-gray-600 mb-6 leading-relaxed">Control ownership of objects written to this
-                        bucket from other AWS accounts and the use of access control lists (ACLs).</p>
-                    <div class="grid grid-cols-2 gap-4">
-                        <label class="border-2 p-4 cursor-pointer transition-all"
-                            :class="objectOwnership === 'ACLs disabled' ? 'border-[var(--aws-blue)] bg-blue-50/10' : 'border-gray-200 hover:border-gray-300'">
-                            <input type="radio" v-model="objectOwnership" value="ACLs disabled" class="hidden">
-                            <div class="flex gap-3">
-                                <div class="w-4 h-4 rounded-full border-2 mt-1 flex items-center justify-center"
-                                    :class="objectOwnership === 'ACLs disabled' ? 'border-[var(--aws-blue)]' : 'border-gray-300'">
-                                    <div v-if="objectOwnership === 'ACLs disabled'"
-                                        class="w-2 h-2 bg-[var(--aws-blue)] rounded-full"></div>
-                                </div>
-                                <div>
-                                    <p class="text-xs font-bold text-gray-900">ACLs disabled (recommended)</p>
-                                    <p class="text-[10px] text-gray-500 mt-1 leading-relaxed">All objects in this bucket
-                                        are owned by this account.</p>
-                                </div>
-                            </div>
-                        </label>
-                        <label class="border-2 p-4 cursor-pointer transition-all"
-                            :class="objectOwnership === 'ACLs enabled' ? 'border-[var(--aws-blue)] bg-blue-50/10' : 'border-gray-200 hover:border-gray-300'">
-                            <input type="radio" v-model="objectOwnership" value="ACLs enabled" class="hidden">
-                            <div class="flex gap-3">
-                                <div class="w-4 h-4 rounded-full border-2 mt-1 flex items-center justify-center"
-                                    :class="objectOwnership === 'ACLs enabled' ? 'border-[var(--aws-blue)]' : 'border-gray-300'">
-                                    <div v-if="objectOwnership === 'ACLs enabled'"
-                                        class="w-2 h-2 bg-[var(--aws-blue)] rounded-full"></div>
-                                </div>
-                                <div>
-                                    <p class="text-xs font-bold text-gray-900">ACLs enabled</p>
-                                    <p class="text-[10px] text-gray-500 mt-1 leading-relaxed">Objects in this bucket can
-                                        be owned by other AWS accounts.</p>
-                                </div>
-                            </div>
-                        </label>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Block Public Access -->
-            <section class="border border-gray-200 rounded-sm mb-8 overflow-hidden">
-                <div class="bg-gray-50/50 px-6 py-3 border-b border-gray-200">
-                    <h2 class="text-lg font-bold text-gray-900">Block Public Access settings for this bucket</h2>
-                </div>
-                <div class="p-8">
-                    <p class="text-xs text-gray-600 mb-6 leading-relaxed">Public access is granted to buckets and
-                        objects through access control lists (ACLs), bucket policies, or all. AWS recommends that you
-                        turn on Block all public access.</p>
-
-                    <div class="border border-gray-200 p-6 bg-white space-y-6">
-                        <!-- Block All Section -->
-                        <label
-                            class="flex items-start gap-4 p-4 border rounded-sm bg-gray-50 cursor-pointer group hover:border-[var(--aws-blue)] transition-colors"
-                            :class="blockPublicAccess ? 'bg-blue-50/10 border-[var(--aws-blue)]' : 'bg-gray-50 border-gray-200'">
-                            <input type="checkbox" v-model="blockPublicAccess"
-                                class="mt-1 w-4 h-4 text-[var(--aws-blue)] rounded-sm border-gray-400 focus:ring-0">
-                            <div>
-                                <p class="text-sm font-bold text-gray-900">Block all public access</p>
-                                <p class="text-[11px] text-gray-500 leading-tight">Recommended. Turning this on will
-                                    override any other bucket or access point policies that grant public access.</p>
-                            </div>
-                        </label>
-
-                        <!-- Individual Bucket/AP Settings -->
-                        <div class="border-t pt-6">
-                            <div class="flex items-center justify-between mb-4">
-                                <div class="flex items-center gap-2">
-                                    <h3 class="text-[11px] font-bold text-gray-700 uppercase tracking-wider">Individual
-                                        settings</h3>
-                                    <span
-                                        class="text-[10px] text-[var(--aws-blue)] hover:underline cursor-pointer uppercase font-bold tracking-tight">Info</span>
-                                </div>
-                                <span v-if="blockPublicAccess"
-                                    class="text-[10px] text-gray-400 font-medium bg-gray-100 px-2 py-0.5 rounded-sm">
-                                    Locked by "Block all"
-                                </span>
-                            </div>
-
-                            <div class="space-y-4">
-                                <!-- Individual Access Points Placeholder -->
-                                <div class="p-4 border border-dashed border-gray-300 rounded-sm"
-                                    :class="blockPublicAccess ? 'bg-gray-100 opacity-60' : 'bg-white'">
-                                    <h4 class="text-[10px] font-bold text-gray-500 uppercase mb-2">Access Points</h4>
-                                    <p class="text-[11px] text-gray-500 italic">
-                                        No access points are available during bucket creation. You can create access
-                                        points and configure individual block settings after the bucket is created.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Bucket Versioning -->
-            <section class="border border-gray-200 rounded-sm mb-8 overflow-hidden">
-                <div class="bg-gray-50/50 px-6 py-3 border-b border-gray-200">
-                    <h2 class="text-lg font-bold text-gray-900">Bucket Versioning</h2>
-                </div>
-                <div class="p-8">
-                    <p class="text-xs text-gray-600 mb-6 leading-relaxed">Versioning is a means of keeping multiple
-                        variants of an object in the same bucket. You can use versioning to preserve, retrieve, and
-                        restore every version of every object stored in your Amazon S3 bucket. With versioning, you can
-                        easily recover from both unintended user actions and application failures. <span
-                            class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn more</span></p>
-
-                    <div class="space-y-4">
-                        <label class="block text-xs font-bold text-gray-900 mb-2">Bucket Versioning</label>
-                        <div class="flex items-center gap-3">
-                            <input type="radio" v-model="bucketVersioning" value="Disable" id="versioning-disable"
-                                class="w-4 h-4 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)] border-gray-300">
-                            <label for="versioning-disable" class="text-xs text-gray-900">Disable</label>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <input type="radio" v-model="bucketVersioning" value="Enable" id="versioning-enable"
-                                class="w-4 h-4 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)] border-gray-300">
-                            <label for="versioning-enable" class="text-xs text-gray-900">Enable</label>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Tags -->
-            <section class="border border-gray-200 rounded-sm mb-8 overflow-hidden">
-                <div class="bg-gray-50/50 px-6 py-3 border-b border-gray-200">
-                    <h2 class="text-lg font-bold text-gray-900">Tags - optional</h2>
-                </div>
-                <div class="p-8">
-                    <p class="text-xs text-gray-600 mb-4">You can use bucket tags to analyze, manage and specify
-                        permissions for a bucket. <span
-                            class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn more</span></p>
-
-                    <div
-                        class="border border-[var(--aws-blue)] bg-blue-50/10 p-4 rounded-sm mb-6 flex items-start gap-3">
-                        <svg class="w-5 h-5 text-[var(--aws-blue)] shrink-0 mt-0.5" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p class="text-xs text-gray-600 leading-relaxed">
-                            You can use s3:ListTagsForResource, s3:TagResource, and s3:UntagResource APIs to manage tags
-                            on S3 general purpose buckets for access control in addition to cost allocation and resource
-                            organization. To ensure a seamless transition, please provide permissions to
-                            s3:ListTagsForResource, s3:TagResource, and s3:UntagResource actions. <span
-                                class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn more</span>
-                        </p>
-                    </div>
-
-                    <p class="text-xs text-gray-600 mb-4">No tags associated with this bucket.</p>
-
-                    <button
-                        class="px-3 py-1 text-xs font-bold border border-gray-300 hover:bg-gray-50 transition-colors rounded-sm bg-white">
-                        Add new tag
-                    </button>
-                    <p class="text-[10px] text-gray-500 mt-2">You can add up to 50 tags.</p>
-                </div>
-            </section>
-
-            <!-- Default Encryption -->
-            <section class="border border-gray-200 rounded-sm mb-8 overflow-hidden">
-                <div class="bg-gray-50/50 px-6 py-3 border-b border-gray-200">
-                    <h2 class="text-lg font-bold text-gray-900">Default encryption <span
-                            class="text-[10px] text-[var(--aws-blue)] hover:underline cursor-pointer uppercase font-bold tracking-tight ml-2">Info</span>
-                    </h2>
-                </div>
-                <div class="p-8">
-                    <p class="text-xs text-gray-600 mb-6">Server-side encryption is automatically applied to new objects
-                        stored in this bucket.</p>
-
-                    <label class="block text-xs font-bold text-gray-900 mb-2">Encryption type <span
-                            class="text-[var(--aws-blue)] hover:underline cursor-pointer ml-1 font-normal">Info</span></label>
-                    <p class="text-[10px] text-gray-500 mb-4">Secure your objects with two separate layers of
-                        encryption. For details on pricing, see DSSE-KMS pricing on the Storage tab of the <span
-                            class="text-[var(--aws-blue)] hover:underline cursor-pointer">Amazon S3 pricing page</span>.
-                    </p>
-
-                    <div class="space-y-4 mb-8">
-                        <div class="flex items-center gap-3">
-                            <input type="radio" v-model="encryptionType" value="SSE-S3" id="enc-s3"
-                                class="w-4 h-4 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)] border-gray-300">
-                            <label for="enc-s3" class="text-xs text-gray-900">Server-side encryption with Amazon S3
-                                managed keys (SSE-S3)</label>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <input type="radio" v-model="encryptionType" value="SSE-KMS" id="enc-kms"
-                                class="w-4 h-4 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)] border-gray-300">
-                            <label for="enc-kms" class="text-xs text-gray-900">Server-side encryption with AWS Key
-                                Management Service keys (SSE-KMS)</label>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <input type="radio" v-model="encryptionType" value="DSSE-KMS" id="enc-dsse"
-                                class="w-4 h-4 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)] border-gray-300">
-                            <label for="enc-dsse" class="text-xs text-gray-900">Dual-layer server-side encryption with
-                                AWS Key Management Service keys (DSSE-KMS)</label>
-                        </div>
-                    </div>
-
-                    <label class="block text-xs font-bold text-gray-900 mb-2">Bucket Key</label>
-                    <p class="text-[10px] text-gray-500 mb-4">Using an S3 Bucket Key for SSE-KMS reduces encryption
-                        costs by lowering calls to AWS KMS. S3 Bucket Keys aren't supported for DSSE-KMS. <span
-                            class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn more</span></p>
-
-                    <div class="space-y-4">
-                        <div class="flex items-center gap-3">
-                            <input type="radio" v-model="bucketKey" value="Disable" id="key-disable"
-                                class="w-4 h-4 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)] border-gray-300">
-                            <label for="key-disable" class="text-xs text-gray-900">Disable</label>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <input type="radio" v-model="bucketKey" value="Enable" id="key-enable"
-                                class="w-4 h-4 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)] border-gray-300">
-                            <label for="key-enable" class="text-xs text-gray-900">Enable</label>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Advanced Settings -->
-            <section class="border border-gray-200 rounded-sm mb-8 overflow-hidden">
-                <button @click="showAdvanced = !showAdvanced"
-                    class="w-full bg-white px-6 py-3 flex items-center gap-2 hover:bg-gray-50 focus:outline-none focus:bg-gray-50">
-                    <svg class="w-4 h-4 text-gray-600 transform transition-transform duration-200"
-                        :class="showAdvanced ? 'rotate-90' : ''" fill="currentColor" viewBox="0 0 20 20">
-                        <path fill-rule="evenodd"
-                            d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                            clip-rule="evenodd" />
-                    </svg>
-                    <h2 class="text-lg font-bold text-gray-900">Advanced settings</h2>
-                </button>
-                <div v-show="showAdvanced" class="p-8 border-t border-gray-200">
-                    <h3 class="text-sm font-bold text-gray-900 mb-2">Object Lock</h3>
-                    <p class="text-xs text-gray-600 mb-4 leading-relaxed">
-                        Store objects using a write-once-read-many (WORM) model to help you prevent objects from being
-                        deleted or overwritten for a fixed amount of time or indefinitely. Object Lock works only in
-                        versioned buckets. <span class="text-[var(--aws-blue)] hover:underline cursor-pointer">Learn
-                            more</span>
-                    </p>
-
-                    <div class="space-y-4 mb-6">
-                        <div class="flex items-start gap-3">
-                            <input type="radio" v-model="objectLock" value="Disable" id="lock-disable"
-                                class="mt-0.5 w-4 h-4 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)] border-gray-300">
-                            <label for="lock-disable" class="text-xs text-gray-900 font-bold">Disable</label>
-                        </div>
-                        <div class="flex items-start gap-3">
-                            <input type="radio" v-model="objectLock" value="Enable" id="lock-enable"
-                                class="mt-0.5 w-4 h-4 text-[var(--aws-blue)] focus:ring-[var(--aws-blue)] border-gray-300">
-                            <div>
-                                <label for="lock-enable" class="text-xs text-gray-900 font-bold">Enable</label>
-                                <p class="text-[10px] text-gray-500 mt-1 leading-relaxed">
-                                    Permanently allows objects in this bucket to be locked. Additional Object Lock
-                                    configuration is required in bucket details after bucket creation to protect objects
-                                    in this bucket from being deleted or overwritten.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="border border-[var(--aws-blue)] bg-blue-50/10 p-4 rounded-sm flex items-start gap-3">
-                        <svg class="w-5 h-5 text-[var(--aws-blue)] shrink-0 mt-0.5" fill="none" stroke="currentColor"
-                            viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        <p class="text-xs text-gray-600 leading-relaxed">
-                            Object Lock works only in versioned buckets. Enabling Object Lock automatically enables
-                            Versioning.
-                        </p>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Footer Info Note -->
-            <div class="border border-[var(--aws-blue)] bg-blue-50/10 p-4 rounded-sm flex items-start gap-3 mb-24">
-                <svg class="w-5 h-5 text-[var(--aws-blue)] shrink-0 mt-0.5" fill="none" stroke="currentColor"
-                    viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p class="text-xs text-gray-600 leading-relaxed">
-                    After creating the bucket, you can upload files and folders to the bucket, and configure additional
-                    bucket settings.
+                <p class="text-[#545b64] text-sm max-w-xl leading-relaxed font-medium">
+                    Buckets are containers for data stored in S3. Configure your storage parameters below to deploy your
+                    hyper-scale fleet.
                 </p>
             </div>
 
-            <!-- Footer actions -->
-            <div
-                class="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 flex justify-end gap-3 z-[100] px-16 shadow-2xl">
-                <button @click="router.back()"
-                    class="px-6 py-2 text-xs font-bold border border-gray-300 hover:bg-gray-50 transition-colors">Cancel</button>
-                <button @click="handleCreateBucket"
-                    class="px-8 py-2 text-xs font-bold bg-[var(--aws-orange)] text-white hover:opacity-90 transition-opacity rounded-sm">Create
-                    bucket</button>
+            <div class="space-y-12">
+                <!-- General Configuration -->
+                <section class="bg-white p-10 border-2 border-[#eaeded] relative overflow-hidden shadow-sm">
+                    <div class="flex items-center gap-4 mb-10">
+                        <div
+                            class="w-10 h-10 bg-[#fafafa] border border-[#eaeded] flex items-center justify-center text-[#ff9900]">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-black text-[#232f3e] uppercase tracking-widest italic">General
+                            configuration</h2>
+                    </div>
+
+                    <div class="grid gap-12">
+                        <div class="grid md:grid-cols-2 gap-12">
+                            <div>
+                                <label class="input-label">AWS Region</label>
+                                <div
+                                    class="p-4 bg-[#fafafa] border-2 border-[#eaeded] text-[#232f3e] text-sm font-black uppercase tracking-tight italic">
+                                    {{ region }}
+                                </div>
+                            </div>
+                            <div>
+                                <label class="input-label italic flex justify-between">
+                                    Bucket type
+                                    <span class="text-[#ff9900] cursor-help hover:underline not-italic">Info</span>
+                                </label>
+                                <div class="flex gap-6">
+                                    <label class="flex-1 p-6 border-2 transition-all cursor-pointer group"
+                                        :class="bucketType === 'General purpose' ? 'border-[#ff9900] bg-[#ff9900]/5' : 'border-[#eaeded] bg-white hover:border-[#ff9900]/30'">
+                                        <input type="radio" v-model="bucketType" value="General purpose" class="hidden">
+                                        <div class="flex flex-col gap-2">
+                                            <span class="text-xs font-black uppercase tracking-widest italic"
+                                                :class="bucketType === 'General purpose' ? 'text-[#ff9900]' : 'text-[#232f3e]'">General
+                                                purpose</span>
+                                            <span class="text-[10px] font-medium"
+                                                :class="bucketType === 'General purpose' ? 'text-[#ff9900]/70' : 'text-[#545b64]'">High
+                                                availability, low-latency</span>
+                                        </div>
+                                    </label>
+                                    <label
+                                        class="flex-1 p-6 border-2 border-[#eaeded] bg-[#fafafa] opacity-40 cursor-not-allowed">
+                                        <div class="flex flex-col gap-2">
+                                            <span
+                                                class="text-xs font-black text-[#545b64] uppercase tracking-widest italic">Directory</span>
+                                            <span class="text-[10px] text-[#879196] font-medium text-nowrap">Single
+                                                Availability Zone</span>
+                                        </div>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="input-label italic flex justify-between">
+                                Bucket name
+                                <span class="text-[#ff9900] cursor-help hover:underline not-italic">Info</span>
+                            </label>
+                            <input v-model="bucketName" type="text" placeholder="amzn-s3-demo-bucket"
+                                class="input-field italic">
+                            <p class="text-[10px] text-[#879196] mt-3 font-medium px-1">Unique global namespace: a-z,
+                                0-9, periods (.), and hyphens (-).</p>
+                        </div>
+
+                        <div>
+                            <label class="input-label italic">Copy settings from existing bucket</label>
+                            <button @click="showChooseBucketModal = true"
+                                class="px-6 py-3 bg-white border-2 border-[#eaeded] text-[#232f3e] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#ff9900] hover:text-white hover:border-[#ff9900] transition-all transform active:scale-95">
+                                Choose bucket &rarr;
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Object Ownership -->
+                <section class="bg-white p-10 border-2 border-[#eaeded] shadow-sm">
+                    <div class="flex items-center gap-4 mb-8">
+                        <div
+                            class="w-10 h-10 bg-[#fafafa] border border-[#eaeded] flex items-center justify-center text-[#ff9900]">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-black text-[#232f3e] uppercase tracking-widest italic">Object Ownership
+                        </h2>
+                    </div>
+                    <p class="text-sm text-[#545b64] mb-10 leading-relaxed font-medium max-w-2xl">Control ownership of
+                        objects written to this bucket and the use of access control lists (ACLs).</p>
+
+                    <div class="grid md:grid-cols-2 gap-6">
+                        <label v-for="option in ['ACLs disabled', 'ACLs enabled']" :key="option"
+                            class="p-6 border-2 transition-all cursor-pointer group"
+                            :class="objectOwnership === option ? 'border-[#ff9900] bg-[#ff9900]/5' : 'border-[#eaeded] bg-white hover:border-[#ff9900]/30'">
+                            <input type="radio" v-model="objectOwnership" :value="option" class="hidden">
+                            <div class="flex items-start gap-5">
+                                <div class="w-5 h-5 border-2 mt-0.5 flex items-center justify-center transition-all"
+                                    :class="objectOwnership === option ? 'border-[#ff9900] bg-[#ff9900]' : 'border-[#eaeded] bg-[#fafafa]'">
+                                    <div v-if="objectOwnership === option" class="w-1.5 h-1.5 bg-white"></div>
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <p class="text-sm font-black uppercase tracking-widest italic"
+                                        :class="objectOwnership === option ? 'text-[#ff9900]' : 'text-[#232f3e]'">{{
+                                            option }}</p>
+                                    <p class="text-[11px] font-medium leading-relaxed"
+                                        :class="objectOwnership === option ? 'text-[#ff9900]/70' : 'text-[#545b64]'">{{
+                                            option === 'ACLs disabled' ? 'Recommended. All objects owned by this account.' :
+                                                'Multiple account ownership supported.' }}</p>
+                                </div>
+                            </div>
+                        </label>
+                    </div>
+                </section>
+
+                <!-- Block Public Access -->
+                <section class="bg-white p-10 border-2 border-[#eaeded] shadow-sm">
+                    <div class="flex items-center gap-4 mb-8">
+                        <div
+                            class="w-10 h-10 bg-[#fafafa] border border-[#eaeded] flex items-center justify-center text-[#ff9900]">
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                            </svg>
+                        </div>
+                        <h2 class="text-lg font-black text-[#232f3e] uppercase tracking-widest italic">Security Policy
+                        </h2>
+                    </div>
+
+                    <div class="p-8 bg-[#ff9900]/5 border-2 border-[#ff9900]/20">
+                        <div class="flex gap-6">
+                            <div
+                                class="w-12 h-12 bg-white border border-[#ff9900]/20 flex items-center justify-center text-[#ff9900] shrink-0 shadow-sm">
+                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                            </div>
+                            <div class="flex-1">
+                                <label class="flex items-start gap-5 cursor-pointer group">
+                                    <div class="relative flex items-center">
+                                        <input type="checkbox" v-model="blockPublicAccess"
+                                            class="w-6 h-6 border-2 border-[#ff9900]/30 text-[#ff9900] focus:ring-0 rounded-none bg-white">
+                                    </div>
+                                    <div>
+                                        <p
+                                            class="text-sm font-black text-[#232f3e] uppercase tracking-widest italic group-hover:text-[#ff9900] transition-colors">
+                                            Block all public access</p>
+                                        <p class="text-xs text-[#545b64] leading-relaxed mt-2 font-medium">Recommended.
+                                            Secure your infrastructure by overriding all legacy bucket policies that
+                                            grant public interaction.</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Advanced Parameters -->
+                <section class="bg-white border-2 border-[#eaeded] shadow-sm overflow-hidden">
+                    <button @click="showAdvanced = !showAdvanced"
+                        class="w-full p-10 flex items-center justify-between hover:bg-[#fafafa] transition-colors">
+                        <div class="flex items-center gap-4">
+                            <div
+                                class="w-10 h-10 bg-[#fafafa] border border-[#eaeded] flex items-center justify-center text-[#ff9900]">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                        d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                </svg>
+                            </div>
+                            <h2 class="text-lg font-black text-[#232f3e] uppercase tracking-widest italic">Advanced
+                                parameters</h2>
+                        </div>
+                        <svg class="w-6 h-6 text-[#545b64] transition-transform duration-300"
+                            :class="showAdvanced ? 'rotate-180' : ''" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </button>
+
+                    <transition name="slide-down">
+                        <div v-show="showAdvanced"
+                            class="p-10 pt-0 space-y-12 bg-[#fafafa] border-t-2 border-[#eaeded]">
+                            <!-- Versioning -->
+                            <div class="pt-12">
+                                <label class="input-label italic">Bucket Versioning</label>
+                                <div class="flex gap-6 max-w-md">
+                                    <button v-for="v in ['Disable', 'Enable']" :key="v" @click="bucketVersioning = v"
+                                        class="flex-1 py-4 px-6 border-2 transition-all text-xs font-black uppercase tracking-widest italic"
+                                        :class="bucketVersioning === v ? 'bg-[#ff9900]/5 border-[#ff9900] text-[#ff9900]' : 'bg-white border-[#eaeded] text-[#545b64] hover:border-[#ff9900]/30'">
+                                        {{ v }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Encryption -->
+                            <div>
+                                <label class="input-label italic">Default Encryption</label>
+                                <div class="grid md:grid-cols-3 gap-6">
+                                    <label v-for="e in ['SSE-S3', 'SSE-KMS', 'DSSE-KMS']" :key="e"
+                                        class="flex items-center gap-4 p-6 border-2 transition-all cursor-pointer group"
+                                        :class="encryptionType === e ? 'border-[#ff9900] bg-[#ff9900]/5' : 'border-[#eaeded] bg-white hover:border-[#ff9900]/30'">
+                                        <input type="radio" v-model="encryptionType" :value="e" class="hidden">
+                                        <div class="w-5 h-5 border-2 flex items-center justify-center transition-all"
+                                            :class="encryptionType === e ? 'border-[#ff9900] bg-[#ff9900]' : 'border-[#eaeded] bg-[#fafafa]'">
+                                            <div v-if="encryptionType === e" class="w-1.5 h-1.5 bg-white"></div>
+                                        </div>
+                                        <span class="text-xs font-black uppercase tracking-tight italic"
+                                            :class="encryptionType === e ? 'text-[#ff9900]' : 'text-[#232f3e]'">{{ e
+                                            }}</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </transition>
+                </section>
+            </div>
+        </div>
+
+        <!-- Sticky Bottom Actions -->
+        <div
+            class="fixed bottom-0 left-0 right-0 z-[100] bg-white/90 backdrop-blur-2xl border-t-2 border-[#eaeded] py-8 px-8 md:px-24 shadow-[0_-20px_50px_-15px_rgba(0,0,0,0.05)]">
+            <div class="max-w-[1800px] mx-auto flex justify-between items-center">
+                <div class="hidden md:block">
+                    <p class="text-[10px] text-[#545b64] uppercase tracking-[0.3em] font-black mb-1">Estimated Costing
+                    </p>
+                    <p class="text-[#ff9900] text-3xl font-black italic tracking-tighter">Net <span
+                            class="not-italic">$0.00</span> <span
+                            class="text-[#879196] text-[11px] uppercase tracking-widest not-italic ml-2 italic">/ Free
+                            Tier</span></p>
+                </div>
+                <div class="flex gap-6 w-full md:w-auto">
+                    <button @click="router.back()"
+                        class="px-10 py-4 bg-white border-2 border-[#eaeded] text-[#545b64] text-[10px] font-black uppercase tracking-widest hover:border-[#ff9900] hover:text-[#ff9900] transition-all transform active:scale-95 shadow-sm">Cancel</button>
+                    <button @click="handleCreateBucket"
+                        class="px-12 py-4 bg-[#ff9900] text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#ec7211] transition-all transform active:scale-95 shadow-lg shadow-[#ff9900]/20">
+                        Create bucket
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </template>
+
+<style scoped>
+.slide-down-enter-active,
+.slide-down-leave-active {
+    transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    max-height: 1000px;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+    max-height: 0;
+    opacity: 0;
+}
+
+.input-label {
+    @apply block text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] mb-4;
+}
+
+.input-field {
+    @apply w-full bg-[#fafafa] border-2 border-[#eaeded] p-4 text-sm text-[#232f3e] placeholder-[#eaeded] focus:outline-none focus:border-[#ff9900] transition-all font-black uppercase tracking-widest;
+}
+</style>

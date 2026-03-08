@@ -1,0 +1,616 @@
+<script setup lang="ts">
+import { onMounted, computed, ref } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
+import { useRdsStore } from '../store/rdsStore'
+import { useDocsStore } from '../../docs/store/docsStore'
+import PublicNavbar from '@/shared/components/PublicNavbar.vue'
+import ChangeVpcModal from '@/shared/components/ChangeVpcModal.vue'
+
+const router = useRouter()
+const route = useRoute()
+const rdsStore = useRdsStore()
+const docsStore = useDocsStore()
+
+const dbId = computed(() => route.params.id as string)
+const db = computed(() => rdsStore.currentDatabase)
+
+const isVpcModalOpen = ref(false)
+
+const handleVpcRefresh = async () => {
+    await rdsStore.fetchVpcs()
+}
+
+const handleVpcCreate = async (name: string) => {
+    await rdsStore.createVpc(name)
+}
+
+const handleVpcChange = async (vpcId: string) => {
+    await rdsStore.changeVpc(dbId.value, vpcId)
+    isVpcModalOpen.value = false
+    await rdsStore.fetchDatabaseById(dbId.value)
+}
+
+const copiedField = ref<string | null>(null)
+let copiedTimeout: ReturnType<typeof setTimeout> | null = null
+
+const copyToClipboard = (text: string, fieldName: string) => {
+    if (!text) return
+    navigator.clipboard.writeText(text).then(() => {
+        copiedField.value = fieldName
+        if (copiedTimeout) clearTimeout(copiedTimeout)
+        copiedTimeout = setTimeout(() => { copiedField.value = null }, 2000)
+    }).catch(err => {
+        console.error('Failed to copy: ', err)
+    })
+}
+
+const isCopied = (fieldName: string) => copiedField.value === fieldName
+
+const showPassword = ref(false)
+const maskedPassword = computed(() => {
+    if (!db.value?.password) return '••••••••••••'
+    return '•'.repeat(db.value.password.length)
+})
+
+onMounted(async () => {
+    await rdsStore.fetchDatabaseById(dbId.value)
+    await rdsStore.fetchSnapshots(dbId.value)
+    await rdsStore.fetchVpcs()
+})
+
+const statusClass = (status: string) => {
+    switch (status?.toLowerCase()) {
+        case 'available': return 'text-emerald-600 bg-emerald-50 border-emerald-200'
+        case 'creating': return 'text-amber-600 bg-amber-50 border-amber-200'
+        case 'modifying': return 'text-blue-600 bg-blue-50 border-blue-200'
+        case 'deleting': return 'text-red-600 bg-red-50 border-red-200'
+        case 'stopped': return 'text-[#879196] bg-[#fafafa] border-[#eaeded]'
+        default: return 'text-[#545b64] bg-[#fafafa] border-[#eaeded]'
+    }
+}
+
+const extractRegion = (arn: string) => {
+    if (!arn) return 'eu-north-1'
+    const parts = arn.split(':')
+    return parts.length >= 4 ? parts[3] : 'eu-north-1'
+}
+
+const handleDelete = async () => {
+    if (!db.value || !confirm(`Delete database "${db.value.name}"? This cannot be undone.`)) return
+    await rdsStore.deleteDatabase(db.value.id)
+    router.push('/rds/databases')
+}
+
+
+
+</script>
+
+<template>
+    <div class="min-h-screen bg-white text-[#16191f] font-urbanist selection:bg-amber-500/20 selection:text-amber-900">
+        <PublicNavbar activeLink="compute" />
+
+        <div class="relative pt-24 pb-40">
+            <!-- Grid Background -->
+            <div
+                class="absolute inset-0 bg-[linear-gradient(rgba(251,191,36,0.06)_1px,transparent_1px),linear-gradient(90deg,rgba(251,191,36,0.06)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none">
+            </div>
+
+            <div class="relative z-10 max-w-7xl mx-auto px-6">
+
+                <!-- Breadcrumbs -->
+                <nav class="flex items-center gap-3 text-[10px] font-black uppercase tracking-[0.3em] mb-12">
+                    <button @click="router.push('/dashboard')"
+                        class="text-[#879196] hover:text-amber-600 transition-colors">Dashboard</button>
+                    <span class="text-[#eaeded] font-light">/</span>
+                    <button @click="router.push('/rds/databases')"
+                        class="text-[#879196] hover:text-amber-600 transition-colors">Managed_Database</button>
+                    <span class="text-[#eaeded] font-light">/</span>
+                    <span class="text-amber-600 italic">{{ db?.name || dbId }}</span>
+                </nav>
+
+                <!-- Loading State -->
+                <div v-if="rdsStore.isLoading"
+                    class="py-32 text-center text-[10px] font-black tracking-widest uppercase text-[#879196] animate-pulse">
+                    FETCHING_DATABASE_METADATA...
+                </div>
+
+                <!-- Not Found -->
+                <div v-else-if="!db" class="py-32 text-center">
+                    <p class="text-[10px] font-black tracking-widest uppercase text-[#879196]">Database not found.</p>
+                    <button @click="router.push('/rds/databases')"
+                        class="mt-6 px-8 py-4 border-2 border-[#232f3e] text-[10px] font-black uppercase tracking-widest hover:bg-[#232f3e] hover:text-white transition-all">
+                        ← Back to Databases
+                    </button>
+                </div>
+
+                <!-- Main Detail -->
+                <div v-else>
+
+                    <!-- Header Card -->
+                    <div
+                        class="flex flex-col lg:flex-row lg:items-end justify-between gap-10 mb-12 px-8 py-10 border-4 border-[#232f3e] bg-white relative overflow-hidden">
+                        <div
+                            class="absolute right-0 top-0 w-64 h-64 bg-amber-500/5 -rotate-45 translate-x-32 -translate-y-32 pointer-events-none">
+                        </div>
+                        <div class="flex items-start gap-8 flex-1">
+                            <div
+                                class="w-20 h-20 border-4 border-[#232f3e] flex items-center justify-center text-[#232f3e] flex-shrink-0">
+                                <svg class="w-9 h-9" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                        d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                                </svg>
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-4 mb-3">
+                                    <h1
+                                        class="text-5xl font-black text-[#232f3e] tracking-tighter uppercase leading-none truncate">
+                                        {{ db.name }}</h1>
+                                    <button @click="docsStore.openHelp('rds', 'rds-clusters')"
+                                        class="flex items-center gap-2 px-3 py-1.5 bg-white border-2 border-[#232f3e] text-[9px] font-black uppercase tracking-widest hover:bg-amber-500 hover:text-white transition-all shadow-[3px_3px_0px_#232f3e] active:translate-y-0.5 active:shadow-none translate-y-[-2px]">
+                                        <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24"
+                                            stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
+                                        Help
+                                    </button>
+                                </div>
+
+                                <!-- ARN Display -->
+                                <div v-if="db.arn" @click="copyToClipboard(db.arn, 'arn')"
+                                    class="group flex items-center gap-2 mb-4 cursor-pointer max-w-fit">
+                                    <span
+                                        class="text-[9px] font-black text-[#879196] uppercase tracking-widest bg-gray-50 px-2 py-0.5 border border-gray-200 group-hover:border-amber-500 group-hover:text-amber-600 transition-all truncate">ARN:
+                                        {{ db.arn }}</span>
+                                    <svg v-if="!isCopied('arn')"
+                                        class="w-3 h-3 text-[#879196] group-hover:text-amber-600 flex-shrink-0"
+                                        fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m-5-5l5 5-5 5" />
+                                    </svg>
+                                    <svg v-else class="w-3 h-3 text-emerald-500 flex-shrink-0" fill="none"
+                                        stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+
+                                <div class="flex items-center gap-4">
+                                    <span
+                                        class="inline-flex items-center gap-2 px-3 py-1 border text-[10px] font-black uppercase tracking-widest"
+                                        :class="statusClass(db.status || 'available')">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                                        {{ db.status || 'available' }}
+                                    </span>
+                                    <span class="text-[10px] font-black text-[#879196] uppercase tracking-widest">{{
+                                        db.engine || 'PostgreSQL' }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex gap-4 flex-wrap">
+                            <button @click="router.push(`/rds/modify/${db.id}`)"
+                                class="px-8 py-4 border-2 border-[#232f3e] text-[#232f3e] font-black uppercase tracking-widest text-xs hover:bg-[#232f3e] hover:text-white transition-all">
+                                Modify
+                            </button>
+                            <button @click="handleDelete"
+                                class="px-8 py-4 border-2 border-red-500 text-red-500 font-black uppercase tracking-widest text-xs hover:bg-red-500 hover:text-white transition-all">
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Detail Grid: 3 columns -->
+                    <div class="grid md:grid-cols-3 gap-0 border-4 border-[#232f3e] mb-12">
+
+                        <!-- Connection Info -->
+                        <div class="p-10 border-r-4 border-[#232f3e]">
+                            <h2 class="text-[10px] font-black text-[#879196] uppercase tracking-[0.3em] mb-8">
+                                Connection_Info</h2>
+                            <div class="space-y-6">
+                                <div>
+                                    <span
+                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Database
+                                        ID</span>
+                                    <div class="flex items-center gap-2 group cursor-pointer"
+                                        @click="copyToClipboard(db.id, 'dbId')">
+                                        <span class="text-sm font-mono text-[#232f3e] break-all">{{ db.id }}</span>
+                                        <svg v-if="!isCopied('dbId')"
+                                            class="w-3 h-3 text-[#ccc] group-hover:text-amber-600 flex-shrink-0 transition-colors"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m-5-5l5 5-5 5" />
+                                        </svg>
+                                        <svg v-else class="w-3 h-3 text-emerald-500 flex-shrink-0" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <span
+                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Private
+                                        IP / Host</span>
+                                    <div class="flex items-center gap-2 group cursor-pointer"
+                                        @click="copyToClipboard(db.host || db.privateIp || db.endpoint, 'host')">
+                                        <span class="text-sm font-mono text-[#232f3e]">{{ db.host || db.privateIp ||
+                                            db.endpoint || '—' }}</span>
+                                        <svg v-if="!isCopied('host')"
+                                            class="w-3 h-3 text-[#ccc] group-hover:text-amber-600 flex-shrink-0 transition-colors"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m-5-5l5 5-5 5" />
+                                        </svg>
+                                        <svg v-else class="w-3 h-3 text-emerald-500 flex-shrink-0" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div class="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <span
+                                            class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Port</span>
+                                        <span class="text-sm font-black text-[#232f3e]">{{ db.port || '5432' }}</span>
+                                    </div>
+                                    <div>
+                                        <span
+                                            class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Public
+                                            Port</span>
+                                        <span class="text-sm font-black text-[#232f3e]">{{ db.publicPort || '—'
+                                        }}</span>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span
+                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Master
+                                        User (Role)</span>
+                                    <span class="text-sm font-mono text-[#232f3e]">{{ db.roleName || db.user || '—'
+                                    }}</span>
+                                </div>
+                                <div>
+                                    <span
+                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Password</span>
+                                    <div class="flex items-center gap-3">
+                                        <span class="text-sm font-mono text-[#232f3e]">{{ showPassword ? db.password :
+                                            maskedPassword }}</span>
+                                        <button @click="showPassword = !showPassword"
+                                            class="text-[8px] font-black text-[#879196] uppercase tracking-widest hover:text-amber-600 transition-colors border border-[#eaeded] hover:border-amber-500 px-2 py-0.5">
+                                            {{ showPassword ? 'Hide' : 'Show' }}
+                                        </button>
+                                        <button @click="copyToClipboard(db.password, 'password')"
+                                            class="text-[8px] font-black text-[#879196] uppercase tracking-widest hover:text-amber-600 transition-colors border border-[#eaeded] hover:border-amber-500 px-2 py-0.5">
+                                            {{ isCopied('password') ? '✓ Copied' : 'Copy' }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Configuration -->
+                        <div class="p-10 border-r-4 border-[#232f3e]">
+                            <h2 class="text-[10px] font-black text-[#879196] uppercase tracking-[0.3em] mb-8">
+                                Configuration</h2>
+                            <div class="space-y-6">
+                                <div>
+                                    <span
+                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Engine</span>
+                                    <span class="text-sm font-black text-[#232f3e] uppercase">{{ db.engine ||
+                                        'PostgreSQL' }}</span>
+                                </div>
+                                <div>
+                                    <span
+                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Physical
+                                        DB Name</span>
+                                    <div class="flex items-center gap-2 group cursor-pointer"
+                                        @click="copyToClipboard(db.physicalDbName || db.name, 'physicalDb')">
+                                        <span class="text-sm font-black text-[#232f3e] uppercase">{{ db.physicalDbName
+                                            ||
+                                            db.name }}</span>
+                                        <svg v-if="!isCopied('physicalDb')"
+                                            class="w-3 h-3 text-[#ccc] group-hover:text-amber-600 flex-shrink-0 transition-colors"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m-5-5l5 5-5 5" />
+                                        </svg>
+                                        <svg v-else class="w-3 h-3 text-emerald-500 flex-shrink-0" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span
+                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Region</span>
+                                    <span class="text-sm font-black text-[#232f3e] uppercase">{{ extractRegion(db.arn)
+                                    }}</span>
+                                </div>
+                                <div>
+                                    <span
+                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Created</span>
+                                    <span class="text-sm font-mono text-[#232f3e]">{{ db.createdAt ? new
+                                        Date(db.createdAt).toLocaleDateString('en-US', {
+                                            year: 'numeric', month:
+                                                'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
+                                        }) : '—' }}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Networking -->
+                        <div class="p-10">
+                            <h2 class="text-[10px] font-black text-[#879196] uppercase tracking-[0.3em] mb-8">
+                                Networking</h2>
+                            <div class="space-y-6">
+                                <div>
+                                    <div class="flex items-center justify-between mb-1">
+                                        <span class="block text-[9px] font-black text-[#879196] uppercase tracking-widest">VPC ID</span>
+                                        <button v-if="db" @click="isVpcModalOpen = true" class="text-[8px] font-black text-[#879196] uppercase tracking-widest hover:text-amber-500 transition-colors border border-[#eaeded] hover:border-amber-500 px-2 py-0.5">
+                                            Change VPC
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center gap-2 group cursor-pointer"
+                                        @click="copyToClipboard(db.publicConnectionString || 'default vpc', 'vpcId')">
+                                        <span class="text-sm font-mono text-[#232f3e] break-all">{{ db.vpcId || '—'
+                                        }}</span>
+                                        <svg v-if="db.vpcId && !isCopied('vpcId')"
+                                            class="w-3 h-3 text-[#ccc] group-hover:text-amber-600 flex-shrink-0 transition-colors"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m-5-5l5 5-5 5" />
+                                        </svg>
+                                        <svg v-else-if="isCopied('vpcId')"
+                                            class="w-3 h-3 text-emerald-500 flex-shrink-0" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span
+                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Private
+                                        IP</span>
+                                    <div class="flex items-center gap-2 group cursor-pointer"
+                                        @click="copyToClipboard(db.privateIp || db.host || '', 'privateIp')">
+                                        <span class="text-sm font-mono text-[#232f3e]">{{ db.privateIp || db.host ||
+                                            '—' }}</span>
+                                        <svg v-if="!isCopied('privateIp')"
+                                            class="w-3 h-3 text-[#ccc] group-hover:text-amber-600 flex-shrink-0 transition-colors"
+                                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m-5-5l5 5-5 5" />
+                                        </svg>
+                                        <svg v-else class="w-3 h-3 text-emerald-500 flex-shrink-0" fill="none"
+                                            stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                </div>
+                                <div>
+                                    <span
+                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Database
+                                        Name</span>
+                                    <span class="text-sm font-mono text-[#232f3e]">{{ db.name }}</span>
+                                </div>
+                                <div>
+                                    <span
+                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Status</span>
+                                    <span
+                                        class="inline-flex items-center gap-2 px-3 py-1 border text-[10px] font-black uppercase tracking-widest"
+                                        :class="statusClass(db.status || 'available')">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-current"></span>
+                                        {{ db.status || 'available' }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Connection Strings -->
+                    <div class="grid md:grid-cols-2 gap-0 border-4 border-[#232f3e] mb-12">
+
+                        <!-- VPC Connection String -->
+                        <div class="border-r-4 border-[#232f3e]">
+                            <div class="px-10 py-5 border-b-4 border-[#232f3e] bg-[#232f3e] flex items-center gap-3">
+                                <svg class="w-4 h-4 text-amber-500" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                                </svg>
+                                <h2 class="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em]">
+                                    VPC_Connection_String</h2>
+                                <span
+                                    class="ml-auto text-[8px] font-black text-amber-500/50 uppercase tracking-widest">Private</span>
+                            </div>
+                            <div class="p-8 bg-[#fafafa]">
+                                <code class="block font-mono text-sm text-[#232f3e] bg-white border-2 border-[#eaeded] p-5 break-all leading-relaxed relative group cursor-pointer hover:border-amber-500 transition-colors"
+                                    @click="copyToClipboard(db.connectionString, 'vpcConn')">
+                                    <div
+                                        class="absolute right-3 top-3 text-[8px] font-black uppercase tracking-widest transition-all"
+                                        :class="isCopied('vpcConn') ? 'text-emerald-500 opacity-100' : 'text-[#879196] opacity-0 group-hover:opacity-100'">
+                                        {{ isCopied('vpcConn') ? '✓ Copied!' : 'Click to copy' }}
+                                    </div>
+                                    {{ db.connectionString || '—' }}
+                                </code>
+                                <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest mt-3 italic">
+                                    Use this within your VPC network.</p>
+                            </div>
+                        </div>
+
+                        <!-- Public Connection String -->
+                        <div>
+                            <div class="px-10 py-5 border-b-4 border-[#232f3e] bg-[#232f3e] flex items-center gap-3">
+                                <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24"
+                                    stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                <h2 class="text-[10px] font-black text-emerald-400 uppercase tracking-[0.3em]">
+                                    Public_Connection_String</h2>
+                                <span
+                                    class="ml-auto text-[8px] font-black text-emerald-400/50 uppercase tracking-widest">External</span>
+                            </div>
+                            <div class="p-8 bg-[#fafafa]">
+                                <code v-if="db.publicConnectionString"
+                                    class="block font-mono text-sm text-[#232f3e] bg-white border-2 border-[#eaeded] p-5 break-all leading-relaxed relative group cursor-pointer hover:border-emerald-500 transition-colors"
+                                    @click="copyToClipboard(db.publicConnectionString, 'pubConn')">
+                                    <div
+                                        class="absolute right-3 top-3 text-[8px] font-black uppercase tracking-widest transition-all"
+                                        :class="isCopied('pubConn') ? 'text-emerald-500 opacity-100' : 'text-[#879196] opacity-0 group-hover:opacity-100'">
+                                        {{ isCopied('pubConn') ? '✓ Copied!' : 'Click to copy' }}
+                                    </div>
+                                    {{ db.publicConnectionString }}
+                                </code>
+                                <div v-else
+                                    class="flex items-center gap-3 bg-white border-2 border-dashed border-[#eaeded] p-5 text-[#879196]">
+                                    <svg class="w-4 h-4 flex-shrink-0" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                            d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" />
+                                    </svg>
+                                    <span
+                                        class="text-[10px] font-black uppercase tracking-widest">Public access not
+                                        enabled</span>
+                                </div>
+                                <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest mt-3 italic">
+                                    Use this to connect from outside your VPC.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Preview Dashboard -->
+                    <div class="grid lg:grid-cols-2 gap-12 mb-12">
+                        <!-- Monitoring Preview -->
+                        <div class="border-4 border-[#232f3e] bg-white">
+                            <div
+                                class="px-8 py-4 border-b-4 border-[#232f3e] bg-[#232f3e] flex justify-between items-center">
+                                <h2 class="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em]">
+                                    Monitoring_Preview</h2>
+                                <span
+                                    class="text-[8px] font-black text-amber-500/50 uppercase tracking-widest">Real-time
+                                    telemetry</span>
+                            </div>
+                            <div class="p-8">
+                                <div class="grid grid-cols-2 gap-8 mb-8">
+                                    <div>
+                                        <span
+                                            class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">CPU
+                                            Utilization</span>
+                                        <div class="flex items-end gap-2">
+                                            <span class="text-3xl font-black text-[#232f3e]">12.4%</span>
+                                            <span class="text-[10px] text-emerald-600 font-bold mb-1">Normal</span>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <span
+                                            class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">DB
+                                            Connections</span>
+                                        <div class="flex items-end gap-2">
+                                            <span class="text-3xl font-black text-[#232f3e]">8</span>
+                                            <span class="text-[10px] text-[#879196] font-bold mb-1">/ 100</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <!-- Mock Chart -->
+                                <div
+                                    class="h-32 w-full bg-[#fafafa] border-2 border-[#eaeded] relative overflow-hidden group">
+                                    <div class="absolute inset-x-0 bottom-0 h-full flex items-end px-2 gap-1">
+                                        <div v-for="i in 20" :key="i"
+                                            class="flex-1 bg-amber-500/20 group-hover:bg-amber-500/40 transition-all"
+                                            :style="{ height: Math.random() * 80 + 20 + '%' }"></div>
+                                    </div>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span
+                                            class="text-[9px] font-black text-[#879196] uppercase tracking-[0.2em] bg-white px-3 py-1 border border-[#eaeded] shadow-sm">load_delta_last_6h</span>
+                                    </div>
+                                </div>
+                                <button
+                                    class="w-full mt-6 py-3 border-2 border-[#232f3e] text-[10px] font-black uppercase tracking-widest hover:bg-[#232f3e] hover:text-white transition-all">View
+                                    CloudWatch Metrics →</button>
+                            </div>
+                        </div>
+
+                        <!-- Snapshots Preview -->
+                        <div class="border-4 border-[#232f3e] bg-white">
+                            <div
+                                class="px-8 py-4 border-b-4 border-[#232f3e] bg-[#232f3e] flex justify-between items-center">
+                                <h2 class="text-[10px] font-black text-amber-500 uppercase tracking-[0.3em]">
+                                    Snapshot_Summary</h2>
+                                <button @click="router.push(`/rds/databases/${dbId}/snapshots`)"
+                                    class="text-[9px] font-black text-amber-500 hover:underline uppercase tracking-widest">View
+                                    all</button>
+                            </div>
+                            <div class="p-8">
+                                <div v-if="rdsStore.snapshots.length === 0" class="py-12 text-center">
+                                    <p class="text-[10px] font-black text-[#879196] uppercase tracking-widest mb-4">No
+                                        snapshots registered.</p>
+                                    <button @click="router.push(`/rds/databases/${dbId}/snapshots/create`)"
+                                        class="px-6 py-3 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all">Take
+                                        First Snapshot</button>
+                                </div>
+                                <div v-else class="space-y-4">
+                                    <div v-for="snap in rdsStore.snapshots.slice(0, 3)" :key="snap.id"
+                                        class="p-4 border-2 border-[#eaeded] hover:border-amber-500 transition-colors cursor-pointer group">
+                                        <div class="flex justify-between items-start mb-1">
+                                            <span
+                                                class="text-xs font-black text-[#232f3e] uppercase font-mono truncate mr-4">{{
+                                                    snap.name }}</span>
+                                            <span
+                                                class="text-[8px] font-black text-emerald-600 uppercase tracking-widest">{{
+                                                    snap.status }}</span>
+                                        </div>
+                                        <div
+                                            class="text-[9px] text-[#879196] font-medium uppercase tracking-widest italic group-hover:text-amber-600">
+                                            Created: {{ new Date(snap.createdAt).toLocaleDateString() }}</div>
+                                    </div>
+                                    <p
+                                        class="text-[9px] font-black text-[#879196] uppercase tracking-widest text-center italic mt-6">
+                                        Showing latest manual snapshots</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+
+        <footer class="py-20 bg-white border-t-2 border-[#232f3e]">
+            <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-10">
+                <div class="flex items-center gap-3">
+                    <div class="w-8 h-8 bg-[#232f3e] flex items-center justify-center text-white font-black italic">S
+                    </div>
+                    <span class="font-black text-xl text-[#232f3e] tracking-tighter uppercase">SerwinForge</span>
+                </div>
+                <div class="text-[10px] text-[#879196] font-black uppercase tracking-widest italic">© 2026 SERWIN
+                    SYSTEMS INC.</div>
+            </div>
+        </footer>
+
+        <ChangeVpcModal
+            v-if="db"
+            :is-open="isVpcModalOpen"
+            :resource-id="dbId"
+            :current-vpc-id="db?.vpcId"
+            :vpcs="rdsStore.vpcs"
+            :is-loading="rdsStore.isLoading"
+            @close="isVpcModalOpen = false"
+            @refresh="handleVpcRefresh"
+            @create="handleVpcCreate"
+            @change="handleVpcChange"
+        />
+    </div>
+</template>
+
+<style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&display=swap');
+
+.font-urbanist {
+    font-family: 'Urbanist', sans-serif;
+}
+</style>

@@ -175,6 +175,8 @@ export const useLambdaStore = defineStore('lambda', () => {
     const createScalingPolicy = async (functionId: string, payload: any) => {
         isLoading.value = true
         try {
+            console.log(payload)
+            console.log("functionId")
             await apiClient.post(`/lambda/${functionId}/policies`, payload)
             await fetchScalingPolicies()
         } catch (error) {

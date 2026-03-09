@@ -19,13 +19,12 @@ const selectedLambdaScalingPolicy = ref<any>(null)
 const lambdaScalingForm = ref({
     function_id: '',
     metric_name: 'Throttles',
-    target_value: 100,
-    scale_down_value: 50,
-    max_instances: 10,
-    scale_out_cooldown: 60,
-    scale_in_cooldown: 60,
-    min_instances: 1,
-    concurrency_step: 1
+    scale_up_threshold: 100,
+    scale_down_threshold: 50,
+    max_concurrency_limit: 10,
+    cooldown_seconds: 60,
+    min_concurrency_limit: 1,
+    scale_step: 1
 })
 const lambdaScalingFormError = ref('')
 
@@ -45,13 +44,12 @@ const goToAddLambdaScalingPolicy = () => {
     lambdaScalingForm.value = {
         function_id: '',
         metric_name: 'Invocations',
-        target_value: 100,
-        scale_down_value: 50,
-        max_instances: 10,
-        scale_out_cooldown: 60,
-        scale_in_cooldown: 60,
-        min_instances: 1,
-        concurrency_step: 1
+        scale_up_threshold: 100,
+        scale_down_threshold: 50,
+        max_concurrency_limit: 10,
+        cooldown_seconds: 60,
+        min_concurrency_limit: 1,
+        scale_step: 1
     }
     lambdaScalingFormError.value = ''
 }
@@ -62,13 +60,12 @@ const goToEditLambdaScalingPolicy = (policy: any) => {
     lambdaScalingForm.value = {
         function_id: policy.function_id || policy.target_id,
         metric_name: policy.metric_name,
-        target_value: policy.target_value,
-        scale_down_value: policy.scale_down_value,
-        max_instances: policy.max_instances,
-        scale_out_cooldown: policy.scale_out_cooldown,
-        scale_in_cooldown: policy.scale_in_cooldown,
-        min_instances: policy.min_instances || 1,
-        concurrency_step: policy.concurrency_step || 1
+        scale_up_threshold: policy.scale_up_threshold || policy.target_value,
+        scale_down_threshold: policy.scale_down_threshold || policy.scale_down_value,
+        max_concurrency_limit: policy.max_concurrency_limit || policy.max_instances,
+        cooldown_seconds: policy.cooldown_seconds || policy.scale_out_cooldown || policy.scale_in_cooldown || 60,
+        min_concurrency_limit: policy.min_concurrency_limit || policy.min_instances || 1,
+        scale_step: policy.scale_step || policy.concurrency_step || 1
     }
     lambdaScalingFormError.value = ''
 }
@@ -84,20 +81,25 @@ const submitLambdaScalingPolicy = async () => {
         lambdaScalingFormError.value = 'Function ID is required'
         return
     }
-    if (lambdaScalingForm.value.target_value <= 0) {
+    if (lambdaScalingForm.value.scale_up_threshold <= 0) {
         lambdaScalingFormError.value = 'Scale Up Threshold must be greater than 0'
         return
     }
-    if (lambdaScalingForm.value.scale_down_value >= lambdaScalingForm.value.target_value) {
+    if (lambdaScalingForm.value.scale_down_threshold >= lambdaScalingForm.value.scale_up_threshold) {
         lambdaScalingFormError.value = 'Scale Down Threshold must be less than Scale Up Threshold'
         return
     }
 
+    const payload = {
+        action: lambdaScalingCrudMode.value === 'edit' ? 'update' : 'create',
+        policy: { ...lambdaScalingForm.value }
+    }
+
     try {
         if (lambdaScalingCrudMode.value === 'edit' && selectedLambdaScalingPolicy.value) {
-            await lambdaStore.updateScalingPolicy(selectedLambdaScalingPolicy.value.function_id || selectedLambdaScalingPolicy.value.target_id, lambdaScalingForm.value)
+            await lambdaStore.updateScalingPolicy(selectedLambdaScalingPolicy.value.function_id || selectedLambdaScalingPolicy.value.target_id, payload)
         } else {
-            await lambdaStore.createScalingPolicy(lambdaScalingForm.value.function_id, lambdaScalingForm.value)
+            await lambdaStore.createScalingPolicy(lambdaScalingForm.value.function_id, payload)
         }
         lambdaScalingCrudMode.value = 'list'
     } catch (e: any) {
@@ -893,7 +895,7 @@ const getStatusColor = (type: string) => {
                     <div v-if="lambdaStore.isLoading" class="py-12 text-center text-[#879196] text-[10px] uppercase font-black tracking-widest animate-pulse">
                         Loading Policies...
                     </div>
-                    <div v-else-if="lambdaStore.scalingPolicies.length === 0" class="py-12 text-center border-2 border-dashed border-[#eaeded]">
+                    <div v-else-if="(lambdaStore.scalingPolicies?.policies || lambdaStore.scalingPolicies || []).length === 0" class="py-12 text-center border-2 border-dashed border-[#eaeded]">
                         <p class="text-[10px] font-black tracking-widest uppercase text-[#879196] italic">No scaling policies found.</p>
                     </div>
                     <div v-else class="overflow-x-auto border-2 border-[#eaeded]">
@@ -907,12 +909,12 @@ const getStatusColor = (type: string) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="policy in lambdaStore.scalingPolicies" :key="policy.function_id || policy.target_id" class="border-b border-[#eaeded] hover:bg-[#fafafa]">
+                                <tr v-for="policy in (lambdaStore.scalingPolicies?.policies || lambdaStore.scalingPolicies || [])" :key="policy.function_id || policy.target_id" class="border-b border-[#eaeded] hover:bg-[#fafafa]">
                                     <td class="p-4">
                                         <span class="font-mono text-xs text-[#232f3e] font-bold">{{ lambdaStore.functions.find(f => f.id === (policy.function_id || policy.target_id))?.name || (policy.function_id || policy.target_id) }}</span>
                                     </td>
                                     <td class="p-4 font-bold text-xs text-[#545b64]">{{ policy.metric_name }}</td>
-                                    <td class="p-4 font-mono text-xs text-[#545b64]">{{ policy.target_value }} / {{ policy.scale_down_value }}</td>
+                                    <td class="p-4 font-mono text-xs text-[#545b64]">{{ policy.scale_up_threshold || policy.target_value }} / {{ policy.scale_down_threshold || policy.scale_down_value }}</td>
                                     <td class="p-4 text-right space-x-4">
                                         <button @click="goToEditLambdaScalingPolicy(policy)" class="text-[10px] font-black text-amber-600 hover:text-amber-700 uppercase tracking-widest">Edit</button>
                                         <button @click="deleteLambdaScalingPolicy(policy.function_id || policy.target_id)" class="text-[10px] font-black text-[#545b64] hover:text-red-600 uppercase tracking-widest">Delete</button>
@@ -963,37 +965,33 @@ const getStatusColor = (type: string) => {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
                             <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3" title="Trigger scale-up when above this value">Scale Up Threshold</label>
-                            <input v-model.number="lambdaScalingForm.target_value" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                            <input v-model.number="lambdaScalingForm.scale_up_threshold" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
                         </div>
                         <div>
                             <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3" title="Trigger scale-down when below this value">Scale Down Threshold</label>
-                            <input v-model.number="lambdaScalingForm.scale_down_value" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                            <input v-model.number="lambdaScalingForm.scale_down_threshold" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
                         </div>
                     </div>
                     
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div>
                             <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Min Concurrency</label>
-                            <input v-model.number="lambdaScalingForm.min_instances" type="number" step="1" min="0" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                            <input v-model.number="lambdaScalingForm.min_concurrency_limit" type="number" step="1" min="0" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
                         </div>
                         <div>
                             <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Max Concurrency</label>
-                            <input v-model.number="lambdaScalingForm.max_instances" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                            <input v-model.number="lambdaScalingForm.max_concurrency_limit" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
                         </div>
                         <div>
                             <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Concurrency Step</label>
-                            <input v-model.number="lambdaScalingForm.concurrency_step" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                            <input v-model.number="lambdaScalingForm.scale_step" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Scale Out Cooldown (sec)</label>
-                            <input v-model.number="lambdaScalingForm.scale_out_cooldown" type="number" step="30" min="0" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
-                        </div>
-                        <div>
-                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Scale In Cooldown (sec)</label>
-                            <input v-model.number="lambdaScalingForm.scale_in_cooldown" type="number" step="30" min="0" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Cooldown (sec)</label>
+                            <input v-model.number="lambdaScalingForm.cooldown_seconds" type="number" step="30" min="0" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
                         </div>
                     </div>
                     

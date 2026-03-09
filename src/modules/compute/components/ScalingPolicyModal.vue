@@ -98,6 +98,9 @@ const handleSubmit = () => {
             scale_out_cooldown: Number(form.value.scale_out_cooldown),
             scale_in_cooldown: Number(form.value.scale_in_cooldown)
         }
+
+
+        console.log(payload)
         emit('submit', payload)
     }
 }

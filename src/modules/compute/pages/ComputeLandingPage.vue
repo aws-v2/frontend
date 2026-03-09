@@ -11,6 +11,102 @@ const authStore = useAuthStore()
 const computeStore = useComputeStore()
 const lambdaStore = useLambdaStore()
 
+// --- Lambda Scaling Policy State ---
+const isLambdaScalingCrudModalOpen = ref(false)
+const lambdaScalingCrudMode = ref<'list' | 'create' | 'edit'>('list')
+const selectedLambdaScalingPolicy = ref<any>(null)
+
+const lambdaScalingForm = ref({
+    function_id: '',
+    metric_name: 'Throttles',
+    scale_up_threshold: 100,
+    scale_down_threshold: 50,
+    max_concurrency_limit: 10,
+    cooldown_seconds: 60,
+    min_concurrency_limit: 1,
+    scale_step: 1
+})
+const lambdaScalingFormError = ref('')
+
+const openLambdaScalingCrudModal = async () => {
+    isLambdaScalingCrudModalOpen.value = true
+    lambdaScalingCrudMode.value = 'list'
+    await lambdaStore.fetchScalingPolicies()
+}
+
+const closeLambdaScalingCrudModal = () => {
+    isLambdaScalingCrudModalOpen.value = false
+    selectedLambdaScalingPolicy.value = null
+}
+
+const goToAddLambdaScalingPolicy = () => {
+    lambdaScalingCrudMode.value = 'create'
+    lambdaScalingForm.value = {
+        function_id: '',
+        metric_name: 'Invocations',
+        scale_up_threshold: 100,
+        scale_down_threshold: 50,
+        max_concurrency_limit: 10,
+        cooldown_seconds: 60,
+        min_concurrency_limit: 1,
+        scale_step: 1
+    }
+    lambdaScalingFormError.value = ''
+}
+
+const goToEditLambdaScalingPolicy = (policy: any) => {
+    lambdaScalingCrudMode.value = 'edit'
+    selectedLambdaScalingPolicy.value = policy
+    lambdaScalingForm.value = {
+        function_id: policy.function_id || policy.target_id,
+        metric_name: policy.metric_name,
+        scale_up_threshold: policy.scale_up_threshold || policy.target_value,
+        scale_down_threshold: policy.scale_down_threshold || policy.scale_down_value,
+        max_concurrency_limit: policy.max_concurrency_limit || policy.max_instances,
+        cooldown_seconds: policy.cooldown_seconds || policy.scale_out_cooldown || policy.scale_in_cooldown || 60,
+        min_concurrency_limit: policy.min_concurrency_limit || policy.min_instances || 1,
+        scale_step: policy.scale_step || policy.concurrency_step || 1
+    }
+    lambdaScalingFormError.value = ''
+}
+
+const deleteLambdaScalingPolicy = async (id: string) => {
+    if (confirm('Are you sure you want to delete this Lambda scaling policy?')) {
+        await lambdaStore.deletePolicy(id)
+    }
+}
+
+const submitLambdaScalingPolicy = async () => {
+    if (!lambdaScalingForm.value.function_id) {
+        lambdaScalingFormError.value = 'Function ID is required'
+        return
+    }
+    if (lambdaScalingForm.value.scale_up_threshold <= 0) {
+        lambdaScalingFormError.value = 'Scale Up Threshold must be greater than 0'
+        return
+    }
+    if (lambdaScalingForm.value.scale_down_threshold >= lambdaScalingForm.value.scale_up_threshold) {
+        lambdaScalingFormError.value = 'Scale Down Threshold must be less than Scale Up Threshold'
+        return
+    }
+
+    const payload = {
+        action: lambdaScalingCrudMode.value === 'edit' ? 'update' : 'create',
+        policy: { ...lambdaScalingForm.value }
+    }
+
+    try {
+        if (lambdaScalingCrudMode.value === 'edit' && selectedLambdaScalingPolicy.value) {
+            await lambdaStore.updateScalingPolicy(selectedLambdaScalingPolicy.value.function_id || selectedLambdaScalingPolicy.value.target_id, payload)
+        } else {
+            await lambdaStore.createScalingPolicy(lambdaScalingForm.value.function_id, payload)
+        }
+        lambdaScalingCrudMode.value = 'list'
+    } catch (e: any) {
+        lambdaScalingFormError.value = e.message || 'Failed to save policy'
+    }
+}
+
 // State for live-feel metrics
 const liveCpu = ref(45.2)
 const liveRam = ref(32.8)
@@ -86,7 +182,8 @@ onMounted(async () => {
             computeStore.fetchTemplates(),
             computeStore.fetchSSHKeys(),
             computeStore.fetchScalingPolicies(),
-            lambdaStore.fetchFunctions()
+            lambdaStore.fetchFunctions(),
+            lambdaStore.fetchScalingPolicies()
         ])
 
         intervalId = setInterval(updateLiveMetrics, 3000)
@@ -269,9 +366,15 @@ const getStatusColor = (type: string) => {
                                         Event-Driven Forge Deployments
                                     </p>
                                 </div>
-                                <button @click="router.push('/lambda/create')"
-                                    class="text-[10px] font-black text-amber-600 hover:text-[#232f3e] transition-colors uppercase tracking-[0.2em] border-b-2 border-amber-600 pb-1">Initialize
-                                    Forge &rarr;</button>
+                                <div class="flex items-center gap-4">
+                                    <button @click="openLambdaScalingCrudModal"
+                                        class="px-4 py-2 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all shadow-[4px_4px_0px_#232f3e] active:translate-y-1 active:shadow-none">
+                                        Scaling Policies
+                                    </button>
+                                    <button @click="router.push('/lambda/create')"
+                                        class="text-[10px] font-black text-amber-600 hover:text-[#232f3e] transition-colors uppercase tracking-[0.2em] border-b-2 border-amber-600 pb-1">Initialize
+                                        Forge &rarr;</button>
+                                </div>
                             </div>
 
                             <div class="border-2 border-[#232f3e] overflow-hidden">
@@ -518,6 +621,29 @@ const getStatusColor = (type: string) => {
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Lambda Scaling Card -->
+                            <div
+                                class="bg-white border-2 border-[#232f3e] p-8 hover:shadow-[10px_10px_0px_#eaeded] transition-all group">
+                                <div class="flex justify-between items-start mb-8">
+                                    <p class="text-[10px] font-black text-[#879196] tracking-widest uppercase italic">
+                                        Forge_Policies</p>
+                                    <button @click="openLambdaScalingCrudModal"
+                                        class="text-[9px] font-black text-blue-600 uppercase border-b border-blue-600">Forge Rules
+                                        &rarr;</button>
+                                </div>
+                                <div class="flex items-center gap-6">
+                                    <div
+                                        class="w-12 h-12 border-2 border-[#232f3e] flex items-center justify-center bg-[#fafafa]">
+                                        <span class="font-black italic text-[#232f3e]">λ</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-2xl font-black text-[#232f3e] leading-none mb-1">{{
+                                            lambdaStore.scalingPolicies?.length || 0 }}</p>
+                                        <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">Lambda Scale Rules</p>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Code Protocol Widget (Only on Functions tab or Bottom) -->
@@ -730,6 +856,154 @@ const getStatusColor = (type: string) => {
                 </div>
             </div>
         </footer>
+
+        <!-- Lambda Scaling CRUD Modal -->
+        <div v-if="isLambdaScalingCrudModalOpen" class="fixed inset-0 z-[200] flex items-start justify-center pt-20">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-[#232f3e]/60 backdrop-blur-sm" @click="closeLambdaScalingCrudModal"></div>
+
+            <!-- Modal Content -->
+            <div class="relative bg-white w-full max-w-4xl shadow-2xl flex flex-col border-4 border-[#232f3e] font-urbanist max-h-[80vh]">
+                <!-- Header -->
+                <div class="flex items-center justify-between px-10 py-8 border-b-2 border-[#eaeded] bg-[#fafafa]">
+                    <div>
+                        <h2 class="text-3xl font-black text-[#232f3e] tracking-tighter uppercase leading-tight">
+                            Lambda Scaling Policies
+                        </h2>
+                        <p class="text-[10px] text-amber-500 font-black uppercase tracking-[0.2em] mt-2">
+                            Manage Concurrency & Auto Scaling
+                        </p>
+                    </div>
+                    <button @click="closeLambdaScalingCrudModal"
+                        class="text-[#545b64] hover:text-amber-500 transition-all p-2 bg-white border-2 border-[#eaeded] hover:border-amber-500 active:scale-95">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Body: List Mode -->
+                <div v-if="lambdaScalingCrudMode === 'list'" class="p-10 flex-1 overflow-y-auto bg-white custom-scrollbar flex flex-col gap-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-xl font-black text-[#232f3e] uppercase">Active Policies</h3>
+                        <button @click="goToAddLambdaScalingPolicy"
+                            class="px-6 py-3 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all shadow-[4px_4px_0px_#232f3e] active:translate-y-1 active:shadow-none">
+                            + Create Policy
+                        </button>
+                    </div>
+
+                    <div v-if="lambdaStore.isLoading" class="py-12 text-center text-[#879196] text-[10px] uppercase font-black tracking-widest animate-pulse">
+                        Loading Policies...
+                    </div>
+                    <div v-else-if="(lambdaStore.scalingPolicies?.policies || lambdaStore.scalingPolicies || []).length === 0" class="py-12 text-center border-2 border-dashed border-[#eaeded]">
+                        <p class="text-[10px] font-black tracking-widest uppercase text-[#879196] italic">No scaling policies found.</p>
+                    </div>
+                    <div v-else class="overflow-x-auto border-2 border-[#eaeded]">
+                        <table class="w-full text-left border-collapse">
+                            <thead class="bg-[#fafafa] border-b-2 border-[#eaeded]">
+                                <tr>
+                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">Function</th>
+                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">Metric</th>
+                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">Scale Up / Down</th>
+                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] text-right">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="policy in (lambdaStore.scalingPolicies?.policies || lambdaStore.scalingPolicies || [])" :key="policy.function_id || policy.target_id" class="border-b border-[#eaeded] hover:bg-[#fafafa]">
+                                    <td class="p-4">
+                                        <span class="font-mono text-xs text-[#232f3e] font-bold">{{ lambdaStore.functions.find(f => f.id === (policy.function_id || policy.target_id))?.name || (policy.function_id || policy.target_id) }}</span>
+                                    </td>
+                                    <td class="p-4 font-bold text-xs text-[#545b64]">{{ policy.metric_name }}</td>
+                                    <td class="p-4 font-mono text-xs text-[#545b64]">{{ policy.scale_up_threshold || policy.target_value }} / {{ policy.scale_down_threshold || policy.scale_down_value }}</td>
+                                    <td class="p-4 text-right space-x-4">
+                                        <button @click="goToEditLambdaScalingPolicy(policy)" class="text-[10px] font-black text-amber-600 hover:text-amber-700 uppercase tracking-widest">Edit</button>
+                                        <button @click="deleteLambdaScalingPolicy(policy.function_id || policy.target_id)" class="text-[10px] font-black text-[#545b64] hover:text-red-600 uppercase tracking-widest">Delete</button>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                </div>
+
+                <!-- Body: Form Mode -->
+                <div v-else class="p-10 flex-1 overflow-y-auto bg-white custom-scrollbar flex flex-col gap-8">
+                    <div class="flex items-center gap-4 mb-2">
+                        <button @click="lambdaScalingCrudMode = 'list'" class="text-[#879196] hover:text-[#232f3e] transition-colors p-2 bg-[#fafafa] border border-[#eaeded]">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                        </button>
+                        <h3 class="text-xl font-black text-[#232f3e] uppercase">
+                            {{ lambdaScalingCrudMode === 'edit' ? 'Edit Scaling Policy' : 'Create Scaling Policy' }}
+                        </h3>
+                    </div>
+
+                    <div v-if="lambdaScalingFormError" class="p-4 border-2 border-red-200 bg-red-50 text-red-600 font-bold text-[10px] uppercase tracking-wider flex items-center justify-between">
+                        <span>{{ lambdaScalingFormError }}</span>
+                        <button @click="lambdaScalingFormError = ''" class="hover:text-red-800">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Forge Function</label>
+                            <select v-model="lambdaScalingForm.function_id" :disabled="lambdaScalingCrudMode === 'edit'" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors appearance-none disabled:opacity-50">
+                                <option value="" disabled>Select Function...</option>
+                                <option v-for="func in lambdaStore.functions" :key="func.id" :value="func.id">{{ func.name }} ({{ func.id }})</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Metric</label>
+                            <select v-model="lambdaScalingForm.metric_name" :disabled="lambdaScalingCrudMode === 'edit'" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-black text-xs text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors appearance-none disabled:opacity-50">
+                                <option value="Invocations">Invocations</option>
+                                <option value="Duration">Duration</option>
+                                <option value="Throttles">Throttles</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3" title="Trigger scale-up when above this value">Scale Up Threshold</label>
+                            <input v-model.number="lambdaScalingForm.scale_up_threshold" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3" title="Trigger scale-down when below this value">Scale Down Threshold</label>
+                            <input v-model.number="lambdaScalingForm.scale_down_threshold" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <div>
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Min Concurrency</label>
+                            <input v-model.number="lambdaScalingForm.min_concurrency_limit" type="number" step="1" min="0" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Max Concurrency</label>
+                            <input v-model.number="lambdaScalingForm.max_concurrency_limit" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Concurrency Step</label>
+                            <input v-model.number="lambdaScalingForm.scale_step" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                        <div>
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Cooldown (sec)</label>
+                            <input v-model.number="lambdaScalingForm.cooldown_seconds" type="number" step="30" min="0" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 flex justify-end gap-6">
+                        <button @click="lambdaScalingCrudMode = 'list'" class="px-8 py-3 text-[10px] font-black text-[#545b64] hover:text-amber-500 uppercase tracking-widest transition-all">Cancel</button>
+                        <button @click="submitLambdaScalingPolicy" :disabled="lambdaStore.isLoading" class="px-10 py-3 text-[10px] font-black text-white bg-[#232f3e] hover:bg-black transition-all uppercase tracking-widest disabled:opacity-50 shadow-[4px_4px_0px_#eaeded]">
+                            {{ lambdaStore.isLoading ? 'Processing...' : (lambdaScalingCrudMode === 'edit' ? 'Update Policy' : 'Create Policy') }}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         <!-- Java SDK Modal -->
         <transition name="fade">

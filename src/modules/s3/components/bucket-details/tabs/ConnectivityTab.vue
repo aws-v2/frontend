@@ -140,13 +140,22 @@ const handleCreateAccessPoint = async () => {
 
 // Access Points List
 const accessPoints = ref<any[]>([])
+const availableVpcs = ref<any[]>([])
 const isLoadingAccessPoints = ref(false)
 
 const loadAccessPoints = async () => {
     isLoadingAccessPoints.value = true
     try {
-        const points = await s3Store.fetchAccessPoints(props.bucketName)
-        accessPoints.value = points || []
+        const response = await s3Store.fetchAccessPoints(props.bucketName)
+        const points = response.access_points || []
+        availableVpcs.value = response.available_vpcs || []
+
+        // Map backend snake_case to frontend camelCase
+        accessPoints.value = (points || []).map((p: any) => ({
+            ...p,
+            networkOrigin: p.network_origin || p.networkOrigin || 'internet',
+            vpcId: p.vpc_id || p.vpcId || ''
+        }))
 
         // Sync blocked access point names based on their status from backend
         const blockedNames = accessPoints.value
@@ -158,6 +167,7 @@ const loadAccessPoints = async () => {
     } catch (e) {
         console.error('Failed to load access points:', e)
         accessPoints.value = []
+        availableVpcs.value = []
     } finally {
         isLoadingAccessPoints.value = false
     }
@@ -435,13 +445,13 @@ const handleSaveBlockPublicAccess = async () => {
                                         <span
                                             class="text-[#545b64] font-black uppercase tracking-widest opacity-40">VPC:</span>
                                         <span class="ml-2 text-[#232f3e] font-mono font-bold">{{ point.vpcId
-                                        }}</span>
+                                            }}</span>
                                     </div>
                                     <div v-if="point.arn" class="col-span-2">
                                         <span
                                             class="text-[#545b64] font-black uppercase tracking-widest opacity-40">ARN:</span>
                                         <span class="ml-2 text-[#ff9900] font-mono text-[10px]">{{ point.arn
-                                        }}</span>
+                                            }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -953,14 +963,30 @@ const handleSaveBlockPublicAccess = async () => {
                         </label>
                     </div>
 
-                    <!-- VPC ID Input -->
+                    <!-- VPC selection dropdown -->
                     <div v-if="accessPointForm.networkOrigin === 'vpc'"
                         class="mt-6 animate-in fade-in slide-in-from-top-4">
                         <label
                             class="block text-[10px] font-black uppercase tracking-[0.4em] text-[#545b64] mb-3 opacity-40">Virtual
                             Private Cloud ID</label>
-                        <input v-model="accessPointForm.vpcId" type="text" placeholder="vpc-00000000"
-                            class="w-full bg-[#fafafa] border-2 border-[#eaeded] px-6 py-3 text-lg font-black italic uppercase tracking-tighter text-[#232f3e] focus:border-[#ff9900] outline-none">
+                        <div class="relative group">
+                            <select v-model="accessPointForm.vpcId"
+                                class="w-full bg-[#fafafa] border-2 border-[#eaeded] px-6 py-4 text-lg font-black italic uppercase tracking-tighter text-[#232f3e] focus:border-[#ff9900] outline-none appearance-none cursor-pointer transition-all hover:bg-white selection:bg-[#ff9900]/10">
+                                <option value="" disabled>Select a VPC</option>
+                                <option v-for="vpc in availableVpcs" :key="vpc.id" :value="vpc.id"
+                                    class="font-bold py-4">
+                                    {{ vpc.name }} ({{ vpc.id }})
+                                </option>
+                            </select>
+                            <!-- Custom arrow -->
+                            <div
+                                class="absolute right-6 top-1/2 -translate-y-1/2 pointer-events-none text-[#ff9900] group-hover:translate-x-1 transition-transform">
+                                <svg class="w-6 h-6 rotate-90" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                        d="M9 5l7 7-7 7" />
+                                </svg>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>

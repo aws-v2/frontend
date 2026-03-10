@@ -96,7 +96,7 @@ onMounted(() => {
                     Gaming, and Infinite Storage into one atomic platform.
                 </p>
 
-                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-24">
+                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center mb-16">
                     <button @click="handleGetStarted"
                         class="px-10 py-5 bg-[#ff9900] text-white text-base font-black hover:bg-[#ec7211] transition-all hover:scale-105 min-w-[220px] flex items-center justify-center gap-2 rounded-none">
                         Start Building Today <span class="text-xl">→</span>
@@ -105,6 +105,26 @@ onMounted(() => {
                         class="px-10 py-5 bg-white border-2 border-[#232f3e] text-[#232f3e] text-base font-bold hover:bg-[#232f3e] hover:text-white transition-all min-w-[220px] rounded-none">
                         Read Documentation
                     </button>
+                </div>
+
+                <!-- Quick Specs Bar -->
+                <div class="max-w-4xl mx-auto mb-24 grid grid-cols-2 md:grid-cols-4 gap-4 border-y-2 border-[#232f3e]/10 py-6">
+                    <div class="text-center">
+                        <div class="text-[10px] font-black text-[#879196] uppercase tracking-widest mb-1">Architecture</div>
+                        <div class="text-sm font-black text-[#232f3e]">Hypervisor-Free</div>
+                    </div>
+                    <div class="text-center border-l border-[#232f3e]/10">
+                        <div class="text-[10px] font-black text-[#879196] uppercase tracking-widest mb-1">Provisioning</div>
+                        <div class="text-sm font-black text-[#232f3e]">Atomic / Inst.</div>
+                    </div>
+                    <div class="text-center border-l border-[#232f3e]/10">
+                        <div class="text-[10px] font-black text-[#879196] uppercase tracking-widest mb-1">Networking</div>
+                        <div class="text-sm font-black text-[#232f3e]">P4 Mesh</div>
+                    </div>
+                    <div class="text-center border-l border-[#232f3e]/10">
+                        <div class="text-[10px] font-black text-[#879196] uppercase tracking-widest mb-1">SLA</div>
+                        <div class="text-sm font-black text-[#232f3e]">99.999% Dur.</div>
+                    </div>
                 </div>
 
                 <!-- Hero Visual (Interactive Infrastructure Map) -->
@@ -250,6 +270,151 @@ onMounted(() => {
             </div>
         </section>
 
+        <!-- New Section: The Full Stack Protocol -->
+        <section class="py-32 bg-[#232f3e] text-white overflow-hidden relative">
+            <!-- Background Text Decoration -->
+            <div class="absolute -bottom-20 -right-20 text-[20rem] font-black text-white/[0.03] select-none pointer-events-none uppercase">
+                Oxide
+            </div>
+            
+            <div class="max-w-7xl mx-auto px-6 relative z-10">
+                <div class="grid lg:grid-cols-2 gap-20 items-center">
+                    <div>
+                        <div class="text-[#ff9900] text-sm font-black uppercase tracking-[0.3em] mb-6">Lower Level, Higher Performance</div>
+                        <h2 class="text-5xl md:text-7xl font-black mb-8 leading-[1.1] tracking-tighter">
+                            The Cloud <br/>You Actually <span class="text-[#ff9900]">Own.</span>
+                        </h2>
+                        <p class="text-slate-400 text-lg leading-relaxed mb-10 max-w-xl">
+                            Traditional cloud runs on top of legacy layers. Serwin is built from the silicon up. 
+                            We've removed the hypervisor overhead and licensing taxes to give you bare-metal performance with 
+                            the elasticity of the public cloud.
+                        </p>
+                        
+                        <div class="space-y-6">
+                            <div class="flex items-start gap-4">
+                                <div class="w-1.5 h-1.5 bg-[#ff9900] mt-2.5"></div>
+                                <div>
+                                    <div class="font-black text-white uppercase tracking-wider mb-1">Zero Hypervisor Overhead</div>
+                                    <p class="text-sm text-slate-400">Direct-to-metal execution for 99.9% resource efficiency.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-4">
+                                <div class="w-1.5 h-1.5 bg-[#ff9900] mt-2.5"></div>
+                                <div>
+                                    <div class="font-black text-white uppercase tracking-wider mb-1">Programmable Networking</div>
+                                    <p class="text-sm text-slate-400">P4-driven mesh network with sub-millisecond inter-zone hop.</p>
+                                </div>
+                            </div>
+                            <div class="flex items-start gap-4">
+                                <div class="w-1.5 h-1.5 bg-[#ff9900] mt-2.5"></div>
+                                <div>
+                                    <div class="font-black text-white uppercase tracking-wider mb-1">Predictable Economics</div>
+                                    <p class="text-sm text-slate-400">Zero licensing fees. Pay for compute, not for permission.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="relative">
+                        <!-- Technical Spec Card -->
+                        <div class="bg-white p-1 border-2 border-[#ff9900]">
+                            <div class="bg-[#fafafa] border border-[#eaeded] p-8">
+                                <div class="flex justify-between items-center mb-12">
+                                    <div class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">System_Manifest_v2.0</div>
+                                    <div class="flex gap-2">
+                                        <div class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></div>
+                                        <div class="text-[10px] font-black text-green-600 uppercase">Operational</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-y-10 gap-x-6">
+                                    <div>
+                                        <div class="text-[10px] text-[#879196] uppercase font-black mb-1">Throughput</div>
+                                        <div class="text-3xl font-black text-[#232f3e]">1.2 TB/s</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] text-[#879196] uppercase font-black mb-1">Provision Time</div>
+                                        <div class="text-3xl font-black text-[#232f3e]">&lt; 4s</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] text-[#879196] uppercase font-black mb-1">Security</div>
+                                        <div class="text-3xl font-black text-[#232f3e]">E2EE</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] text-[#879196] uppercase font-black mb-1">Efficiency</div>
+                                        <div class="text-3xl font-black text-[#ff9900]">94%</div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-12 pt-8 border-t border-[#eaeded]">
+                                    <div class="text-[10px] text-[#879196] uppercase font-black mb-4">Core Components</div>
+                                    <div class="flex flex-wrap gap-2">
+                                        <span class="px-3 py-1 bg-[#232f3e] text-white text-[9px] font-black uppercase tracking-widest">Rust Hypervisor</span>
+                                        <span class="px-3 py-1 bg-[#232f3e] text-white text-[9px] font-black uppercase tracking-widest">P4 Network</span>
+                                        <span class="px-3 py-1 bg-[#232f3e] text-white text-[9px] font-black uppercase tracking-widest">gRPC API</span>
+                                        <span class="px-3 py-1 bg-[#ff9900] text-white text-[9px] font-black uppercase tracking-widest">Custom Silicon</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- New Section: Infrastructure as Data (Observability) -->
+        <section class="py-32 bg-white">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="max-w-3xl mb-20">
+                    <h2 class="text-4xl md:text-6xl font-black text-[#232f3e] mb-6 tracking-tight">
+                        Infrastructure <br/>as <span class="text-[#ff9900]">Data.</span>
+                    </h2>
+                    <p class="text-[#545b64] text-lg">
+                        Oxide-inspired observability gives you a single pane of glass into every watt consumed and every packet routed. 
+                        No black boxes. No hidden throttles. Just pure, actionable telemetry.
+                    </p>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-8">
+                    <div class="p-8 border-2 border-[#232f3e] hover:shadow-[8px_8px_0px_0px_#ff9900] transition-all">
+                        <div class="w-12 h-12 bg-[#232f3e] flex items-center justify-center text-[#ff9900] mb-8">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-black mb-4 uppercase tracking-tight">Power Observability</h3>
+                        <p class="text-sm text-[#545b64] leading-relaxed">
+                            Monitor energy usage at the rack level. Optimize your workloads for sustainability and performance without the guesswork.
+                        </p>
+                    </div>
+
+                    <div class="p-8 border-2 border-[#232f3e] hover:shadow-[8px_8px_0px_0px_#ff9900] transition-all">
+                        <div class="w-12 h-12 bg-[#232f3e] flex items-center justify-center text-[#ff9900] mb-8">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-black mb-4 uppercase tracking-tight">Real-time Telemetry</h3>
+                        <p class="text-sm text-[#545b64] leading-relaxed">
+                            High-fidelity metrics captured at microsecond intervals. Resolve issues before they impact your end users.
+                        </p>
+                    </div>
+
+                    <div class="p-8 border-2 border-[#232f3e] hover:shadow-[8px_8px_0px_0px_#ff9900] transition-all">
+                        <div class="w-12 h-12 bg-[#232f3e] flex items-center justify-center text-[#ff9900] mb-8">
+                            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 11c0 3.517-1.009 6.799-2.753 9.571m-3.44-2.04l.054-.09a10.116 10.116 0 001.283-3.562V10.701m.976-4.214a10.116 10.116 0 011.026 4.214V11m0 0V11m0 0v1.428m0 0a10.262 10.262 0 01-2.253 6.355m2.253-6.355a10.259 10.259 0 01-3.328 7.373m5.581-12.008a10.114 10.114 0 013.344 7.279v1.432a10.114 10.114 0 01-1.497 5.272m-1.847-12.702a10.202 10.202 0 012.33 5.43" />
+                            </svg>
+                        </div>
+                        <h3 class="text-xl font-black mb-4 uppercase tracking-tight">Audit-Ready Security</h3>
+                        <p class="text-sm text-[#545b64] leading-relaxed">
+                            Full visibility into the control plane. Every API call, configuration change, and access event is logged and immutable.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- Feature Deep Dives -->
         <section class="py-32 relative bg-[#fafafa]">
             <div class="max-w-7xl mx-auto px-6">
@@ -289,6 +454,56 @@ onMounted(() => {
                             class="mt-auto text-sm font-black uppercase tracking-[0.2em] transition-colors duration-300 text-[#0073bb] group-hover:text-[#ff9900] text-left">
                             {{ feature.link }} →
                         </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- New Section: Zero-Touch Operations -->
+        <section class="py-32 bg-[#fafafa]">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="flex flex-col md:flex-row gap-20 items-center">
+                    <div class="flex-1">
+                        <h2 class="text-4xl md:text-6xl font-black text-[#232f3e] mb-8 tracking-tighter">
+                            No Assembly <br/><span class="text-[#ff9900]">Required.</span>
+                        </h2>
+                        <p class="text-[#545b64] text-lg leading-relaxed mb-10">
+                            Stop managing licenses and start managing infrastructure. Serwin eliminates the 
+                            operational friction of traditional hardware with a software-defined approach that 
+                            just works.
+                        </p>
+                        
+                        <div class="grid sm:grid-cols-2 gap-8">
+                            <div>
+                                <h4 class="font-black text-[#232f3e] uppercase text-sm mb-2">Instant IT transformation</h4>
+                                <p class="text-xs text-[#879196]">Just add code and scale. Start new projects today, not next quarter.</p>
+                            </div>
+                            <div>
+                                <h4 class="font-black text-[#232f3e] uppercase text-sm mb-2">No more license management</h4>
+                                <p class="text-xs text-[#879196]">Focus on business goals, not renewals. Transparent pricing, always.</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="flex-1 w-full bg-[#232f3e] p-10 text-white font-mono text-sm border-2 border-[#ff9900]">
+                        <div class="flex items-center gap-2 mb-6">
+                            <div class="w-2 h-2 bg-red-500 rounded-full"></div>
+                            <div class="w-2 h-2 bg-yellow-500 rounded-full"></div>
+                            <div class="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <span class="ml-2 text-[10px] text-slate-500">serwin init --cluster-scale 10k</span>
+                        </div>
+                        <div class="space-y-2">
+                            <div class="text-green-400"># Initializing cluster...</div>
+                            <div>[OK] Identity verified (sub: 0x6d617274696e)</div>
+                            <div>[OK] VPC manifest applied (p4_mesh_v1)</div>
+                            <div>[OK] Provisioning 10,000 cores...</div>
+                            <div class="flex items-center gap-2">
+                                <div class="w-full bg-slate-800 h-1">
+                                    <div class="bg-[#ff9900] h-full w-[100%] animate-pulse"></div>
+                                </div>
+                            </div>
+                            <div class="text-[#ff9900]">Deployment successful in 4.2s.</div>
+                            <div class="text-indigo-400">Endpoint: https://api.serwin.io/v2/cluster-alpha</div>
+                        </div>
                     </div>
                 </div>
             </div>

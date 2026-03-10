@@ -141,19 +141,69 @@ onMounted(() => {
             </div>
         </main>
 
+        <!-- New Section: Predictable Economics -->
+        <section class="py-24 bg-[#232f3e] text-white">
+            <div class="max-w-7xl mx-auto px-6">
+                <div class="grid md:grid-cols-2 gap-20 items-center">
+                    <div>
+                        <h2 class="text-4xl md:text-6xl font-black mb-8 tracking-tighter">
+                            The End of <br/><span class="text-[#ff9900]">Licensing Taxes.</span>
+                        </h2>
+                        <p class="text-slate-400 text-lg leading-relaxed mb-8">
+                            Most infrastructure providers charge you twice: once for the hardware, and again for the right to use it. 
+                            At Serwin, we believe licenses are another form of rental. Our platform is built on open-foundation 
+                            principles with zero licensing overhead.
+                        </p>
+                        <ul class="space-y-4">
+                            <li class="flex items-center gap-3">
+                                <div class="w-1.5 h-1.5 bg-[#ff9900]"></div>
+                                <span class="text-sm font-bold uppercase tracking-widest text-slate-300">Unlimited API Access</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div class="w-1.5 h-1.5 bg-[#ff9900]"></div>
+                                <span class="text-sm font-bold uppercase tracking-widest text-slate-300">No Per-Seat Maintenance</span>
+                            </li>
+                            <li class="flex items-center gap-3">
+                                <div class="w-1.5 h-1.5 bg-[#ff9900]"></div>
+                                <span class="text-sm font-bold uppercase tracking-widest text-slate-300">Elastic Scaling without Renewals</span>
+                            </li>
+                        </ul>
+                    </div>
+                    <div class="bg-white/5 border border-white/10 p-10 backdrop-blur-sm relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-32 h-32 bg-[#ff9900]/10 blur-3xl rounded-full -mr-16 -mt-16"></div>
+                        <div class="text-[10px] font-black text-[#ff9900] uppercase tracking-widest mb-6">Comparative_Analysis_v1.0</div>
+                        <div class="space-y-6">
+                            <div class="flex justify-between items-end border-b border-white/5 pb-4">
+                                <div class="text-xs font-bold text-slate-400 uppercase">Legacy Providers</div>
+                                <div class="text-xl font-black text-slate-200">$4.2M / Yr</div>
+                            </div>
+                            <div class="flex justify-between items-end border-b border-[#ff9900]/20 pb-4">
+                                <div class="text-xs font-black text-[#ff9900] uppercase">Serwin Protocol</div>
+                                <div class="text-xl font-black text-white">$1.8M / Yr</div>
+                            </div>
+                        </div>
+                        <p class="mt-8 text-[10px] text-slate-500 italic">Based on 10,000 core deployment with standard enterprise features.</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
         <!-- FAQ or Help Section -->
-        <section class="pb-24 max-w-7xl mx-auto px-6">
-            <div class="border-t-2 border-[#eaeded] pt-24 grid md:grid-cols-2 gap-16">
+        <section class="py-24 max-w-7xl mx-auto px-6">
+            <div class="grid md:grid-cols-2 gap-16">
                 <div>
-                    <h2 class="text-3xl font-black text-[#232f3e] mb-6 tracking-tight">Got Questions?</h2>
+                    <h2 class="text-3xl font-black text-[#232f3e] mb-6 tracking-tight">Enterprise Scale</h2>
                     <p class="text-[#545b64] font-medium leading-relaxed mb-8">
-                        Our team is here to help you choose the right plan for your current scale. Not sure where to
-                        start? Reach out to our technical advisors.
+                        Our infrastructure is designed for the most demanding compliance and security requirements. 
+                        Whether you're in FinTech, Healthcare, or Public Sector, we provide the isolation and 
+                        auditability you need.
                     </p>
-                    <button @click="router.push('/docs/content/billing')"
-                        class="text-[#0073bb] font-black uppercase tracking-widest text-sm hover:text-[#ff9900] transition-colors">
-                        View Billing Docs →
-                    </button>
+                    <div class="flex flex-wrap gap-4 opacity-50">
+                        <span class="px-3 py-1 bg-[#eaeded] text-[#232f3e] text-[10px] font-black uppercase tracking-widest">SOC 2 TYPE II</span>
+                        <span class="px-3 py-1 bg-[#eaeded] text-[#232f3e] text-[10px] font-black uppercase tracking-widest">HIPAA Ready</span>
+                        <span class="px-3 py-1 bg-[#eaeded] text-[#232f3e] text-[10px] font-black uppercase tracking-widest">PCI DSS</span>
+                        <span class="px-3 py-1 bg-[#eaeded] text-[#232f3e] text-[10px] font-black uppercase tracking-widest">GDPR COMPLIANT</span>
+                    </div>
                 </div>
                 <div class="space-y-8">
                     <div>

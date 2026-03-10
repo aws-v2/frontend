@@ -95,40 +95,96 @@ const handleSubmit = () => {
                 </div>
 
                 <!-- Right Column: Form -->
-                <div class="bg-white border-2 border-[#232f3e] p-10 shadow-none">
-                    <h2
-                        class="text-2xl font-black text-[#232f3e] uppercase tracking-tighter mb-8 border-b-2 border-[#eaeded] pb-6">
-                        Send Message</h2>
-                    <form @submit.prevent="handleSubmit" class="space-y-8">
-                        <div class="space-y-3">
-                            <label class="text-[10px] font-black text-[#545b64] uppercase tracking-widest px-1">Full
-                                Name</label>
-                            <input v-model="name" type="text"
-                                class="w-full bg-white border-2 border-[#eaeded] px-5 py-4 text-[#16191f] font-bold placeholder-[#879196] focus:outline-none focus:border-[#ff9900] transition-all rounded-none"
-                                placeholder="ALEXANDER PIERCE" required>
-                        </div>
+                <div class="space-y-12">
+                    <div class="bg-white border-2 border-[#232f3e] p-10 shadow-none">
+                        <h2
+                            class="text-2xl font-black text-[#232f3e] uppercase tracking-tighter mb-8 border-b-2 border-[#eaeded] pb-6">
+                            Send Message</h2>
+                        <form @submit.prevent="handleSubmit" class="space-y-8">
+                            <div class="space-y-3">
+                                <label class="text-[10px] font-black text-[#545b64] uppercase tracking-widest px-1">Full
+                                    Name</label>
+                                <input v-model="name" type="text"
+                                    class="w-full bg-white border-2 border-[#eaeded] px-5 py-4 text-[#16191f] font-bold placeholder-[#879196] focus:outline-none focus:border-[#ff9900] transition-all rounded-none"
+                                    placeholder="ALEXANDER PIERCE" required>
+                            </div>
 
-                        <div class="space-y-3">
-                            <label class="text-[10px] font-black text-[#545b64] uppercase tracking-widest px-1">Enquiry
-                                Email</label>
-                            <input v-model="email" type="email"
-                                class="w-full bg-white border-2 border-[#eaeded] px-5 py-4 text-[#16191f] font-bold placeholder-[#879196] focus:outline-none focus:border-[#ff9900] transition-all rounded-none"
-                                placeholder="name@company.com" required>
-                        </div>
+                            <div class="space-y-3">
+                                <label class="text-[10px] font-black text-[#545b64] uppercase tracking-widest px-1">Enquiry
+                                    Email</label>
+                                <input v-model="email" type="email"
+                                    class="w-full bg-white border-2 border-[#eaeded] px-5 py-4 text-[#16191f] font-bold placeholder-[#879196] focus:outline-none focus:border-[#ff9900] transition-all rounded-none"
+                                    placeholder="name@company.com" required>
+                            </div>
 
-                        <div class="space-y-3">
-                            <label class="text-[10px] font-black text-[#545b64] uppercase tracking-widest px-1">Message
-                                Detail</label>
-                            <textarea v-model="message" rows="5"
-                                class="w-full bg-white border-2 border-[#eaeded] px-5 py-4 text-[#16191f] font-bold placeholder-[#879196] focus:outline-none focus:border-[#ff9900] transition-all rounded-none resize-none"
-                                placeholder="HOW CAN WE HELP YOU?" required></textarea>
-                        </div>
+                            <div class="space-y-3">
+                                <label class="text-[10px] font-black text-[#545b64] uppercase tracking-widest px-1">Message
+                                    Detail</label>
+                                <textarea v-model="message" rows="5"
+                                    class="w-full bg-white border-2 border-[#eaeded] px-5 py-4 text-[#16191f] font-bold placeholder-[#879196] focus:outline-none focus:border-[#ff9900] transition-all rounded-none resize-none"
+                                    placeholder="HOW CAN WE HELP YOU?" required></textarea>
+                            </div>
 
-                        <button type="submit" :disabled="isSubmitting"
-                            class="w-full px-16 py-6 bg-[#ff9900] hover:bg-[#ec7211] text-white font-black uppercase tracking-widest rounded-none transition-all disabled:opacity-50">
-                            {{ isSubmitting ? 'Sending...' : 'Transmit Enquiry' }}
-                        </button>
-                    </form>
+                            <button type="submit" :disabled="isSubmitting"
+                                class="w-full px-16 py-6 bg-[#ff9900] hover:bg-[#ec7211] text-white font-black uppercase tracking-widest rounded-none transition-all disabled:opacity-50">
+                                {{ isSubmitting ? 'Sending...' : 'Transmit Enquiry' }}
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- New Content: Technical Support Specs -->
+                    <div class="border-2 border-[#232f3e] p-8 bg-[#fafafa]">
+                        <h3 class="text-xs font-black text-[#ff9900] uppercase tracking-[0.2em] mb-4">Support_SLA_Manifest</h3>
+                        <div class="space-y-6">
+                            <div class="flex justify-between items-center border-b border-[#eaeded] pb-4">
+                                <span class="text-[10px] font-black text-[#232f3e] uppercase">Response Time</span>
+                                <span class="text-sm font-black">&lt; 15m (P1)</span>
+                            </div>
+                            <div class="flex justify-between items-center border-b border-[#eaeded] pb-4">
+                                <span class="text-[10px] font-black text-[#232f3e] uppercase">Expertise Level</span>
+                                <span class="text-sm font-black">L3 Engineer Direct</span>
+                            </div>
+                            <div class="flex justify-between items-center pb-4">
+                                <span class="text-[10px] font-black text-[#232f3e] uppercase">Observability</span>
+                                <span class="text-sm font-black">Full-Stack Context</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- New Technical Accountability Section -->
+            <div class="mt-32 border-t-2 border-[#232f3e] pt-20">
+                <div class="grid md:grid-cols-2 gap-20">
+                    <div>
+                        <h2 class="text-3xl font-black text-[#232f3e] uppercase tracking-tighter mb-8">Direct-to-Metal <br/>Accountability.</h2>
+                        <p class="text-[#545b64] font-medium leading-relaxed mb-6">
+                            When things go wrong, you don't need a script-reader. You need the people who built the system. 
+                            Our support hierarchy is flat: you talk directly to the engineers who maintain the hypervisor 
+                            and control plane.
+                        </p>
+                        <router-link to="/docs" class="text-xs font-black text-[#ff9900] uppercase tracking-widest hover:underline">
+                            Reference Documentation →
+                        </router-link>
+                    </div>
+                    <div class="grid grid-cols-2 gap-8">
+                        <div>
+                            <div class="text-2xl font-black text-[#232f3e] mb-2">99.9%</div>
+                            <div class="text-[10px] font-black text-[#879196] uppercase tracking-widest">Resolution Rate</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-black text-[#232f3e] mb-2">24/7/365</div>
+                            <div class="text-[10px] font-black text-[#879196] uppercase tracking-widest">Global Watch</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-black text-[#232f3e] mb-2">Atomic</div>
+                            <div class="text-[10px] font-black text-[#879196] uppercase tracking-widest">State Tracking</div>
+                        </div>
+                        <div>
+                            <div class="text-2xl font-black text-[#ff9900] mb-2">Live</div>
+                            <div class="text-[10px] font-black text-[#879196] uppercase tracking-widest">Telemetry Debugging</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>

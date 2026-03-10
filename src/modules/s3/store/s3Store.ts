@@ -512,11 +512,12 @@ export const useS3Store = defineStore('s3', () => {
   const fetchAccessPoints = async (bucketId: string) => {
     isLoading.value = true
     try {
-      const response = await apiClient.get<{ code: number; message: string; data: any[] }>(`/s3/buckets/${bucketId}/access-points`)
-      return response.data?.data || []
+      const response = await apiClient.get<{ code: number; message: string; data: any }>(`/s3/buckets/${bucketId}/access-points`)
+      // The backend returns { access_points: [...], available_vpcs: [...] } or { data: { ... } }
+      return response.data?.data || response.data || { access_points: [], available_vpcs: [] }
     } catch (error) {
       console.warn(`Failed to fetch access points for bucket ${bucketId}:`, error)
-      return []
+      return { access_points: [], available_vpcs: [] }
     } finally {
       isLoading.value = false
     }
@@ -670,8 +671,8 @@ export const useS3Store = defineStore('s3', () => {
       isLoading.value = true
       try {
         const response = await apiClient.get<{ code: number; message: string; data: { corsRules: any[] } }>(`/s3/buckets/${bucketId}/cors`)
-        // The backend returns { data: { corsRules: [...] } }
-        return response.data?.data?.corsRules || []
+        // Handle both wrapped { data: { corsRules: [...] } } and flat { corsRules: [...] } formats
+        return response.data?.data?.corsRules || (response.data as any)?.corsRules || []
       } catch (error) {
         console.warn(`Failed to fetch CORS for bucket ${bucketId} (might not be implemented yet):`, error)
         return []
@@ -706,8 +707,8 @@ export const useS3Store = defineStore('s3', () => {
       isLoading.value = true
       try {
         const response = await apiClient.get<{ code: number; message: string; data: { policy: string } }>(`/s3/buckets/${bucketId}/policy`)
-        // The backend returns an escaped JSON string in data.policy
-        const policyString = response.data?.data?.policy
+        // Handle both wrapped { data: { policy: "..." } } and flat { policy: "..." } formats
+        const policyString = response.data?.data?.policy || (response.data as any)?.policy
         if (policyString) {
           return JSON.parse(policyString)
         }

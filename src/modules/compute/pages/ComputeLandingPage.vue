@@ -221,9 +221,9 @@ const getStatusColor = (type: string) => {
         <PublicNavbar activeLink="compute" />
 
         <div class="relative min-h-screen pt-24">
-            <!-- Structural Grid Background -->
+            <!-- Structural Grid Background (Subtle Neutral) -->
             <div
-                class="absolute inset-0 bg-[linear-gradient(rgba(0,102,255,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(0,102,255,0.03)_1px,transparent_1px)] bg-[size:50px_50px] pointer-events-none">
+                class="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none">
             </div>
 
             <!-- Authenticated View: Developer Console -->
@@ -610,18 +610,21 @@ const getStatusColor = (type: string) => {
                                 <div class="flex items-center gap-6">
                                     <div
                                         class="w-12 h-12 border-2 border-[#232f3e] flex items-center justify-center bg-[#fafafa]">
-                                        <svg class="w-6 h-6 text-[#232f3e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                                        <svg class="w-6 h-6 text-[#232f3e]" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
                                         </svg>
                                     </div>
                                     <div>
                                         <p class="text-2xl font-black text-[#232f3e] leading-none mb-1">{{
                                             computeStore.scalingPolicies?.length || 0 }}</p>
-                                        <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">Auto Scale Rules</p>
+                                        <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">Auto
+                                            Scale Rules</p>
                                     </div>
                                 </div>
                             </div>
-                            
+
                             <!-- Lambda Scaling Card -->
                             <div
                                 class="bg-white border-2 border-[#232f3e] p-8 hover:shadow-[10px_10px_0px_#eaeded] transition-all group">
@@ -629,7 +632,8 @@ const getStatusColor = (type: string) => {
                                     <p class="text-[10px] font-black text-[#879196] tracking-widest uppercase italic">
                                         Forge_Policies</p>
                                     <button @click="openLambdaScalingCrudModal"
-                                        class="text-[9px] font-black text-blue-600 uppercase border-b border-blue-600">Forge Rules
+                                        class="text-[9px] font-black text-blue-600 uppercase border-b border-blue-600">Forge
+                                        Rules
                                         &rarr;</button>
                                 </div>
                                 <div class="flex items-center gap-6">
@@ -640,7 +644,8 @@ const getStatusColor = (type: string) => {
                                     <div>
                                         <p class="text-2xl font-black text-[#232f3e] leading-none mb-1">{{
                                             lambdaStore.scalingPolicies?.length || 0 }}</p>
-                                        <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">Lambda Scale Rules</p>
+                                        <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">Lambda
+                                            Scale Rules</p>
                                     </div>
                                 </div>
                             </div>
@@ -762,77 +767,186 @@ const getStatusColor = (type: string) => {
                 </div>
             </div>
 
-            <!-- Public Landing Page -->
-            <div v-else
-                class="relative z-10 w-full min-h-[90vh] flex flex-col items-center pt-32 pb-40 bg-white text-[#16191f]">
-                <div class="max-w-7xl mx-auto px-6 relative w-full text-center">
-                    <div class="inline-flex items-center gap-3 mb-10 text-blue-600">
-                        <div class="w-12 h-[2px] bg-blue-600"></div>
-                        <span class="text-[10px] font-black uppercase tracking-[0.3em]">Quantum Compute
-                            Unified Protocol</span>
-                        <div class="w-12 h-[2px] bg-blue-600"></div>
+            <!-- Public Landing Page: Technical Deep Dive -->
+            <div v-else class="relative z-10 w-full min-h-[90vh] pt-32 pb-40 bg-white">
+                <div class="max-w-7xl mx-auto px-6 relative w-full">
+
+                    <!-- Hero Section -->
+                    <div class="text-center mb-32">
+                        <div class="inline-flex items-center gap-3 mb-10 text-[#232f3e]">
+                            <div class="w-8 h-[1px] bg-[#ff9900]"></div>
+                            <span
+                                class="text-[10px] font-black uppercase tracking-[0.4em]">Infrastructure_v2.0_Compute</span>
+                            <div class="w-8 h-[1px] bg-[#ff9900]"></div>
+                        </div>
+
+                        <h1
+                            class="text-5xl md:text-8xl font-black tracking-tight mb-10 leading-[1.05] text-[#232f3e] uppercase">
+                            Hyperscale <br /><span class="text-[#ff9900]">Atomics.</span>
+                        </h1>
+
+                        <p
+                            class="text-lg md:text-xl text-[#545b64] leading-relaxed max-w-3xl mx-auto mb-16 font-medium">
+                            The Serwin Compute Protocol delivers hypervisor-free performance for both persistent virtual
+                            machines
+                            and event-driven serverless functions. Designed for the most demanding silicon workloads.
+                        </p>
+
+                        <div class="flex flex-wrap justify-center gap-6 mb-24">
+                            <button @click="router.push('/register')"
+                                class="bg-[#232f3e] text-white font-black px-12 py-6 transition-all rounded-none uppercase tracking-[0.2em] text-xs hover:bg-[#ff9900] shadow-[8px_8px_0px_#eaeded] active:translate-y-1 active:shadow-none">
+                                Initialize Cluster &rarr;
+                            </button>
+                            <button @click="router.push('/docs/content/ec2-overview')"
+                                class="px-12 py-6 border-2 border-[#232f3e] text-[#232f3e] font-black hover:bg-[#fafafa] transition-all rounded-none uppercase tracking-[0.2em] text-xs">
+                                View Specification
+                            </button>
+                        </div>
+
+                        <!-- Technical Specs Bar -->
+                        <div
+                            class="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 py-10 border-y border-[#eaeded]">
+                            <div>
+                                <div class="text-[9px] font-black text-[#879196] uppercase tracking-[0.2em] mb-2">
+                                    IO_LATENCY</div>
+                                <div class="text-2xl font-black text-[#232f3e] tracking-tighter">&lt; 150μs</div>
+                            </div>
+                            <div>
+                                <div class="text-[9px] font-black text-[#879196] uppercase tracking-[0.2em] mb-2">
+                                    VM_DENSITY</div>
+                                <div class="text-2xl font-black text-[#232f3e] tracking-tighter">1024 / Rack</div>
+                            </div>
+                            <div>
+                                <div class="text-[9px] font-black text-[#879196] uppercase tracking-[0.2em] mb-2">
+                                    NVMe_IOPS</div>
+                                <div class="text-2xl font-black text-[#232f3e] tracking-tighter">1.5M+</div>
+                            </div>
+                            <div>
+                                <div class="text-[9px] font-black text-[#879196] uppercase tracking-[0.2em] mb-2">
+                                    AVAILABILITY</div>
+                                <div class="text-2xl font-black text-[#ff9900] tracking-tighter">99.9999%</div>
+                            </div>
+                        </div>
                     </div>
 
-                    <h1 class="text-7xl md:text-9xl font-black tracking-tighter mb-12 leading-[0.95] uppercase">
-                        Absolute Compute.<br><span class="text-blue-600 italic">Universal Scaling.</span>
-                    </h1>
+                    <!-- Detailed Content Grid -->
+                    <div class="grid lg:grid-cols-2 gap-20 items-start mb-40">
+                        <div class="space-y-12">
+                            <div>
+                                <div class="text-[#ff9900] text-xs font-black uppercase tracking-widest mb-4">01 //
+                                    Persistent Nodes
+                                </div>
+                                <h2 class="text-3xl font-black text-[#232f3e] uppercase tracking-tighter mb-6">
+                                    Hypervisor-Free
+                                    <br />Virtualization.
+                                </h2>
+                                <p class="text-[#545b64] leading-relaxed mb-6 font-medium">
+                                    Our VMs bypass the traditional hypervisor layer, speaking directly to the silicon.
+                                    This "Direct-to-Metal" architecture eliminates Jitter and provides true
+                                    deterministic
+                                    performance
+                                    for gaming, finance, and AI workloads.
+                                </p>
+                                <ul class="space-y-4">
+                                    <li class="flex items-center gap-3 text-sm font-bold text-[#232f3e]">
+                                        <div class="w-1.5 h-1.5 bg-[#ff9900]"></div> NVMe Gen5 Storage Rails
+                                    </li>
+                                    <li class="flex items-center gap-3 text-sm font-bold text-[#232f3e]">
+                                        <div class="w-1.5 h-1.5 bg-[#ff9900]"></div> Hardware-Isolated VPC Networking
+                                    </li>
+                                    <li class="flex items-center gap-3 text-sm font-bold text-[#232f3e]">
+                                        <div class="w-1.5 h-1.5 bg-[#ff9900]"></div> Instant snapshotting & recovery
+                                    </li>
+                                </ul>
+                            </div>
 
-                    <p class="text-xl md:text-2xl text-[#545b64] leading-relaxed max-w-4xl mx-auto mb-20 font-medium">
-                        Deploy lightning-fast virtual nodes and serverless endpoints on our <strong
-                            class="text-[#232f3e] font-black uppercase">low-latency global grid</strong>. Orchestrate
-                        hybrid fleets
-                        with a single atomic protocol.
-                    </p>
+                            <div class="p-8 bg-[#fafafa] border-l-4 border-[#ff9900]">
+                                <div class="text-[10px] font-black text-[#879196] uppercase tracking-[0.2em] mb-4">
+                                    Kernel_Note</div>
+                                <p class="text-xs text-[#545b64] leading-relaxed italic">
+                                    "Serwin's hypervisor-free approach has allowed our HFT systems to reach
+                                    sub-microsecond internal
+                                    switching
+                                    latencies previously impossible on any cloud platform."
+                                </p>
+                            </div>
+                        </div>
 
-                    <div class="flex flex-wrap justify-center gap-8">
-                        <button @click="router.push('/register')"
-                            class="bg-[#232f3e] hover:bg-blue-600 text-white font-black px-16 py-8 transition-all rounded-none uppercase tracking-[0.3em] text-sm group">
-                            Launch Cluster <span
-                                class="ml-4 group-hover:translate-x-2 transition-transform inline-block">&rarr;</span>
-                        </button>
-                        <button @click="router.push('/docs/content/ec2-overview')"
-                            class="px-16 py-8 border-4 border-[#232f3e] text-[#232f3e] font-black hover:bg-[#232f3e] hover:text-white transition-all rounded-none uppercase tracking-[0.3em] text-sm">
-                            View Spec
-                        </button>
+                        <div class="space-y-12 lg:mt-24">
+                            <div>
+                                <div class="text-[#ff9900] text-xs font-black uppercase tracking-widest mb-4">02 //
+                                    Forge Serverless
+                                </div>
+                                <h2 class="text-3xl font-black text-[#232f3e] uppercase tracking-tighter mb-6">Infinite
+                                    Scaling.
+                                    <br />Zero Cold Starts.
+                                </h2>
+                                <p class="text-[#545b64] leading-relaxed mb-6 font-medium">
+                                    The Forge engine pre-warms environments at the edge of our P4-driven mesh network.
+                                    Deploy Java, Python, or Rust functions that scale from zero to 100k requests in
+                                    under 4 seconds.
+                                </p>
+                                <div class="grid grid-cols-2 gap-6 bg-white border-2 border-[#232f3e] p-8">
+                                    <div>
+                                        <div class="text-[10px] font-black text-[#545b64] uppercase mb-1">Cold Start
+                                        </div>
+                                        <div class="text-xl font-black text-[#ff9900]">&lt; 1ms</div>
+                                    </div>
+                                    <div>
+                                        <div class="text-[10px] font-black text-[#545b64] uppercase mb-1">Runtime Sync
+                                        </div>
+                                        <div class="text-xl font-black text-[#232f3e]">Atomic</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <!-- Features Row -->
-                    <div class="grid md:grid-cols-3 gap-0 mt-40 border-2 border-[#232f3e]">
+                    <!-- Summary Specs Grid -->
+                    <div class="grid md:grid-cols-3 gap-0 border-2 border-[#232f3e]">
                         <div
-                            class="p-12 border-r-2 border-b-2 md:border-b-0 border-[#232f3e] text-left hover:bg-[#fafafa] transition-colors group">
+                            class="p-12 border-r-2 border-b-2 md:border-b-0 border-[#232f3e] hover:bg-[#fafafa] transition-colors group">
                             <div
-                                class="w-10 h-10 border-2 border-blue-600 flex items-center justify-center text-blue-600 mb-8 group-hover:bg-blue-600 group-hover:text-white transition-all">
-                                <span class="font-black italic">vm</span>
+                                class="w-12 h-12 bg-[#232f3e] text-[#ff9900] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                        d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 01-2 2v4a2 2 0 012 2h14a2 2 0 012-2v-4a2 2 0 01-2-2" />
+                                </svg>
                             </div>
-                            <h3 class="text-lg font-black text-[#232f3e] mb-4 uppercase tracking-tighter">Hypervisor VM
+                            <h3 class="text-lg font-black text-[#232f3e] mb-4 uppercase tracking-tight">H100 Clusters
                             </h3>
-                            <p
-                                class="text-xs text-[#879196] font-bold leading-relaxed uppercase tracking-widest leading-6">
-                                Dedicated hardware isolation with sub-ms NVMe backplanes.</p>
+                            <p class="text-xs text-[#879196] font-bold uppercase tracking-widest leading-6">Dedicated
+                                GPU clusters
+                                with direct RDMA fabrics for distributed model training.</p>
                         </div>
                         <div
-                            class="p-12 border-r-2 border-b-2 md:border-b-0 border-[#232f3e] text-left hover:bg-[#fafafa] transition-colors group">
+                            class="p-12 border-r-2 border-b-2 md:border-b-0 border-[#232f3e] hover:bg-[#fafafa] transition-colors group">
                             <div
-                                class="w-10 h-10 border-2 border-amber-500 flex items-center justify-center text-amber-500 mb-8 group-hover:bg-amber-500 group-hover:text-white transition-all">
-                                <span class="font-black italic">λ</span>
+                                class="w-12 h-12 bg-[#232f3e] text-[#ff9900] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                        d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
                             </div>
-                            <h3 class="text-lg font-black text-[#232f3e] mb-4 uppercase tracking-tighter">Forge
-                                Serverless</h3>
-                            <p
-                                class="text-xs text-[#879196] font-bold leading-relaxed uppercase tracking-widest leading-6">
-                                Event-driven triggers with zero cold-start latency mapping.</p>
-                        </div>
-                        <div class="p-12 text-left hover:bg-[#fafafa] transition-colors group">
-                            <div
-                                class="w-10 h-10 border-2 border-emerald-500 flex items-center justify-center text-emerald-500 mb-8 group-hover:bg-emerald-500 group-hover:text-white transition-all">
-                                <span class="font-black italic">k8</span>
-                            </div>
-                            <h3 class="text-lg font-black text-[#232f3e] mb-4 uppercase tracking-tighter">Mesh Clusters
+                            <h3 class="text-lg font-black text-[#232f3e] mb-4 uppercase tracking-tight">Elastic Mesh
                             </h3>
-                            <p
-                                class="text-xs text-[#879196] font-bold leading-relaxed uppercase tracking-widest leading-6">
-                                Managed
-                                Kubernetes with integrated service-mesh security.</p>
+                            <p class="text-xs text-[#879196] font-bold uppercase tracking-widest leading-6">Integrated
+                                multi-zone
+                                VPC bridge with zero-latency layer-2 encryption.</p>
+                        </div>
+                        <div class="p-12 hover:bg-[#fafafa] transition-colors group">
+                            <div
+                                class="w-12 h-12 bg-[#232f3e] text-[#ff9900] flex items-center justify-center mb-8 group-hover:scale-110 transition-transform">
+                                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                        d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-black text-[#232f3e] mb-4 uppercase tracking-tight">Silicon Health
+                            </h3>
+                            <p class="text-xs text-[#879196] font-bold uppercase tracking-widest leading-6">Real-time
+                                hardware
+                                telemetry down to the individual CPU core and memory bank.</p>
                         </div>
                     </div>
                 </div>
@@ -863,7 +977,8 @@ const getStatusColor = (type: string) => {
             <div class="fixed inset-0 bg-[#232f3e]/60 backdrop-blur-sm" @click="closeLambdaScalingCrudModal"></div>
 
             <!-- Modal Content -->
-            <div class="relative bg-white w-full max-w-4xl shadow-2xl flex flex-col border-4 border-[#232f3e] font-urbanist max-h-[80vh]">
+            <div
+                class="relative bg-white w-full max-w-4xl shadow-2xl flex flex-col border-4 border-[#232f3e] font-urbanist max-h-[80vh]">
                 <!-- Header -->
                 <div class="flex items-center justify-between px-10 py-8 border-b-2 border-[#eaeded] bg-[#fafafa]">
                     <div>
@@ -877,13 +992,15 @@ const getStatusColor = (type: string) => {
                     <button @click="closeLambdaScalingCrudModal"
                         class="text-[#545b64] hover:text-amber-500 transition-all p-2 bg-white border-2 border-[#eaeded] hover:border-amber-500 active:scale-95">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                d="M6 18L18 6M6 6l12 12" />
                         </svg>
                     </button>
                 </div>
 
                 <!-- Body: List Mode -->
-                <div v-if="lambdaScalingCrudMode === 'list'" class="p-10 flex-1 overflow-y-auto bg-white custom-scrollbar flex flex-col gap-6">
+                <div v-if="lambdaScalingCrudMode === 'list'"
+                    class="p-10 flex-1 overflow-y-auto bg-white custom-scrollbar flex flex-col gap-6">
                     <div class="flex justify-between items-center mb-4">
                         <h3 class="text-xl font-black text-[#232f3e] uppercase">Active Policies</h3>
                         <button @click="goToAddLambdaScalingPolicy"
@@ -892,32 +1009,54 @@ const getStatusColor = (type: string) => {
                         </button>
                     </div>
 
-                    <div v-if="lambdaStore.isLoading" class="py-12 text-center text-[#879196] text-[10px] uppercase font-black tracking-widest animate-pulse">
+                    <div v-if="lambdaStore.isLoading"
+                        class="py-12 text-center text-[#879196] text-[10px] uppercase font-black tracking-widest animate-pulse">
                         Loading Policies...
                     </div>
-                    <div v-else-if="(lambdaStore.scalingPolicies?.policies || lambdaStore.scalingPolicies || []).length === 0" class="py-12 text-center border-2 border-dashed border-[#eaeded]">
-                        <p class="text-[10px] font-black tracking-widest uppercase text-[#879196] italic">No scaling policies found.</p>
+                    <div v-else-if="(lambdaStore.scalingPolicies?.policies || lambdaStore.scalingPolicies || []).length === 0"
+                        class="py-12 text-center border-2 border-dashed border-[#eaeded]">
+                        <p class="text-[10px] font-black tracking-widest uppercase text-[#879196] italic">No scaling
+                            policies
+                            found.</p>
                     </div>
                     <div v-else class="overflow-x-auto border-2 border-[#eaeded]">
                         <table class="w-full text-left border-collapse">
                             <thead class="bg-[#fafafa] border-b-2 border-[#eaeded]">
                                 <tr>
-                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">Function</th>
-                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">Metric</th>
-                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">Scale Up / Down</th>
-                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] text-right">Actions</th>
+                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">
+                                        Function
+                                    </th>
+                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">
+                                        Metric</th>
+                                    <th class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em]">
+                                        Scale Up /
+                                        Down</th>
+                                    <th
+                                        class="p-4 text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] text-right">
+                                        Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="policy in (lambdaStore.scalingPolicies?.policies || lambdaStore.scalingPolicies || [])" :key="policy.function_id || policy.target_id" class="border-b border-[#eaeded] hover:bg-[#fafafa]">
+                                <tr v-for="policy in (lambdaStore.scalingPolicies?.policies || lambdaStore.scalingPolicies || [])"
+                                    :key="policy.function_id || policy.target_id"
+                                    class="border-b border-[#eaeded] hover:bg-[#fafafa]">
                                     <td class="p-4">
-                                        <span class="font-mono text-xs text-[#232f3e] font-bold">{{ lambdaStore.functions.find(f => f.id === (policy.function_id || policy.target_id))?.name || (policy.function_id || policy.target_id) }}</span>
+                                        <span class="font-mono text-xs text-[#232f3e] font-bold">{{
+                                            lambdaStore.functions.find(f => f.id === (policy.function_id ||
+                                                policy.target_id))?.name ||
+                                            (policy.function_id || policy.target_id) }}</span>
                                     </td>
                                     <td class="p-4 font-bold text-xs text-[#545b64]">{{ policy.metric_name }}</td>
-                                    <td class="p-4 font-mono text-xs text-[#545b64]">{{ policy.scale_up_threshold || policy.target_value }} / {{ policy.scale_down_threshold || policy.scale_down_value }}</td>
+                                    <td class="p-4 font-mono text-xs text-[#545b64]">{{ policy.scale_up_threshold ||
+                                        policy.target_value }} / {{ policy.scale_down_threshold ||
+                                            policy.scale_down_value }}
+                                    </td>
                                     <td class="p-4 text-right space-x-4">
-                                        <button @click="goToEditLambdaScalingPolicy(policy)" class="text-[10px] font-black text-amber-600 hover:text-amber-700 uppercase tracking-widest">Edit</button>
-                                        <button @click="deleteLambdaScalingPolicy(policy.function_id || policy.target_id)" class="text-[10px] font-black text-[#545b64] hover:text-red-600 uppercase tracking-widest">Delete</button>
+                                        <button @click="goToEditLambdaScalingPolicy(policy)"
+                                            class="text-[10px] font-black text-amber-600 hover:text-amber-700 uppercase tracking-widest">Edit</button>
+                                        <button
+                                            @click="deleteLambdaScalingPolicy(policy.function_id || policy.target_id)"
+                                            class="text-[10px] font-black text-[#545b64] hover:text-red-600 uppercase tracking-widest">Delete</button>
                                     </td>
                                 </tr>
                             </tbody>
@@ -929,76 +1068,114 @@ const getStatusColor = (type: string) => {
                 <!-- Body: Form Mode -->
                 <div v-else class="p-10 flex-1 overflow-y-auto bg-white custom-scrollbar flex flex-col gap-8">
                     <div class="flex items-center gap-4 mb-2">
-                        <button @click="lambdaScalingCrudMode = 'list'" class="text-[#879196] hover:text-[#232f3e] transition-colors p-2 bg-[#fafafa] border border-[#eaeded]">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                        <button @click="lambdaScalingCrudMode = 'list'"
+                            class="text-[#879196] hover:text-[#232f3e] transition-colors p-2 bg-[#fafafa] border border-[#eaeded]">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                            </svg>
                         </button>
                         <h3 class="text-xl font-black text-[#232f3e] uppercase">
                             {{ lambdaScalingCrudMode === 'edit' ? 'Edit Scaling Policy' : 'Create Scaling Policy' }}
                         </h3>
                     </div>
 
-                    <div v-if="lambdaScalingFormError" class="p-4 border-2 border-red-200 bg-red-50 text-red-600 font-bold text-[10px] uppercase tracking-wider flex items-center justify-between">
+                    <div v-if="lambdaScalingFormError"
+                        class="p-4 border-2 border-red-200 bg-red-50 text-red-600 font-bold text-[10px] uppercase tracking-wider flex items-center justify-between">
                         <span>{{ lambdaScalingFormError }}</span>
                         <button @click="lambdaScalingFormError = ''" class="hover:text-red-800">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12" />
+                            </svg>
                         </button>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Forge Function</label>
-                            <select v-model="lambdaScalingForm.function_id" :disabled="lambdaScalingCrudMode === 'edit'" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors appearance-none disabled:opacity-50">
+                            <label
+                                class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Forge
+                                Function</label>
+                            <select v-model="lambdaScalingForm.function_id" :disabled="lambdaScalingCrudMode === 'edit'"
+                                class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors appearance-none disabled:opacity-50">
                                 <option value="" disabled>Select Function...</option>
-                                <option v-for="func in lambdaStore.functions" :key="func.id" :value="func.id">{{ func.name }} ({{ func.id }})</option>
+                                <option v-for="func in lambdaStore.functions" :key="func.id" :value="func.id">{{
+                                    func.name }}
+                                    ({{ func.id }})</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Metric</label>
-                            <select v-model="lambdaScalingForm.metric_name" :disabled="lambdaScalingCrudMode === 'edit'" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-black text-xs text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors appearance-none disabled:opacity-50">
+                            <label
+                                class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Metric</label>
+                            <select v-model="lambdaScalingForm.metric_name" :disabled="lambdaScalingCrudMode === 'edit'"
+                                class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-black text-xs text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors appearance-none disabled:opacity-50">
                                 <option value="Invocations">Invocations</option>
                                 <option value="Duration">Duration</option>
                                 <option value="Throttles">Throttles</option>
                             </select>
                         </div>
                     </div>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3" title="Trigger scale-up when above this value">Scale Up Threshold</label>
-                            <input v-model.number="lambdaScalingForm.scale_up_threshold" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3"
+                                title="Trigger scale-up when above this value">Scale Up Threshold</label>
+                            <input v-model.number="lambdaScalingForm.scale_up_threshold" type="number" step="1" min="1"
+                                class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3" title="Trigger scale-down when below this value">Scale Down Threshold</label>
-                            <input v-model.number="lambdaScalingForm.scale_down_threshold" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3"
+                                title="Trigger scale-down when below this value">Scale Down Threshold</label>
+                            <input v-model.number="lambdaScalingForm.scale_down_threshold" type="number" step="1"
+                                min="1"
+                                class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
                         </div>
                     </div>
-                    
+
                     <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
                         <div>
-                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Min Concurrency</label>
-                            <input v-model.number="lambdaScalingForm.min_concurrency_limit" type="number" step="1" min="0" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                            <label
+                                class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Min
+                                Concurrency</label>
+                            <input v-model.number="lambdaScalingForm.min_concurrency_limit" type="number" step="1"
+                                min="0"
+                                class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Max Concurrency</label>
-                            <input v-model.number="lambdaScalingForm.max_concurrency_limit" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                            <label
+                                class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Max
+                                Concurrency</label>
+                            <input v-model.number="lambdaScalingForm.max_concurrency_limit" type="number" step="1"
+                                min="1"
+                                class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Concurrency Step</label>
-                            <input v-model.number="lambdaScalingForm.scale_step" type="number" step="1" min="1" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                            <label
+                                class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Concurrency
+                                Step</label>
+                            <input v-model.number="lambdaScalingForm.scale_step" type="number" step="1" min="1"
+                                class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
                         <div>
-                            <label class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Cooldown (sec)</label>
-                            <input v-model.number="lambdaScalingForm.cooldown_seconds" type="number" step="30" min="0" class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
+                            <label
+                                class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Cooldown
+                                (sec)</label>
+                            <input v-model.number="lambdaScalingForm.cooldown_seconds" type="number" step="30" min="0"
+                                class="w-full px-4 py-3 bg-[#fafafa] border-2 border-[#eaeded] font-mono text-sm text-[#232f3e] focus:outline-none focus:border-amber-500 transition-colors">
                         </div>
                     </div>
-                    
+
                     <div class="mt-4 flex justify-end gap-6">
-                        <button @click="lambdaScalingCrudMode = 'list'" class="px-8 py-3 text-[10px] font-black text-[#545b64] hover:text-amber-500 uppercase tracking-widest transition-all">Cancel</button>
-                        <button @click="submitLambdaScalingPolicy" :disabled="lambdaStore.isLoading" class="px-10 py-3 text-[10px] font-black text-white bg-[#232f3e] hover:bg-black transition-all uppercase tracking-widest disabled:opacity-50 shadow-[4px_4px_0px_#eaeded]">
-                            {{ lambdaStore.isLoading ? 'Processing...' : (lambdaScalingCrudMode === 'edit' ? 'Update Policy' : 'Create Policy') }}
+                        <button @click="lambdaScalingCrudMode = 'list'"
+                            class="px-8 py-3 text-[10px] font-black text-[#545b64] hover:text-amber-500 uppercase tracking-widest transition-all">Cancel</button>
+                        <button @click="submitLambdaScalingPolicy" :disabled="lambdaStore.isLoading"
+                            class="px-10 py-3 text-[10px] font-black text-white bg-[#232f3e] hover:bg-black transition-all uppercase tracking-widest disabled:opacity-50 shadow-[4px_4px_0px_#eaeded]">
+                            {{ lambdaStore.isLoading ? `Processing...` : (lambdaScalingCrudMode === `edit` ? `Update
+                            Policy` :
+                                `Create Policy`) }}
                         </button>
                     </div>
                 </div>

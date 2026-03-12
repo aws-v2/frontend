@@ -496,7 +496,30 @@ export const useS3Store = defineStore('s3', () => {
 
       try {
         const response = await apiClient.get<{ code: number; message: string; data: SecuritySummary }>('/s3/security/summary')
-        securityData.value = response.data?.data || (response.data as any)?.data || dummySecurity
+        const raw = response.data
+        // Handle: { data: { security summary } } or { security summary }
+        const data = (raw?.data || raw) as any
+
+        if (data && (data.findings || data.score !== undefined)) {
+          securityData.value = {
+            score: data.score ?? 0,
+            criticalCount: data.criticalCount ?? data.critical_count ?? 0,
+            warningCount: data.warningCount ?? data.warning_count ?? 0,
+            publicBucketsCount: data.publicBucketsCount ?? data.public_buckets_count ?? data.publicBuckets ?? 0,
+            mfaMissingCount: data.mfaMissingCount ?? data.mfa_missing_count ?? data.mfaMissing ?? 0,
+            unencryptedCount: data.unencryptedCount ?? data.un_encrypted_count ?? data.unencrypted ?? 0,
+            findings: (data.findings || []).map((f: any) => ({
+              id: f.id || f.findingId || 'UNKNOWN',
+              severity: f.severity || 'low',
+              bucket_name: f.bucket_name || f.bucketName || 'Unknown',
+              description: f.description || '',
+              remediation: f.remediation || '',
+              timestamp: f.timestamp || new Date().toISOString()
+            }))
+          }
+        } else {
+          securityData.value = dummySecurity
+        }
       } catch (innerError) {
         console.warn('Backend security endpoint missing, using mock data')
         securityData.value = dummySecurity

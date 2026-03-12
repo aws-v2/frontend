@@ -411,29 +411,31 @@ export const useS3Store = defineStore('s3', () => {
       }
 
       try {
-        const response = await apiClient.get<{ code: number; message: string; data: any }>('/s3/analytics/dashboard')
-        const raw = response.data?.data || (response.data as any)?.data
+        const response = await apiClient.get<{ code: number; message: string; data: any }>('/s3/analytics/storage/lens')
+        const raw = response.data
+        // Handle: { data: { summary, ... } } or { summary, ... }
+        const data = (raw?.data || raw) as any
 
-        if (raw) {
+        if (data && (data.summary || data.timeSeries || data.storageClasses)) {
           storageLensData.value = {
             summary: {
-              totalStorage: raw.summary?.total_storage ?? raw.summary?.totalStorage ?? 0,
-              objectCount: raw.summary?.object_count ?? raw.summary?.objectCount ?? 0,
-              activeBuckets: raw.summary?.active_buckets ?? raw.summary?.activeBuckets ?? 0,
-              avgObjectSize: raw.summary?.avg_object_size ?? raw.summary?.avgObjectSize ?? 0,
+              totalStorage: data.summary?.total_storage ?? data.summary?.totalStorage ?? 0,
+              objectCount: data.summary?.object_count ?? data.summary?.objectCount ?? 0,
+              activeBuckets: data.summary?.active_buckets ?? data.summary?.activeBuckets ?? 0,
+              avgObjectSize: data.summary?.avg_object_size ?? data.summary?.avgObjectSize ?? 0,
             },
-            timeSeries: (raw.time_series || raw.time_series || raw.timeSeries || []).map((d: any) => ({
+            timeSeries: (data.timeSeries || data.time_series || []).map((d: any) => ({
               date: d.date,
               storage: d.total_storage ?? d.storage ?? 0,
               objects: d.object_count ?? d.objects ?? 0,
               throughput: d.throughput ?? 0
             })),
-            storageClasses: (raw.storage_classes || raw.storageClasses || []).map((cls: any) => ({
+            storageClasses: (data.storageClasses || data.storage_classes || []).map((cls: any) => ({
               name: cls.class_name ?? cls.name ?? 'Unknown',
               size: cls.total_size ?? cls.size ?? 0,
               color: cls.color || '#ff9900'
             })),
-            topBuckets: (raw.top_buckets || raw.topBuckets || []).map((b: any) => ({
+            topBuckets: (data.topBuckets || data.top_buckets || []).map((b: any) => ({
               name: b.bucket_name ?? b.name ?? 'Unnamed',
               region: b.region ?? 'Unknown',
               size: b.total_size ?? b.total_storage ?? b.size ?? 0,

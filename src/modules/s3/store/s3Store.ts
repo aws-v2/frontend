@@ -605,7 +605,9 @@ export const useS3Store = defineStore('s3', () => {
       isLoading.value = true
       try {
         const response = await apiClient.get(`/s3/buckets/${bucketId}/notifications`)
-        return response.data.data || []
+        // Handle: { data: { notifications: [...] } }, { notifications: [...] }, or { notifications: {...} }
+        const data = response.data?.data?.notifications || (response.data as any)?.notifications || response.data?.data || []
+        return Array.isArray(data) ? data : [data]
       } catch (error) {
         console.error(`Failed to fetch event notifications for bucket ${bucketId}:`, error)
         return []
@@ -617,7 +619,8 @@ export const useS3Store = defineStore('s3', () => {
       isLoading.value = true
       try {
         const response = await apiClient.get(`/s3/buckets/${bucketId}/tags`)
-        return response.data.data || []
+        // Handle: { data: { tags: [...] } } or { tags: [...] }
+        return response.data?.data?.tags || (response.data as any)?.tags || response.data?.data || []
       } catch (error) {
         console.error(`Failed to fetch tags for bucket ${bucketId}:`, error)
         return []
@@ -643,7 +646,9 @@ export const useS3Store = defineStore('s3', () => {
       isLoading.value = true
       try {
         const response = await apiClient.get(`/s3/buckets/${bucketId}/replication`)
-        return response.data.data || []
+        // Handle: { data: { replication: [...] } }, { replication: [...] }, or { replication: {...} }
+        const data = response.data?.data?.replication || (response.data as any)?.replication || response.data?.data || []
+        return Array.isArray(data) ? data : (data && typeof data === 'object' ? [data] : [])
       } catch (error) {
         console.error(`Failed to fetch replication rules for bucket ${bucketId}:`, error)
         return []
@@ -733,6 +738,88 @@ export const useS3Store = defineStore('s3', () => {
         await apiClient.put(`/s3/buckets/${bucketId}/policy`, flatPolicy)
       } catch (error) {
         console.error(`Failed to update policy for bucket ${bucketId}:`, error)
+        throw error
+      } finally {
+        isLoading.value = false
+      }
+    },
+    fetchBucketAccessLogging: async (bucketId: string) => {
+      isLoading.value = true
+      try {
+        const response = await apiClient.get(`/s3/buckets/${bucketId}/logging`)
+        // Handle: { data: { status: "Enabled", targetBucket: "...", targetPrefix: "..." } }
+        const data = response.data?.data || response.data
+        if (currentBucket.value && currentBucket.value.bucket_id === bucketId) {
+          if (!currentBucket.value.settings) {
+            currentBucket.value.settings = {} as any
+          }
+          currentBucket.value.settings!.logging = {
+            enabled: data.status === 'Enabled',
+            targetBucket: data.targetBucket,
+            targetPrefix: data.targetPrefix
+          }
+        }
+        return data
+      } catch (error) {
+        console.warn(`Failed to fetch access logging for bucket ${bucketId}:`, error)
+        return null
+      } finally {
+        isLoading.value = false
+      }
+    },
+    fetchBucketObjectLock: async (bucketId: string) => {
+      isLoading.value = true
+      try {
+        const response = await apiClient.get(`/s3/buckets/${bucketId}/object-lock`)
+        // Handle: { data: { enabled: true } } or { enabled: true }
+        const data = response.data?.data || response.data
+        if (currentBucket.value && currentBucket.value.bucket_id === bucketId) {
+          if (!currentBucket.value.settings) {
+            currentBucket.value.settings = {} as any
+          }
+          currentBucket.value.settings!.object_lock = data.enabled
+        }
+        return data
+      } catch (error) {
+        console.warn(`Failed to fetch object lock for bucket ${bucketId}:`, error)
+        return null
+      } finally {
+        isLoading.value = false
+      }
+    },
+    fetchBucketEncryption: async (bucketId: string) => {
+      isLoading.value = true
+      try {
+        const response = await apiClient.get(`/s3/buckets/${bucketId}/encryption`)
+        // Handle: { data: { type: "SSE-S3", bucketKeyEnabled: true } } or { type: "...", ... }
+        const data = response.data?.data || response.data
+        if (currentBucket.value && currentBucket.value.bucket_id === bucketId) {
+          if (!currentBucket.value.settings) {
+            currentBucket.value.settings = {} as any
+          }
+          currentBucket.value.settings!.encryption = data
+        }
+        return data
+      } catch (error) {
+        console.warn(`Failed to fetch encryption for bucket ${bucketId}:`, error)
+        return null
+      } finally {
+        isLoading.value = false
+      }
+    },
+    updateBucketEncryption: async (bucketId: string, encryption: { type: string; bucketKeyEnabled: boolean }) => {
+      isLoading.value = true
+      try {
+        const response = await apiClient.put(`/s3/buckets/${bucketId}/encryption`, encryption)
+        if (currentBucket.value && currentBucket.value.bucket_id === bucketId) {
+          if (!currentBucket.value.settings) {
+            currentBucket.value.settings = {} as any
+          }
+          currentBucket.value.settings!.encryption = encryption
+        }
+        return response.data
+      } catch (error) {
+        console.error(`Failed to update encryption for bucket ${bucketId}:`, error)
         throw error
       } finally {
         isLoading.value = false

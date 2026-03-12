@@ -70,35 +70,59 @@ const syncState = async () => {
     // Fetch event notifications
     if (bucket?.bucket_id) {
         const notifications = await s3Store.fetchEventNotifications(bucket.bucket_id)
-        eventNotifications.value = notifications.map((n: any) => ({
-            id: n.id,
+        eventNotifications.value = notifications.map((n: any, idx: number) => ({
+            id: n.id || idx,
             name: n.name,
-            types: n.event_types,
+            types: n.event_types || n.eventTypes || [],
             destination: n.destination
         }))
 
         // Fetch resource tags
         const fetchedTags = await s3Store.fetchBucketTags(bucket.bucket_id)
         tags.value = fetchedTags.map((t: any) => ({
-            key: t.key,
-            value: t.value
+            key: t.key || t.Key,
+            value: t.value || t.Value
         }))
         tempTags.value = JSON.parse(JSON.stringify(tags.value))
 
         // Fetch replication rules
         const rules = await s3Store.fetchReplicationRules(bucket.bucket_id)
-        replicationRules.value = rules.map((r: any) => ({
-            id: r.id,
+        replicationRules.value = rules.map((r: any, idx: number) => ({
+            id: r.id || idx,
             name: r.name,
             priority: r.priority,
             status: r.status
         }))
+
+        // Fetch encryption settings
+        const encData = await s3Store.fetchBucketEncryption(bucket.bucket_id)
+        if (encData) {
+            encryption.type = encData.type || 'SSE-S3'
+            encryption.bucketKey = encData.bucketKeyEnabled ? 'Enable' : 'Disable'
+            Object.assign(tempEncryption, encryption)
+        }
+
+        // Fetch object lock status
+        const lockData = await s3Store.fetchBucketObjectLock(bucket.bucket_id)
+        if (lockData) {
+            objectLock.value = lockData.enabled ? 'Enabled' : 'Disabled'
+            tempObjectLock.value = objectLock.value
+        }
+
+        // Fetch access logging settings
+        const logData = await s3Store.fetchBucketAccessLogging(bucket.bucket_id)
+        if (logData) {
+            accessLogging.status = logData.status || 'Disabled'
+            accessLogging.targetBucket = logData.targetBucket || ''
+            accessLogging.prefix = logData.targetPrefix || ''
+            Object.assign(tempAccessLogging, accessLogging)
+        }
     }
 }
 
 
 onMounted(syncState)
-watch(() => s3Store.currentBucket?.settings, syncState, { deep: true })
+watch(() => s3Store.currentBucket?.bucket_id, syncState)
 
 const handleSaveVersioning = async () => {
     if (!s3Store.currentBucket?.bucket_id) return
@@ -116,11 +140,23 @@ const handleSaveVersioning = async () => {
     }
 }
 
-const handleSaveEncryption = () => {
-    // In a real app, this would also be an API call
-    Object.assign(encryption, tempEncryption)
-    activeModal.value = null
-    toastStore.addToast('Encryption settings updated locally.', 'success')
+const handleSaveEncryption = async () => {
+    if (!s3Store.currentBucket?.bucket_id) return
+
+    isSaving.value = true
+    try {
+        await s3Store.updateBucketEncryption(s3Store.currentBucket.bucket_id, {
+            type: tempEncryption.type,
+            bucketKeyEnabled: tempEncryption.bucketKey === 'Enable'
+        })
+        Object.assign(encryption, tempEncryption)
+        activeModal.value = null
+        toastStore.addToast('Encryption settings updated successfully.', 'success')
+    } catch (error) {
+        toastStore.addToast('Could not update encryption settings.', 'error')
+    } finally {
+        isSaving.value = false
+    }
 }
 
 const handleSaveObjectLock = async () => {

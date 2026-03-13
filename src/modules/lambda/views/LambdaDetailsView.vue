@@ -49,7 +49,7 @@ const loadPolicies = async () => {
   if (!currentFunction.value?.name) return
   isLoadingPolicies.value = true
   try {
-    const res = await lambdaStore.fetchPolicies(currentFunction.value.name)
+    const res = await lambdaStore.fetchPolicies()
     policies.value = Array.isArray(res) ? res : [res].filter(Boolean)
   } finally {
     isLoadingPolicies.value = false
@@ -77,9 +77,11 @@ const submitPolicy = async () => {
   try {
     if (editingPolicy.value) {
       const policyId = editingPolicy.value.id || editingPolicy.value.PolicyId || editingPolicy.value.Id || currentFunction.value?.name
+      if (!policyId) return
       await lambdaStore.updatePolicy(policyId, policyForm.value)
     } else {
-      await lambdaStore.createPolicy(policyForm.value)
+      if (!currentFunction.value?.name) return
+      await lambdaStore.createPolicy(currentFunction.value.name, policyForm.value)
     }
     showPolicyModal.value = false
     await loadPolicies()

@@ -27,7 +27,7 @@ export const useLambdaStore = defineStore('lambda', () => {
     const currentFunction = ref<LambdaFunction | null>(null)
     const lastTestResult = ref<any>(null)
     const metrics = ref<LambdaMetrics | null>(null)
-    const scalingPolicies = ref<any[]>([])
+    const policies = ref<any[]>([])
 
     const fetchFunctions = async () => {
         isLoading.value = true
@@ -160,11 +160,11 @@ export const useLambdaStore = defineStore('lambda', () => {
         }
     }
 
-    const fetchScalingPolicies = async () => {
+    const fetchPolicies = async () => {
         isLoading.value = true
         try {
             const response = await apiClient.get<any>('/lambda/policies')
-            scalingPolicies.value = response.data?.data || response.data || []
+            policies.value = response.data?.data || response.data || []
         } catch (error) {
             console.error('Failed to fetch scaling policies:', error)
         } finally {
@@ -172,13 +172,13 @@ export const useLambdaStore = defineStore('lambda', () => {
         }
     }
 
-    const createScalingPolicy = async (functionId: string, payload: any) => {
+    const createPolicy = async (functionId: string, payload: any) => {
         isLoading.value = true
         try {
             console.log(payload)
             console.log("functionId")
             await apiClient.post(`/lambda/${functionId}/policies`, payload)
-            await fetchScalingPolicies()
+            await fetchPolicies()
         } catch (error) {
             console.error('Failed to create scaling policy:', error)
             throw error
@@ -187,11 +187,11 @@ export const useLambdaStore = defineStore('lambda', () => {
         }
     }
 
-    const updateScalingPolicy = async (functionId: string, payload: any) => {
+    const updatePolicy = async (functionId: string, payload: any) => {
         isLoading.value = true
         try {
             await apiClient.put(`/lambda/${functionId}/policies`, payload)
-            await fetchScalingPolicies()
+            await fetchPolicies()
         } catch (error) {
             console.error('Failed to update scaling policy:', error)
             throw error
@@ -204,7 +204,7 @@ export const useLambdaStore = defineStore('lambda', () => {
         isLoading.value = true
         try {
             const response = await apiClient.delete(`/lambda/${functionId}/policies`)
-            await fetchScalingPolicies()
+            await fetchPolicies()
             return response.data
         } catch (error) {
             console.error(`Failed to delete policy for ${functionId}:`, error)
@@ -220,16 +220,16 @@ export const useLambdaStore = defineStore('lambda', () => {
         isLoading,
         lastTestResult,
         metrics,
-        scalingPolicies,
+        policies,
         fetchFunctions,
         fetchFunctionById,
         registerFunction,
         invokeFunction,
         fetchMetrics,
         updateConfiguration,
-        fetchScalingPolicies,
-        createScalingPolicy,
-        updateScalingPolicy,
+        fetchPolicies,
+        createPolicy,
+        updatePolicy,
         deletePolicy
     }
 })

@@ -288,14 +288,14 @@ const navigateTo = (path: string) => {
                             <!-- Serwin Orange Trend Line (Data Entering) -->
                             <path
                                 v-if="storageLensData && storageLensData.timeSeries && storageLensData.timeSeries.length && storageLensData.summary"
-                                :d="`M 0,${240 - ((storageLensData.timeSeries[0]?.storage || 0) / (storageLensData.summary.totalStorage || 1) * 180 + 20)} ${storageLensData.timeSeries.map((p, i) => 'L ' + (i * (100 / (storageLensData.timeSeries!.length - 1))) + ',' + (240 - ((p.storage || 0) / (storageLensData.summary!.totalStorage || 1) * 180 + 20))).join(' ')}`"
+                                :d="`M 0,${240 - ((storageLensData!.timeSeries[0]?.storage || 0) / (storageLensData!.summary.totalStorage || 1) * 180 + 20)} ${storageLensData!.timeSeries.map((p, i) => 'L ' + (i * (100 / (storageLensData!.timeSeries!.length - 1))) + ',' + (240 - ((p.storage || 0) / (storageLensData!.summary!.totalStorage || 1) * 180 + 20))).join(' ')}`"
                                 stroke="#ff9900" stroke-width="2" fill="none" stroke-linejoin="round"
                                 stroke-linecap="round" />
 
                             <!-- YELLOW STORAGE THROUGHPUT LINE -->
                             <path
                                 v-if="storageLensData && storageLensData.timeSeries && storageLensData.timeSeries.length"
-                                :d="`M 0,${240 - ((storageLensData.timeSeries[0]?.throughput || 0) / 150000000 * 180 + 10)} ${storageLensData.timeSeries.map((p, i) => 'L ' + (i * (100 / (storageLensData.timeSeries!.length - 1))) + ',' + (240 - ((p.throughput || 0) / 150000000 * 180 + 10))).join(' ')}`"
+                                :d="`M 0,${240 - ((storageLensData!.timeSeries[0]?.throughput || 0) / 150000000 * 180 + 10)} ${storageLensData!.timeSeries.map((p, i) => 'L ' + (i * (100 / (storageLensData!.timeSeries!.length - 1))) + ',' + (240 - ((p.throughput || 0) / 150000000 * 180 + 10))).join(' ')}`"
                                 stroke="#FFFB00" stroke-width="1.5" fill="none" stroke-linejoin="round"
                                 stroke-linecap="round" class="drop-shadow-[0_0_4px_rgba(255,251,0,0.3)]" />
                         </svg>

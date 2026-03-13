@@ -31,7 +31,7 @@ const lambdaScalingFormError = ref('')
 const openLambdaScalingCrudModal = async () => {
     isLambdaScalingCrudModalOpen.value = true
     lambdaScalingCrudMode.value = 'list'
-    await lambdaStore.fetchScalingPolicies()
+    await lambdaStore.fetchPolicies()
 }
 
 const closeLambdaScalingCrudModal = () => {
@@ -97,9 +97,9 @@ const submitLambdaScalingPolicy = async () => {
 
     try {
         if (lambdaScalingCrudMode.value === 'edit' && selectedLambdaScalingPolicy.value) {
-            await lambdaStore.updateScalingPolicy(selectedLambdaScalingPolicy.value.function_id || selectedLambdaScalingPolicy.value.target_id, payload)
+            await lambdaStore.updatePolicy(selectedLambdaScalingPolicy.value.function_id || selectedLambdaScalingPolicy.value.target_id, payload)
         } else {
-            await lambdaStore.createScalingPolicy(lambdaScalingForm.value.function_id, payload)
+            await lambdaStore.createPolicy(lambdaScalingForm.value.function_id, payload)
         }
         lambdaScalingCrudMode.value = 'list'
     } catch (e: any) {
@@ -183,7 +183,7 @@ onMounted(async () => {
             computeStore.fetchSSHKeys(),
             computeStore.fetchScalingPolicies(),
             lambdaStore.fetchFunctions(),
-            lambdaStore.fetchScalingPolicies()
+            lambdaStore.fetchPolicies()
         ])
 
         intervalId = setInterval(updateLiveMetrics, 3000)
@@ -643,7 +643,7 @@ const getStatusColor = (type: string) => {
                                     </div>
                                     <div>
                                         <p class="text-2xl font-black text-[#232f3e] leading-none mb-1">{{
-                                            lambdaStore.scalingPolicies?.length || 0 }}</p>
+                                            lambdaStore.policies?.length || 0 }}</p>
                                         <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">Lambda
                                             Scale Rules</p>
                                     </div>
@@ -1013,7 +1013,7 @@ const getStatusColor = (type: string) => {
                         class="py-12 text-center text-[#879196] text-[10px] uppercase font-black tracking-widest animate-pulse">
                         Loading Policies...
                     </div>
-                    <div v-else-if="(lambdaStore.scalingPolicies?.policies || lambdaStore.scalingPolicies || []).length === 0"
+                    <div v-else-if="(lambdaStore.policies || []).length === 0"
                         class="py-12 text-center border-2 border-dashed border-[#eaeded]">
                         <p class="text-[10px] font-black tracking-widest uppercase text-[#879196] italic">No scaling
                             policies
@@ -1037,7 +1037,7 @@ const getStatusColor = (type: string) => {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="policy in (lambdaStore.scalingPolicies?.policies || lambdaStore.scalingPolicies || [])"
+                                <tr v-for="policy in (lambdaStore.policies || [])"
                                     :key="policy.function_id || policy.target_id"
                                     class="border-b border-[#eaeded] hover:bg-[#fafafa]">
                                     <td class="p-4">

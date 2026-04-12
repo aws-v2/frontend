@@ -31,12 +31,16 @@ if (isStagingProfile && !import.meta.env.VITE_API_BASE_URL) {
   for (const url of STAGING_URLS) {
     try {
       // Simple GET request to check connectivity
-      await axios.get(url, { timeout: 1500 }) 
+      const response = await axios.get(url, { 
+        timeout: 2000,
+        validateStatus: () => true // Accept any status code (2xx, 4xx, 5xx) as "reachable"
+      }) 
       apiClient.defaults.baseURL = url
-      probeResults.push(`✅ ${url} (Connected)`)
+      probeResults.push(`✅ ${url} (Responded with ${response.status})`)
       break
-    } catch (err) {
-      probeResults.push(`❌ ${url} (Unreachable)`)
+    } catch (err: any) {
+      const reason = err.response ? `HTTP ${err.response.status}` : (err.code || 'Network Error')
+      probeResults.push(`❌ ${url} (${reason})`)
     }
   }
 

@@ -10,7 +10,7 @@ const STAGING_URLS = [
   '/api/v1',                                  // 1. Nginx Proxy (Standard)
   'http://api-gateway:8080/api/v1',           // 2. Docker Service Name
   'http://api-gateway-staging:8080/api/v1',   // 3. Docker Container Name
-  'http://172.18.0.2:8080/api/v1',            // 4. Internal IP (Example)
+  'http://172.10.18.06:8080/api/v1',            // 4. Internal IP (Example)
 ]
 
 const defaultBaseUrl = isProdProfile
@@ -26,20 +26,23 @@ const apiClient = axios.create({
 
 // Fallback "Cycling" Discovery (Staging only)
 if (isStagingProfile && !import.meta.env.VITE_API_BASE_URL) {
-  (async () => {
-    for (const url of STAGING_URLS) {
-      try {
-        console.log(`[API Client] Probing: ${url}...`)
-        // Simple GET request to check connectivity
-        await axios.get(url, { timeout: 2000 }) 
-        apiClient.defaults.baseURL = url
-        console.log(`[API Client] Connected! Using: ${url}`)
-        break
-      } catch (err) {
-        console.warn(`[API Client] ${url} not reachable.`)
-      }
+  const probeResults: string[] = []
+  
+  for (const url of STAGING_URLS) {
+    try {
+      // Simple GET request to check connectivity
+      await axios.get(url, { timeout: 1500 }) 
+      apiClient.defaults.baseURL = url
+      probeResults.push(`✅ ${url} (Connected)`)
+      break
+    } catch (err) {
+      probeResults.push(`❌ ${url} (Unreachable)`)
     }
-  })()
+  }
+
+  console.group('[API Client] Backend Discovery Summary')
+  probeResults.forEach(res => console.log(res))
+  console.groupEnd()
 }
 
 console.log(`[API Client] Initialized with profile: ${viteAppProfile}, Base URL: ${apiClient.defaults.baseURL}`)

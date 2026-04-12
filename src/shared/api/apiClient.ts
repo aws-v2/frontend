@@ -5,9 +5,9 @@ const viteAppProfile = import.meta.env.VITE_APP_PROFILE
 const isProdProfile = viteAppProfile === 'prod'
 const isStagingProfile = viteAppProfile === 'staging'
 
-const defaultBaseUrl = isProdProfile 
-  ? 'http://13.48.129.233:8080/api/v1' 
-  : (isStagingProfile ? 'http://api-gateway:8080/api/v1' : 'http://localhost:8080/api/v1')
+const defaultBaseUrl = isProdProfile
+  ? 'http://13.48.129.233:8080/api/v1'
+  : (isStagingProfile ? 'http://api-gateway-staging:8080/api/v1' : 'http://localhost:8080/api/v1')
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || defaultBaseUrl,

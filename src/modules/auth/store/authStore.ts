@@ -93,7 +93,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(payload: any) {
     try {
       console.log('Attempting login for:', payload.email)
-      const response = await apiClient.post<LoginResponse>('auth/login', payload)
+      const response = await apiClient.post<LoginResponse>(`${apiClient.defaults.baseURL}auth/login', payload)
       console.log('Login raw response:', response)
       // Ensure email is preserved if not returned by backend
       setSession({

@@ -5,18 +5,9 @@ const viteAppProfile = import.meta.env.VITE_APP_PROFILE
 const isProdProfile = viteAppProfile === 'prod'
 const isStagingProfile = viteAppProfile === 'staging'
 
-// List of potential backend URLs for staging (in priority order)
-const STAGING_URLS = [
-  'http://localhost:8080/api/v1',                                  // 1. Nginx Proxy (Standard)
-  '/api/v1',                        // 1. Nginx Proxy (Standard)
-  'http://api-gateway:8080/api/v1',           // 2. Docker Service Name
-  'http://api-gateway-staging:8080/api/v1',   // 3. Docker Container Name
-  'http://[IP_ADDRESS]/api/v1',            // 4. Internal IP (Example)
-]
-
 const defaultBaseUrl = isProdProfile
   ? 'http://13.48.129.233:8080/api/v1'
-  : (isStagingProfile ? STAGING_URLS[0] : 'http://localhost:8080/api/v1')
+  : (isStagingProfile ? '/api/v1' : 'http://localhost:8080/api/v1')
 
 const apiClient = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || defaultBaseUrl,
@@ -24,31 +15,6 @@ const apiClient = axios.create({
     'Content-Type': 'application/json',
   },
 })
-
-// Fallback "Cycling" Discovery (Staging only)
-if (isStagingProfile && !import.meta.env.VITE_API_BASE_URL) {
-  const probeResults: string[] = []
-  
-  for (const url of STAGING_URLS) {
-    try {
-      // Simple GET request to check connectivity
-      const response = await axios.get(url, { 
-        timeout: 2000,
-        validateStatus: () => true // Accept any status code (2xx, 4xx, 5xx) as "reachable"
-      }) 
-      apiClient.defaults.baseURL = url
-      probeResults.push(`✅ ${url} (Responded with ${response.status})`)
-      break
-    } catch (err: any) {
-      const reason = err.response ? `HTTP ${err.response.status}` : (err.code || 'Network Error')
-      probeResults.push(`❌ ${url} (${reason})`)
-    }
-  }
-
-  console.group('[API Client] Backend Discovery Summary')
-  probeResults.forEach(res => console.log(res))
-  console.groupEnd()
-}
 
 console.log(`[API Client] Initialized with profile: ${viteAppProfile}, Base URL: ${apiClient.defaults.baseURL}`)
 

@@ -27,7 +27,7 @@ jobs:
         push: true
         tags: qarani/frontend-server:staging
         build-args: |
-          SPRING_PROFILES_ACTIVE=prod
+          SPRING_PROFILES_ACTIVE=staging
 
   deploy:
     needs: build-and-push

@@ -111,8 +111,8 @@ import AddFromEnvModal from '../components/AddFromEnvModal.vue'
 const isEditing = ref(false)
 const showEnvModal = ref(false)
 
-const appProfile = import.meta.env.APP_PROFILE
-const isProdProfile = appProfile === 'prod'
+const viteAppProfile = import.meta.env.VITE_APP_PROFILE
+const isProdProfile = viteAppProfile === 'prod'
 
 const initialEnvVars = [
   { key: 'ALCHEMY_URL', value: 'https://eth-mainnet.g.alchemy.com/v2/your-api-key', show: false },
@@ -124,7 +124,7 @@ const initialEnvVars = [
   { key: 'FRONTEND_URL', value: isProdProfile ? 'http://13.48.129.233:8080/api/v1/' : 'http://localhost:3000', show: false },
   { key: 'JWT_SECRET', value: 'your-super-secret-jwt-key', show: false },
   { key: 'NATI_FRIEND_API_KEY', value: 'nati-friend-api-key-12345', show: false },
-  { key: 'APP_PROFILE', value: appProfile || 'dev', show: false },
+  { key: 'VITE_APP_PROFILE', value: viteAppProfile || 'dev', show: false },
 ]
 
 const envVars = ref([...initialEnvVars])

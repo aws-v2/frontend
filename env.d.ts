@@ -2,7 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_API_BASE_URL: string
-  readonly APP_PROFILE: string
+  readonly VITE_APP_PROFILE: string
 }
 
 interface ImportMeta {

@@ -1,8 +1,8 @@
 import axios from 'axios'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 
-const appProfile = import.meta.env.APP_PROFILE
-const isProdProfile = appProfile === 'prod'
+const viteAppProfile = import.meta.env.VITE_APP_PROFILE
+const isProdProfile = viteAppProfile === 'prod'
 const defaultBaseUrl = isProdProfile ? 'http://13.48.129.233:8080/api/v1' : '/api/v1'
 
 const apiClient = axios.create({
@@ -12,7 +12,7 @@ const apiClient = axios.create({
   },
 })
 
-console.log(`[API Client] Initialized with profile: ${appProfile}, Base URL: ${apiClient.defaults.baseURL}`)
+console.log(`[API Client] Initialized with profile: ${viteAppProfile}, Base URL: ${apiClient.defaults.baseURL}`)
 
 // Request Interceptor: Attach JWT token to every request
 apiClient.interceptors.request.use(

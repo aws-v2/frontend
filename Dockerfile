@@ -4,11 +4,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
-ARG APP_PROFILE=dev
+ARG VITE_APP_PROFILE=dev
 ARG VITE_API_BASE_URL
-ENV APP_PROFILE=$APP_PROFILE
+ENV VITE_APP_PROFILE=$VITE_APP_PROFILE
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-RUN APP_PROFILE=$APP_PROFILE npm run build-only
+RUN VITE_APP_PROFILE=$VITE_APP_PROFILE npm run build-only
 
 # Production stage.
 FROM nginx:stable-alpine AS production-stage

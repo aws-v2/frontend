@@ -8,6 +8,8 @@ const isStagingProfile = viteAppProfile === 'staging'
 // List of potential backend URLs for staging (in priority order)
 const STAGING_URLS = [
   'http://localhost:8080/api/v1',                                  // 1. Nginx Proxy (Standard)
+  '/api/v1',            
+                        // 1. Nginx Proxy (Standard)
   'http://api-gateway:8080/api/v1',           // 2. Docker Service Name
   'http://api-gateway-staging:8080/api/v1',   // 3. Docker Container Name
   'http://172.10.18.06:8080/api/v1',            // 4. Internal IP (Example)

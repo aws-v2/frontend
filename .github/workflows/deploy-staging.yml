@@ -33,13 +33,17 @@ jobs:
     needs: build-and-push
     runs-on: ubuntu-latest
     steps:
-    - name: Deploy to EC2 via SSH.
+    - name: Install Tailscale
+      run: |
+        curl -fsSL https://tailscale.com/install.sh | sh
+        sudo tailscale up --authkey ${{ secrets.TAILSCALE_AUTH_KEY }}
+
+    - name: Deploy to Staging via SSH over Tailscale.
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USERNAME }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        passphrase: ${{ secrets.EC2_SSH_PASSPHRASE }}
+        host: ${{ secrets.STAGING_HOST }}
+        username: ${{ secrets.STAGING_USERNAME }}
+        key: ${{ secrets.STAGING_SSH_KEY }}
         script: |
           docker pull qarani/frontend-server:staging
           docker stop frontend-server || true

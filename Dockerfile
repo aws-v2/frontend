@@ -4,6 +4,8 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 COPY . .
+ARG APP_PROFILE=dev
+ENV APP_PROFILE=$APP_PROFILE
 RUN npm run build-only
 
 # Production stage

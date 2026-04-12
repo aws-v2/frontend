@@ -12,6 +12,7 @@ export default defineConfig({
     vueJsx(),
     vueDevTools(),
   ],
+  envPrefix: ['VITE_', 'APP_'],
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

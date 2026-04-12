@@ -111,18 +111,20 @@ import AddFromEnvModal from '../components/AddFromEnvModal.vue'
 const isEditing = ref(false)
 const showEnvModal = ref(false)
 
-const isProd = import.meta.env.MODE === 'production'
+const appProfile = import.meta.env.APP_PROFILE
+const isProdProfile = appProfile === 'prod'
 
 const initialEnvVars = [
   { key: 'ALCHEMY_URL', value: 'https://eth-mainnet.g.alchemy.com/v2/your-api-key', show: false },
-  { key: 'DATABASE_URL', value: `postgresql://root:root@${isProd ? 'postgres' : 'localhost'}:5432/aws_cloud`, show: false },
+  { key: 'DATABASE_URL', value: `postgresql://root:root@${isProdProfile ? 'postgres' : 'localhost'}:5432/aws_cloud`, show: false },
   { key: 'DEV_MAIL_HOST', value: 'smtp.mailtrap.io', show: false },
   { key: 'DEV_MAIL_PASSWORD', value: 'your-password', show: false },
   { key: 'DEV_MAIL_PORT', value: '2525', show: false },
   { key: 'DEV_MAIL_USERNAME', value: 'your-username', show: false },
-  { key: 'FRONTEND_URL', value: isProd ? 'http://13.48.129.233:8080/api/v1/' : 'http://localhost:3000', show: false },
+  { key: 'FRONTEND_URL', value: isProdProfile ? 'http://13.48.129.233:8080/api/v1/' : 'http://localhost:3000', show: false },
   { key: 'JWT_SECRET', value: 'your-super-secret-jwt-key', show: false },
   { key: 'NATI_FRIEND_API_KEY', value: 'nati-friend-api-key-12345', show: false },
+  { key: 'APP_PROFILE', value: appProfile || 'dev', show: false },
 ]
 
 const envVars = ref([...initialEnvVars])

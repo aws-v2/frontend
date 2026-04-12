@@ -93,7 +93,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function login(payload: any) {
     try {
       console.log('Attempting login for:', payload.email)
-      const response = await apiClient.post<LoginResponse>('/auth/login', payload)
+      const response = await apiClient.post<LoginResponse>('auth/login', payload)
       console.log('Login raw response:', response)
       // Ensure email is preserved if not returned by backend
       setSession({
@@ -110,7 +110,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function forgotPassword(payload: { email: string }) {
     try {
       const response = await apiClient.post<{ message: string; email: string }>(
-        '/auth/forgot-password',
+        'auth/forgot-password',
         payload,
       )
       return response.data
@@ -122,7 +122,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function enableMfa() {
     try {
-      const response = await apiClient.post<{ qrCode: string; secret: string }>('/auth/mfa/enable')
+      const response = await apiClient.post<{ qrCode: string; secret: string }>('auth/mfa/enable')
       return response.data
     } catch (error) {
       console.error('MFA Enable failed:', error)
@@ -132,7 +132,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function verifyMfa(code: string) {
     try {
-      const response = await apiClient.post<LoginResponse>('/auth/mfa/verify', {
+      const response = await apiClient.post<LoginResponse>('auth/mfa/verify', {
         code,
         email: email.value,
       })
@@ -146,7 +146,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function disableMfa(code: string) {
     try {
-      const response = await apiClient.post<{ message: string }>('/auth/mfa/disable', { code })
+      const response = await apiClient.post<{ message: string }>('auth/mfa/disable', { code })
       mfaEnabled.value = false
       localStorage.setItem('auth_mfa_enabled', 'false')
       return response.data
@@ -158,7 +158,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function register(payload: any) {
     try {
-      const response = await apiClient.post<LoginResponse>('/auth/register', payload)
+      const response = await apiClient.post<LoginResponse>('auth/register', payload)
       // Ensure email is preserved if not returned by backend
       setSession({
         ...response.data,
@@ -178,7 +178,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function verifyPayment(payload: any) {
     try {
-      const response = await apiClient.post('/auth/payment/verify', payload)
+      const response = await apiClient.post('auth/payment/verify', payload)
       return response.data
     } catch (error) {
       console.error('Payment verification failed:', error)
@@ -189,7 +189,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function verifyEmail(token: string) {
     try {
       loading.value = true
-      const response = await apiClient.get('/auth/verify-email', { params: { token } })
+      const response = await apiClient.get('auth/verify-email', { params: { token } })
       if (user.value) {
         user.value.emailVerified = true
       }
@@ -206,7 +206,7 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       loading.value = true
       // Simulating real API call
-      const response = await apiClient.get('/auth/me')
+      const response = await apiClient.get('auth/me')
       user.value = response.data
       return response.data
     } catch (error) {

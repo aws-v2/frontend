@@ -5,12 +5,15 @@ const viteAppProfile = import.meta.env.VITE_APP_PROFILE
 const isProdProfile = viteAppProfile === 'prod'
 const isStagingProfile = viteAppProfile === 'staging'
 
+// Ensure trailing slashes for clean path joining
 const defaultBaseUrl = isProdProfile
-  ? 'http://13.48.129.233:8080/api/v1'
-  : (isStagingProfile ? '/api/v1' : 'http://localhost:8080/api/v1')
+  ? 'http://13.48.129.233:8080/api/v1/'
+  : (isStagingProfile ? '/api/v1/' : 'http://localhost:8080/api/v1/')
+
+const baseURL = (import.meta.env.VITE_API_BASE_URL || defaultBaseUrl).replace(/\/$/, '') + '/'
 
 const apiClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL || defaultBaseUrl,
+  baseURL,
   headers: {
     'Content-Type': 'application/json',
   },

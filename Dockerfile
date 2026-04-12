@@ -10,7 +10,7 @@ ENV APP_PROFILE=$APP_PROFILE
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 RUN npm run build-only
 
-# Production stage
+# Production stage.
 FROM nginx:stable-alpine AS production-stage
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf

@@ -8,7 +8,7 @@ ARG VITE_APP_PROFILE=staging
 ARG VITE_API_BASE_URL
 ENV VITE_APP_PROFILE=$VITE_APP_PROFILE
 ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
-RUN VITE_APP_PROFILE=$VITE_APP_PROFILE npm run build-only
+RUN npm run build
 
 # Production stage.
 FROM nginx:stable-alpine AS production-stage

@@ -30,17 +30,19 @@ const imageMap = {
 }
 
 const distroList = [
-    { id: 'ubuntu', name: 'Ubuntu', versions: ['ubuntu-24.04', 'ubuntu-22.04', 'ubuntu-20.04'] },
-    { id: 'debian', name: 'Debian', versions: ['debian-12', 'debian-11'] },
-    { id: 'rocky', name: 'Rocky Linux', versions: ['rocky-9', 'rocky-8'] },
-    { id: 'almalinux', name: 'AlmaLinux', versions: ['almalinux-9', 'almalinux-8'] },
-    { id: 'fedora', name: 'Fedora', versions: ['fedora-40', 'fedora-39'] },
-    { id: 'centos', name: 'CentOS Stream', versions: ['centos-stream-9'] }
+    { id: 'ubuntu', name: 'Ubuntu', versions: ['ubuntu-24.04', 'ubuntu-22.04', 'ubuntu-20.04'], available: true },
+    { id: 'debian', name: 'Debian', versions: ['debian-12', 'debian-11'], available: true },
+    { id: 'rocky', name: 'Rocky Linux', versions: ['rocky-9', 'rocky-8'], available: true },
+    { id: 'almalinux', name: 'AlmaLinux', versions: ['almalinux-9', 'almalinux-8'], available: false },
+    { id: 'fedora', name: 'Fedora', versions: ['fedora-40', 'fedora-39'], available: false },
+    { id: 'centos', name: 'CentOS Stream', versions: ['centos-stream-9'], available: false }
 ]
 
 const selectDistro = (distroId: string) => {
+    const distro = distroList.find(d => d.id === distroId)
+    if (!distro || !distro.available) return
     selectedDistro.value = distroId
-    selectedVersion.value = distroList.find(d => d.id === distroId)?.versions[0] || ''
+    selectedVersion.value = distro.versions[0] || ''
 }
 
 const goBack = () => {
@@ -130,12 +132,14 @@ const launchInstance = async () => {
 
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                             <div v-for="distro in distroList" :key="distro.id" @click="selectDistro(distro.id)" :class="[
-                                'p-5 border-2 cursor-pointer transition-all flex flex-col items-center gap-4 group relative overflow-hidden',
-                                selectedDistro === distro.id ? 'bg-[#fafafa] border-blue-600 translate-y-[-4px]' : 'bg-white border-[#eaeded] hover:border-[#232f3e]'
+                                'p-5 border-2 transition-all flex flex-col items-center gap-4 group relative overflow-hidden',
+                                distro.available ? 'cursor-pointer' : 'cursor-not-allowed opacity-40 grayscale',
+                                (distro.available && selectedDistro === distro.id) ? 'bg-[#fafafa] border-blue-600 translate-y-[-4px]' : 'bg-white border-[#eaeded]',
+                                (distro.available && selectedDistro !== distro.id) ? 'hover:border-[#232f3e]' : ''
                             ]">
                                 <!-- Distro Logos -->
                                 <div
-                                    class="w-12 h-12 flex items-center justify-center transition-transform group-hover:scale-110">
+                                    :class="['w-12 h-12 flex items-center justify-center transition-transform', distro.available ? 'group-hover:scale-110' : '']">
                                     <svg v-if="distro.id === 'ubuntu'" class="w-10 h-10" viewBox="0 0 24 24"
                                         fill="none">
                                         <path

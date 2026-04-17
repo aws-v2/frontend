@@ -54,6 +54,10 @@ const authStore = useAuthStore()
                                 class="bg-amber-600 hover:bg-amber-700 text-white font-black px-12 py-6 transition-all rounded-none uppercase tracking-widest text-sm shadow-[8px_8px_0px_#232f3e] active:shadow-none active:translate-x-1 active:translate-y-1">
                                 Provision DB Cluster
                             </button>
+                            <button v-if="authStore.isAuthenticated" @click="router.push('/rds/databases')"
+                                class="bg-white border-2 border-amber-600 hover:bg-amber-600 text-amber-600 hover:text-white font-black px-12 py-6 transition-all rounded-none uppercase tracking-widest text-sm shadow-[8px_8px_0px_#232f3e] active:shadow-none active:translate-x-1 active:translate-y-1">
+                                Enter Console
+                            </button>
                             <button @click="router.push('/docs/content/rds-overview')"
                                 class="px-12 py-6 border-2 border-[#232f3e] text-[#232f3e] font-black hover:bg-[#232f3e] hover:text-white transition-all rounded-none uppercase tracking-widest text-sm">
                                 Read Protocol &rarr;

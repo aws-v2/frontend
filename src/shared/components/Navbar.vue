@@ -223,28 +223,65 @@ const isDarkMode = computed(() => !!route.meta.isDarkNavbar)
                             </div>
                         </router-link>
 
-                        <!-- Compute Card (Disabled) -->
-                        <div
-                            class="bg-[#fafafa] border-2 border-[#eaeded] p-8 opacity-60 grayscale cursor-not-allowed relative overflow-hidden">
+                        <!-- Compute Card -->
+                        <router-link to="/compute" @click="isMenuOpen = false"
+                            class="group bg-white border-2 border-[#eaeded] hover:border-[#ff9900] p-8 transition-all shadow-sm hover:shadow-xl relative overflow-hidden">
                             <div
-                                class="absolute top-4 right-4 bg-[#232f3e] text-white text-[10px] font-black px-2 py-1 uppercase tracking-tighter">
-                                Coming Soon
+                                class="absolute inset-0 bg-[#ff9900]/5 opacity-0 group-hover:opacity-100 transition-opacity">
                             </div>
                             <div class="relative z-10">
                                 <div
-                                    class="w-12 h-12 bg-white border border-[#eaeded] flex items-center justify-center text-[#879196] mb-6">
+                                    class="w-12 h-12 bg-[#fafafa] border border-[#eaeded] flex items-center justify-center text-[#ff9900] mb-6 group-hover:scale-110 group-hover:border-[#ff9900]/30 transition-transform">
                                     <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                     </svg>
                                 </div>
-                                <h3 class="text-2xl font-black text-[#879196] uppercase tracking-tighter mb-3">Compute
+                                <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tighter mb-3">Compute
                                 </h3>
-                                <p class="text-sm text-[#879196] font-medium leading-relaxed">High-performance instances
+                                <p class="text-sm text-[#545b64] font-medium leading-relaxed">High-performance instances
                                     and
                                     serverless functions.</p>
                             </div>
-                        </div>
+                        </router-link>
+
+                        <!-- Gaming Card -->
+                        <router-link to="/gaming" @click="isMenuOpen = false"
+                            class="group bg-white border-2 border-[#eaeded] hover:border-[#ff9900] p-8 transition-all shadow-sm hover:shadow-xl relative overflow-hidden">
+                            <div
+                                class="absolute inset-0 bg-[#ff9900]/5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            </div>
+                            <div class="relative z-10">
+                                <div
+                                    class="w-12 h-12 bg-[#fafafa] border border-[#eaeded] flex items-center justify-center text-[#ff9900] mb-6 group-hover:scale-110 group-hover:border-[#ff9900]/30 transition-transform">
+                                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a1 1 0 11-2 0 1 1 0 012 0zm-4-4a1 1 0 11-2 0 1 1 0 012 0zm4 8a1 1 0 11-2 0 1 1 0 012 0zm-8-4a1 1 0 11-2 0 1 1 0 012 0zm11 0a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    </svg>
+                                </div>
+                                <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tighter mb-3">Gaming
+                                </h3>
+                                <p class="text-sm text-[#545b64] font-medium leading-relaxed">Multiplayer game server hosting and scaling.</p>
+                            </div>
+                        </router-link>
+
+                        <!-- AI / SageMaker Card -->
+                        <router-link to="/sagemaker" @click="isMenuOpen = false"
+                            class="group bg-white border-2 border-[#eaeded] hover:border-[#ff9900] p-8 transition-all shadow-sm hover:shadow-xl relative overflow-hidden">
+                            <div
+                                class="absolute inset-0 bg-[#ff9900]/5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            </div>
+                            <div class="relative z-10">
+                                <div
+                                    class="w-12 h-12 bg-[#fafafa] border border-[#eaeded] flex items-center justify-center text-[#ff9900] mb-6 group-hover:scale-110 group-hover:border-[#ff9900]/30 transition-transform">
+                                    <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                    </svg>
+                                </div>
+                                <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tighter mb-3">AI & ML
+                                </h3>
+                                <p class="text-sm text-[#545b64] font-medium leading-relaxed">Train and deploy machine learning models.</p>
+                            </div>
+                        </router-link>
                     </div>
                 </div>
             </div>

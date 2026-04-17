@@ -74,14 +74,14 @@ const handleRDSClick = () => {
                     :class="activeLink === 'database' ? 'text-[#ff9900]' : 'hover:text-[#ff9900]'">
                     Database
                 </a>
-                <button @click="handleComingSoon"
-                    class="transition-colors text-[#ff9900]/40 hover:text-[#ff9900]/60 flex items-center gap-1.5">
+                <router-link to="/gaming" class="transition-colors"
+                    :class="activeLink === 'gaming' ? 'text-[#ff9900]' : 'hover:text-[#ff9900]'">
                     Gaming
-                </button>
-                <button @click="handleComingSoon"
-                    class="transition-colors text-[#ff9900]/40 hover:text-[#ff9900]/60 flex items-center gap-1.5">
+                </router-link>
+                <router-link to="/sagemaker" class="transition-colors"
+                    :class="activeLink === 'ai' ? 'text-[#ff9900]' : 'hover:text-[#ff9900]'">
                     AI
-                </button>
+                </router-link>
                 <router-link to="/pricing" class="transition-colors"
                     :class="activeLink === 'pricing' ? 'text-[#ff9900]' : 'hover:text-[#ff9900]'">
                     Pricing

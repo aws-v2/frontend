@@ -1,6 +1,5 @@
 <script setup lang="ts">
-// Minimal setup for the landing page
-const showComingSoon = import.meta.env.VITE_SHOW_GAMING_COMING_SOON === 'true'
+
 </script>
 
 <template>
@@ -133,34 +132,6 @@ const showComingSoon = import.meta.env.VITE_SHOW_GAMING_COMING_SOON === 'true'
             </div>
         </div>
 
-        <!-- Coming Soon Overlay -->
-        <div v-if="showComingSoon"
-            class="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md">
-            <div class="max-w-2xl mx-auto px-8 text-center">
-                <div
-                    class="inline-flex items-center gap-3 px-4 py-2 bg-purple-600/20 border border-purple-500/30 rounded-full mb-8">
-                    <div class="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
-                    <span class="text-xs font-black text-purple-400 uppercase tracking-widest">In Development</span>
-                </div>
-                <h2 class="text-6xl md:text-7xl font-bold text-white mb-6 tracking-tight">
-                    Coming <span
-                        class="text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">Soon</span>
-                </h2>
-                <p class="text-xl text-slate-400 font-light mb-8 leading-relaxed max-w-xl mx-auto">
-                    GameLift Edge is currently under active development. We're building the future of multiplayer gaming
-                    infrastructure.
-                </p>
-                <div class="flex flex-col sm:flex-row gap-4 justify-center items-center">
-                    <a href="/dashboard"
-                        class="px-8 py-4 bg-purple-600 hover:bg-purple-500 text-white font-bold text-sm transition-all rounded-xl shadow-lg shadow-purple-500/20">
-                        ← Back to Dashboard
-                    </a>
-                    <div class="flex items-center gap-3 px-6 py-4 glass-panel rounded-xl">
-                        <div class="w-2 h-2 bg-green-500 animate-ping"></div>
-                        <span class="text-xs font-bold text-slate-400 uppercase tracking-widest">ETA: Q2 2026</span>
-                    </div>
-                </div>
-            </div>
-        </div>
+
     </div>
 </template>

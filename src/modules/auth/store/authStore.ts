@@ -50,7 +50,6 @@ export const useAuthStore = defineStore('auth', () => {
 
   function setSession(data: any) {
     console.log('Setting session with data:', data)
-    // Support all common token keys
     token.value = data.token || data.accessToken || data.auth_token || data.jwt || data.id_token
     email.value = data.email
 
@@ -74,7 +73,6 @@ export const useAuthStore = defineStore('auth', () => {
       localStorage.setItem(`auth_reg_complete_${email.value}`, 'true')
     }
 
-    // Explicitly update authenticated state
     isAuthenticated.value = !!token.value
   }
 

@@ -8,7 +8,7 @@ const isStagingProfile = viteAppProfile === 'staging'
 // Ensure trailing slashes for clean path joining
 const defaultBaseUrl = isProdProfile
   ? 'http://13.48.129.233:8080/api/v1/'
-  : (isStagingProfile ? '/api/v1/' : 'http://localhost:8080/api/v1/')
+  : (isStagingProfile ? 'http://localhost:8080/api/v1/' : 'http://localhost:8080/api/v1/')
 
 const baseURL = (import.meta.env.VITE_API_BASE_URL || defaultBaseUrl).replace(/\/$/, '') + '/'
 

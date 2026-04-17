@@ -24,18 +24,23 @@ const handleLogin = async (e: Event) => {
         })
         toastStore.addToast('Welcome back to Serwin Console', 'success')
 
-        // Check if MFA is required for login
-        if (response.mfaRequired) {
-            router.push('/auth/mfa')
+        // Check if MFA is required for login using store values for reliability
+        if (authStore.mfaRequired) {
+            console.log('MFA is required for login')
+            router.push({ name: 'mfa' })
         }
-        // Always prompt for MFA setup if not enabled, as requested
-        else if (!response.mfaEnabled) {
-            router.push('/auth/mfa-setup')
-        }
-        // Otherwise go to dashboard
+        // Otherwise go directly to dashboard as requested
         else {
-            router.push('/dashboard')
+            console.log('MFA is not *required* for login')
+            router.push({ name: 'dashboard' })
+
+
+            const result = await router.push({ name: 'dashboard' })
+console.log('Navigation result:', result) // undefined = success, NavigationFailure object = blocked
         }
+
+
+
     } catch (error: any) {
         toastStore.addToast(error.response?.data?.message || 'Authentication failed', 'error')
     } finally {

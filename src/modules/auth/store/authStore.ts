@@ -88,22 +88,23 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('auth_mfa_required', 'false')
   }
 
-  async function login(payload: any) {
-    try {
-      console.log('Attempting login for:', payload.email)
-      const response = await apiClient.post<LoginResponse>(`${apiClient.defaults.baseURL}auth/login`, payload)
-      console.log('Login raw response:', response)
-      // Ensure email is preserved if not returned by backend
-      setSession({
-        ...response.data,
-        email: response.data.email || payload.email,
-      })
-      return response.data
-    } catch (error) {
-      console.error('Login failed:', error)
-      throw error
-    }
+async function login(payload: any) {
+  try {
+    console.log('Attempting login for:', payload.email)
+    const response = await apiClient.post<any>(`${apiClient.defaults.baseURL}auth/login`, payload)
+    
+    const inner = response.data.data  // ✅ unwrap the envelope
+    
+    setSession({
+      ...inner,
+      email: inner.email || payload.email,
+    })
+    return inner
+  } catch (error) {
+    console.error('Login failed:', error)
+    throw error
   }
+}
 
   async function forgotPassword(payload: { email: string }) {
     try {
@@ -128,19 +129,24 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  async function verifyMfa(code: string) {
-    try {
-      const response = await apiClient.post<LoginResponse>('auth/mfa/verify', {
-        code,
-        email: email.value,
-      })
-      setSession(response.data)
-      return response.data
-    } catch (error) {
-      console.error('MFA Verification failed:', error)
-      throw error
-    }
-  }
+async function register(payload: any) {
+  const response = await apiClient.post<any>('auth/register', payload)
+  const inner = response.data.data  // ✅
+  setSession({ ...inner, email: inner.email || payload.email })
+  return inner
+}
+
+async function verifyMfa(code: string) {
+  const response = await apiClient.post<any>('auth/mfa/verify', { code, email: email.value })
+  const inner = response.data.data  // ✅
+  setSession(inner)
+  return inner
+}
+
+
+
+
+
 
   async function disableMfa(code: string) {
     try {
@@ -150,21 +156,6 @@ export const useAuthStore = defineStore('auth', () => {
       return response.data
     } catch (error) {
       console.error('MFA Disable failed:', error)
-      throw error
-    }
-  }
-
-  async function register(payload: any) {
-    try {
-      const response = await apiClient.post<LoginResponse>('auth/register', payload)
-      // Ensure email is preserved if not returned by backend
-      setSession({
-        ...response.data,
-        email: response.data.email || payload.email,
-      })
-      return response.data
-    } catch (error) {
-      console.error('Registration failed:', error)
       throw error
     }
   }

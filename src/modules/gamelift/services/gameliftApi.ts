@@ -1,4 +1,4 @@
-const API_BASE_V1 = '/api/v1'
+const API_BASE_V1 = 'http://localhost:8080/api/v1'
 
 function getAuthHeaders(): Record<string, string> {
     const token = localStorage.getItem('auth_token')

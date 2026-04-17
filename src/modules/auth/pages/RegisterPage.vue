@@ -30,7 +30,7 @@ const handleRegister = async (e: Event) => {
             confirmPassword: confirmPassword.value
         })
         toastStore.addToast('Account created successfully', 'success')
-        router.push('/auth/mfa-setup')
+        router.push('/auth/payment-method')
     } catch (error: any) {
         toastStore.addToast(error.response?.data?.message || 'Registration failed', 'error')
     } finally {

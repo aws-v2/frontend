@@ -24,12 +24,12 @@ const handleLogin = async (e: Event) => {
         })
         toastStore.addToast('Welcome back to Serwin Console', 'success')
 
-        // Check if MFA is required for login
-        if (response.mfaRequired) {
+        // Check if MFA is required for login using store values which handle snake_case/camelCase
+        if (authStore.mfaRequired) {
             router.push('/auth/mfa')
         }
         // Always prompt for MFA setup if not enabled, as requested
-        else if (!response.mfaEnabled) {
+        else if (!authStore.mfaEnabled) {
             router.push('/auth/mfa-setup')
         }
         // Otherwise go to dashboard

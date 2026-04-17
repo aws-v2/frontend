@@ -22,6 +22,12 @@ const serviceCatalog = [
     { id: 'gaming', name: 'GameLift Edge', icon: 'gamepad', description: 'Multiplayer fleet scaling', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/gaming', enabled: true }
 ]
 
+import { computed } from 'vue'
+
+const unactivatedServices = computed(() => {
+    return serviceCatalog.filter(s => !activeServices.value.find(active => active.id === s.id))
+})
+
 // State for User's Active Resources
 const activeServices = ref<any[]>([])
 const isResourceModalOpen = ref(false)
@@ -420,7 +426,10 @@ const navigateTo = (path: string) => {
                     </div>
 
                     <div class="p-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div v-for="service in serviceCatalog" :key="service.id"
+                        <div v-if="unactivatedServices.length === 0" class="col-span-full py-12 text-center text-[#879196] font-black uppercase tracking-widest">
+                            No more resources available to provision.
+                        </div>
+                        <div v-else v-for="service in unactivatedServices" :key="service.id"
                             @click="service.enabled && activateService(service)"
                             class="relative p-8 border-2 transition-all group overflow-hidden" :class="[
                                 service.enabled

@@ -7,6 +7,9 @@ on:
 jobs:
   test-and-pr:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
     steps:
       - uses: actions/checkout@v4
 
@@ -30,5 +33,5 @@ jobs:
           commit-message: "chore: automated PR from dev to staging"
           title: "Automated PR: dev -> staging"
           body: "This is an automated pull request created after successful CI checks on the dev branch."
-          branch: dev
+          branch: automated-dev-to-staging
           base: staging

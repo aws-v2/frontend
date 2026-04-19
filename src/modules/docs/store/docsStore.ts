@@ -40,6 +40,7 @@ const SERVICE_REGISTRY: Record<string, string> = {
     api_gateway: '/api-gateway',
     sagemaker: '/sagemaker',
     networking: '/network',
+    metrics: '/metrics',
     
 };
 

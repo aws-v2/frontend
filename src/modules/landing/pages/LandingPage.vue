@@ -281,8 +281,8 @@ onMounted(() => {
                 <div class="grid lg:grid-cols-2 gap-20 items-center">
                     <div>
                         <div class="text-[#ff9900] text-sm font-black uppercase tracking-[0.3em] mb-6">Lower Level, Higher Performance</div>
-                        <h2 class="text-5xl md:text-7xl font-black mb-8 leading-[1.1] tracking-tighter">
-                            The Cloud <br/>You Actually <span class="text-[#ff9900]">Own.</span>
+                        <h2 class="text-5xl md:text-7xl font-black mb-8 leading-[1.1] tracking-tighter" >
+                           <span class="text-[#ff9900]">The Cloud You <br/> Actually Own.</span>
                         </h2>
                         <p class="text-slate-400 text-lg leading-relaxed mb-10 max-w-xl">
                             Traditional cloud runs on top of legacy layers. Serwin is built from the silicon up. 

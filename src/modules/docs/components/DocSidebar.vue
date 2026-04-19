@@ -1,14 +1,21 @@
 <template>
     <aside class="doc-sidebar w-72 bg-white border-r border-gray-100 flex flex-col h-full font-urbanist sticky top-20">
+        <!-- Header -->
         <div class="p-6 border-b border-gray-100">
             <div class="flex items-center gap-3 text-[#ff6b00] mb-1">
                 <BookOpen :size="20" />
-                <h2 class="text-xs font-bold uppercase tracking-widest italic">Documentation Portal</h2>
+                <h2 class="text-xs font-semibold uppercase tracking-wide">
+                    Documentation Portal
+                </h2>
             </div>
-            <p class="text-[10px] text-gray-400 font-medium">SERWIN SYSTEMS CLOUD</p>
+            <p class="text-[11px] text-gray-400">
+                SERWIN SYSTEMS CLOUD
+            </p>
         </div>
 
+        <!-- Content -->
         <div class="flex-1 overflow-y-auto p-4 custom-scrollbar">
+            <!-- Loading Skeleton -->
             <div v-if="loading" class="space-y-6 p-4">
                 <div v-for="i in 3" :key="i" class="space-y-3">
                     <div class="h-3 bg-gray-50 rounded w-1/3 animate-pulse"></div>
@@ -17,48 +24,71 @@
                 </div>
             </div>
 
-            <nav v-else class="space-y-8 pb-10">
-                <!-- Iterate through each service manifest -->
+            <!-- Docs Navigation -->
+            <nav v-else class="space-y-10 pb-10">
                 <div v-for="(manifest, serviceId) in manifests" :key="serviceId" class="service-block">
-                    <div class="flex items-center justify-between px-4 mb-4">
-                        <h3 class="text-[11px] font-black text-[#232f3e] uppercase tracking-[0.2em] italic">
+
+                    <!-- Service Header -->
+                    <div class="flex items-center justify-between px-4 mb-5">
+                        <h3 class="text-[12px] font-semibold text-gray-900 tracking-wide">
                             {{ manifest.service }}
                         </h3>
-                        <span class="text-[9px] text-gray-300 font-bold">{{ manifest.version || 'V1' }}</span>
+                        <span class="text-[10px] text-gray-300 font-medium">
+                            {{ manifest.version || 'V1' }}
+                        </span>
                     </div>
 
-                    <div v-for="category in manifest.categories" :key="category.title" class="mb-6 last:mb-0">
-                        <div
-                            class="px-6 text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-2">
-                            <div class="w-1 h-1 bg-gray-200 rounded-full"></div>
+                    <!-- Categories -->
+                    <div v-for="category in manifest.categories" :key="category.title" class="mb-7 last:mb-0">
+                        <div class="px-6 text-[10px] font-medium text-gray-400 uppercase tracking-wide mb-3">
                             {{ category.title }}
                         </div>
-                        <ul class="space-y-0.5">
+
+                        <!-- Items -->
+                        <ul class="space-y-1">
                             <li v-for="item in category.items" :key="item.slug">
                                 <router-link
                                     :to="{ name: 'docs-content', params: { service: serviceId, slug: item.slug } }"
-                                    class="flex items-center gap-2 px-6 py-2 text-[13px] font-bold transition-all duration-200 border-l-2"
+                                    class="relative group flex items-center px-6 py-2.5 text-[13px] font-medium rounded-md transition-all duration-150"
                                     :class="[
                                         isActive(serviceId, item.slug)
-                                            ? 'bg-[#ff6b00]/5 text-[#ff6b00] border-[#ff6b00]'
-                                            : 'text-[#545b64] hover:text-[#232f3e] hover:bg-gray-50 border-transparent'
-                                    ]">
-                                    <span>{{ item.title }}</span>
+                                            ? 'bg-orange-50 text-orange-600 font-semibold'
+                                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                                    ]"
+                                >
+                                    <!-- Active Indicator -->
+                                    <span
+                                        v-if="isActive(serviceId, item.slug)"
+                                        class="absolute left-0 w-1 h-5 bg-orange-500 rounded-r">
+                                    </span>
+
+                                    <span class="truncate">
+                                        {{ item.title }}
+                                    </span>
                                 </router-link>
                             </li>
                         </ul>
                     </div>
-                    <div v-if="Object.keys(manifests).indexOf(serviceId) < Object.keys(manifests).length - 1"
-                        class="mx-4 mt-8 border-b border-gray-50"></div>
+
+                    <!-- Divider -->
+                    <div
+                        v-if="Object.keys(manifests).indexOf(serviceId) < Object.keys(manifests).length - 1"
+                        class="mx-6 mt-8 border-t border-gray-100">
+                    </div>
                 </div>
             </nav>
         </div>
 
+        <!-- Footer -->
         <div class="p-4 bg-gray-50 border-t border-gray-100 flex items-center justify-between">
-            <span class="text-[9px] text-gray-400 font-black uppercase tracking-widest italic">© 2026 SERWIN</span>
-            <div class="flex gap-2">
+            <span class="text-[10px] text-gray-400 font-semibold uppercase tracking-wide">
+                © 2026 SERWIN
+            </span>
+            <div class="flex items-center gap-2">
                 <div class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></div>
-                <span class="text-[8px] text-emerald-600 font-black uppercase">Live Docs</span>
+                <span class="text-[10px] text-emerald-600 font-semibold uppercase">
+                    Live Docs
+                </span>
             </div>
         </div>
     </aside>
@@ -99,7 +129,6 @@ const isActive = (service: string, slug: string) => {
     background: #e5e5e5;
 }
 
-/* Service transition polish */
 .service-block {
     @apply transition-opacity duration-300;
 }

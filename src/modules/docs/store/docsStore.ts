@@ -30,7 +30,7 @@ export interface DocResponse {
 
 const SERVICE_REGISTRY: Record<string, string> = {
     s3: '/s3',
-    compute: '/compute',
+    compute: '/ec2',
     lambda: '/lambda',
     rds: '/rds',
     identity: '/identity',

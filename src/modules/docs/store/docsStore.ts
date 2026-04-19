@@ -37,6 +37,10 @@ const SERVICE_REGISTRY: Record<string, string> = {
     gamelift: '/gamelift',
     auth: '/auth',
     fargate: '/fargate',
+    api_gateway: '/api-gateway',
+    sagemaker: '/sagemaker',
+    networking: '/network',
+    
 };
 
 export const useDocsStore = defineStore('docs', {

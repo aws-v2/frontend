@@ -36,6 +36,7 @@ const SERVICE_REGISTRY: Record<string, string> = {
     identity: '/identity',
     gamelift: '/gamelift',
     auth: '/auth',
+    fargate: '/fargate',
 };
 
 export const useDocsStore = defineStore('docs', {

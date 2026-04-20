@@ -79,7 +79,7 @@ const initTerminal = () => {
   
   // Initialize WebSocket
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const host = 'localhost:8085' // Direct connection to EC2 service (bypassing gateway)
+  const host = 'localhost:8080' // Direct connection to EC2 service (bypassing gateway)
   const token = authStore.token
   const wsUrl = `${protocol}//${host}/api/v1/ec2/instances/${instanceId}/terminal?token=${token}`
   

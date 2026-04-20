@@ -122,7 +122,6 @@ const route = useRoute();
 const router = useRouter();
 
 const fetchInitialData = async () => {
-    // Fetch all manifests on first load
     if (Object.keys(docsStore.manifests).length === 0) {
         await docsStore.fetchAllManifests();
     }
@@ -132,26 +131,39 @@ const fetchInitialData = async () => {
     if (service && slug) {
         await docsStore.fetchDocContent(service as string, slug as string);
     } else if (service) {
-        // Find first slug for this service
         const manifest = docsStore.manifests[service as string];
         if (manifest?.categories[0]?.items[0]) {
             router.replace({
                 name: 'docs-content',
                 params: { service, slug: manifest.categories[0].items[0].slug }
             });
+        } else {
+            redirectToFirstAvailableDoc();
         }
     } else {
-        // Global default: s3-overview
-        router.replace({
-            name: 'docs-content',
-            params: { service: 's3', slug: 's3-overview' }
-        });
+        redirectToFirstAvailableDoc();
     }
+};
+
+const redirectToFirstAvailableDoc = () => {
+    const manifests = docsStore.manifests;
+
+    for (const service of Object.keys(manifests)) {
+        const firstItem = manifests[service]?.categories?.[0]?.items?.[0];
+        if (firstItem) {
+            router.replace({
+                name: 'docs-content',
+                params: { service, slug: firstItem.slug }
+            });
+            return;
+        }
+    }
+
+    console.warn('No docs available across any service');
 };
 
 onMounted(fetchInitialData);
 
-// Watch for route parameter changes
 watch(() => [route.params.service, route.params.slug], ([service, slug]) => {
     if (service && slug) {
         docsStore.fetchDocContent(service as string, slug as string);

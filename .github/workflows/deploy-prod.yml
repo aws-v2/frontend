@@ -51,8 +51,6 @@ jobs:
             VITE_APP_PROFILE=prod
 
 
-            
-
   deploy:
     needs: build-and-push
     runs-on: ubuntu-latest
@@ -64,7 +62,7 @@ jobs:
           curl -fsSL https://tailscale.com/install.sh | sh
           sudo tailscale up --authkey ${{ secrets.TAILSCALE_AUTH_KEY }}
 
-      - name: Deploy to Staging via SSH over Tailscale
+      - name: Deploy to Production via SSH over Tailscale
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.PROD_HOST }}
@@ -72,6 +70,7 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           passphrase: ${{ secrets.PROD_SSH_PASSPHRASE }}
           script: |
+            docker network create aws-prod-network || true
             docker pull qarani/frontend-server:prod
             docker stop frontend-server || true
             docker rm frontend-server || true

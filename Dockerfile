@@ -28,8 +28,8 @@ FROM nginx:stable-alpine AS production-stage
 # Copy built files
 COPY --from=build-stage /app/dist /usr/share/nginx/html
 
-# Nginx config
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Nginx configuration template for environment variable substitution
+COPY nginx.conf /etc/nginx/templates/default.conf.template
 
 EXPOSE 80
 

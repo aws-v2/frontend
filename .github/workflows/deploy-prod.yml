@@ -72,10 +72,10 @@ jobs:
           script: |
             docker network create aws-prod-network || true
             docker pull qarani/frontend-server:prod
-            docker stop frontend-server || true
-            docker rm frontend-server || true
+            docker stop frontend-server-prod || true
+            docker rm frontend-server-prod || true
             docker run -d \
-              --name frontend-server \
+              --name frontend-server-prod \
               --network aws-prod-network \
               -e VITE_API_BASE_URL=http://localhost:8080 \
               -e VITE_APP_PROFILE=prod \

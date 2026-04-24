@@ -44,7 +44,7 @@ const SERVICE_REGISTRY: Record<string, string> = {
     identity: '/identity',
     config: '/config',
     auth: '/auth',
-    // sagemaker: '/sagemaker',
+    sagemaker: '/llm',
 
 };
 

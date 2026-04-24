@@ -18,6 +18,30 @@ const sagemakerRoutes: RouteRecordRaw[] = [
         name: 'sagemaker-job-details',
         component: () => import('./pages/TrainingJobDetailsPage.vue'),
         meta: { requiresAuth: true }
+    },
+    {
+        path: '/models/register',
+        name: 'sagemaker-register-model',
+        component: () => import('./pages/NewInferencingJob.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/models/:id',
+        name: 'sagemaker-model-details',
+        component: () => import('./pages/ModelDetailsPage.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/training/jobs/:id',
+        name: 'sagemaker-training-job-details',
+        component: () => import('./pages/TrainingJobDetailsPage.vue'),
+        meta: { requiresAuth: true }
+    },
+    {
+        path: '/training/new',
+        name: 'sagemaker-training-new',
+        component: () => import('./pages/CreateTrainingJobPage.vue'),
+        meta: { requiresAuth: true }
     }
 ]
 

@@ -1,188 +1,239 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useSageMakerStore } from '../store/sagemakerStore'
+import { ref, onMounted, computed } from 'vue'
+import { useRoute } from 'vue-router'
+import apiClient from '@/shared/api/apiClient'
 
 const route = useRoute()
-const router = useRouter()
-const store = useSageMakerStore()
+const jobId = route.params.id as string
 
-const jobId = computed(() => route.params.id as string)
+const job = ref<any>(null)
+const deployedModel = ref<any>(null)
 
-const job = computed(() => {
-    return store.trainingJobs.find(j => j.id === jobId.value)
-})
+const loading = ref(false)
+const deploying = ref(false)
 
-const getStatusColor = (status: string) => {
-    switch (status) {
-        case 'Completed': return 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20'
-        case 'Training': return 'text-blue-500 bg-blue-500/10 border-blue-500/20'
-        case 'Initializing': return 'text-amber-500 bg-amber-500/10 border-amber-500/20'
-        case 'Failed': return 'text-red-500 bg-red-500/10 border-red-500/20'
-        case 'Canceled': return 'text-slate-500 bg-slate-500/10 border-slate-500/20'
-        default: return 'text-slate-500 bg-slate-500/10 border-slate-500/20'
-    }
+/**
+ * FETCH JOB DETAILS
+ */
+const fetchJob = async () => {
+  loading.value = true
+
+  try {
+    const res = await apiClient.get(`/llm/training/jobs/${jobId}`)
+    job.value = res.data
+  } catch (err) {
+    console.error('Failed to load job', err)
+  } finally {
+    loading.value = false
+  }
 }
 
-const handleCancel = async () => {
-    if (job.value && confirm('Are you sure you want to stop this training job?')) {
-        await store.cancelTrainingJob(job.value.id)
-    }
+/**
+ * DEPLOY MODEL
+ */
+const deployModel = async () => {
+  deploying.value = true
+
+  try {
+    const res = await apiClient.post(
+      `/llm/training/jobs/${jobId}/deploy`
+    )
+
+    // backend returns created model
+    deployedModel.value = res.data
+
+    // refresh job state
+    await fetchJob()
+
+  } catch (err) {
+    console.error('Deploy failed', err)
+  } finally {
+    deploying.value = false
+  }
 }
+
+onMounted(fetchJob)
+
+/**
+ * STATUS HELPERS
+ */
+const isCompleted = computed(() => job.value?.status === 'Completed')
+
+const isDeployed = computed(() =>
+  job.value?.status === 'Deployed' || deployedModel.value
+)
+
+const isActive = computed(() =>
+  job.value?.status === 'Training' ||
+  job.value?.status === 'Initializing'
+)
 </script>
 
 <template>
-    <div class="min-h-screen bg-[#05080F] text-white font-sans selection:bg-pink-500/30">
-        <div v-if="job" class="max-w-[1200px] mx-auto px-8 pt-24 pb-20">
-            
-            <!-- Breadcrumb -->
-            <div class="flex items-center gap-2 text-sm text-slate-500 mb-8 font-mono">
-                <router-link to="/sagemaker" class="hover:text-pink-400 transition-colors">SageMaker</router-link>
-                <span>/</span>
-                <span class="text-white">{{ job.name }}</span>
+  <div class="min-h-screen bg-[#05080F] text-white px-10 py-20">
+
+    <div class="max-w-5xl mx-auto">
+
+      <!-- HEADER -->
+      <div class="mb-10">
+        <h1 class="text-3xl font-bold">
+          Training Job
+        </h1>
+        <p class="text-slate-400 mt-1">
+          Job ID: {{ jobId }}
+        </p>
+      </div>
+
+      <!-- LOADING -->
+      <div v-if="loading" class="text-slate-400">
+        Loading job details...
+      </div>
+
+      <div v-else-if="job" class="space-y-8">
+
+        <!-- JOB INFO -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+          <h2 class="text-xl font-semibold mb-4">Overview</h2>
+
+          <div class="grid grid-cols-2 gap-6 text-sm">
+
+            <div>
+              <p class="text-slate-400">Name</p>
+              <p class="font-semibold">{{ job.name }}</p>
             </div>
 
-            <!-- Header -->
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-12">
-                <div>
-                    <div class="flex items-center gap-4 mb-3">
-                        <h1 class="text-4xl font-bold tracking-tight font-display">{{ job.name }}</h1>
-                        <span class="inline-flex items-center px-3 py-1 border text-[10px] font-bold uppercase tracking-widest rounded-full" 
-                            :class="getStatusColor(job.status)">
-                            <span v-if="job.status === 'Training' || job.status === 'Initializing'" class="w-1.5 h-1.5 bg-current rounded-full animate-ping mr-2"></span>
-                            {{ job.status }}
-                        </span>
-                    </div>
-                    <p class="text-slate-400 font-mono text-sm max-w-2xl">Job ID: {{ job.id }} <br/> Created: {{ new Date(job.createdAt).toLocaleString() }}</p>
-                </div>
-                <div class="flex gap-4">
-                    <button v-if="job.status === 'Training' || job.status === 'Initializing'" 
-                        @click="handleCancel"
-                        class="px-6 py-2 border border-red-500/30 text-red-500 hover:bg-red-500/10 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors">
-                        Abort Job
-                    </button>
-                    <button @click="router.push('/sagemaker')" class="px-6 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-xs font-bold uppercase tracking-widest transition-colors">
-                        Back to Registry
-                    </button>
-                </div>
+            <div>
+              <p class="text-slate-400">Status</p>
+              <p class="font-semibold text-blue-400">{{ job.status }}</p>
             </div>
 
-            <!-- Content Grid -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                
-                <!-- Left Column (General Details) -->
-                <div class="lg:col-span-1 space-y-8">
-                    <!-- Instance Config -->
-                    <div class="bg-white/[0.02] border border-white/5 rounded-2xl p-6">
-                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-4 font-mono">Compute Environment</h3>
-                        <div class="space-y-4">
-                            <div>
-                                <p class="text-[10px] uppercase text-slate-500 font-bold tracking-widest">Instance Type</p>
-                                <p class="font-mono text-pink-400">{{ job.instance }}</p>
-                            </div>
-                            <div>
-                                <p class="text-[10px] uppercase text-slate-500 font-bold tracking-widest">Duration</p>
-                                <p class="font-mono">{{ job.duration }}</p>
-                            </div>
-                            <div>
-                                <p class="text-[10px] uppercase text-slate-500 font-bold tracking-widest">Pricing Model</p>
-                                <p class="font-mono">On-Demand</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Output Artifacts (Integrated S3 display) -->
-                    <div class="bg-white/[0.02] border border-white/5 rounded-2xl p-6 relative overflow-hidden">
-                        <div class="absolute top-0 right-0 w-24 h-24 bg-pink-500/5 rounded-bl-full translate-x-8 -translate-y-8 pointer-events-none"></div>
-                        <h3 class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-6 font-mono flex items-center gap-2">
-                            <svg class="w-4 h-4 text-pink-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                            </svg>
-                            Storage Integration
-                        </h3>
-                        
-                        <div class="space-y-6">
-                            <div>
-                                <p class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-1">Input Data Source</p>
-                                <div class="bg-black/40 border border-white/5 rounded py-2 px-3 text-xs font-mono truncate text-slate-300">
-                                    {{ job.inputPath || 's3://bucket/data/' }}
-                                </div>
-                            </div>
-                            <div>
-                                <p class="text-[10px] uppercase text-slate-500 font-bold tracking-widest mb-1">Model Output Artifacts</p>
-                                <div class="bg-black/40 border border-white/5 rounded py-2 px-3 text-xs font-mono truncate text-slate-300 group cursor-pointer hover:border-pink-500/50 transition-colors">
-                                    {{ job.outputPath || 's3://bucket/output/' }}
-                                </div>
-                                <p class="text-[9px] text-slate-500 mt-2 italic">* Artifacts replicate to Hyper Storage when completed.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Right Column (Terminal / Logs) -->
-                <div class="lg:col-span-2">
-                    <div class="bg-black/40 border border-white/5 rounded-2xl overflow-hidden h-full flex flex-col shadow-2xl">
-                        <div class="bg-white/5 border-b border-white/5 px-4 py-3 flex justify-between items-center">
-                            <div class="flex items-center gap-2">
-                                <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                </svg>
-                                <span class="text-xs font-bold text-slate-400 uppercase tracking-widest font-mono">CloudWatch / Training Streams</span>
-                            </div>
-                            <div class="flex items-center gap-2">
-                                <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
-                                <div class="w-2.5 h-2.5 rounded-full bg-slate-600"></div>
-                                <div v-if="job.status === 'Training'" class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></div>
-                                <div v-else class="w-2.5 h-2.5 rounded-full bg-red-500"></div>
-                            </div>
-                        </div>
-                        <div class="p-6 font-mono text-sm leading-relaxed text-[#4ade80] flex-1 overflow-y-auto">
-                            <div v-if="job.status === 'Initializing'">
-                                <p class="text-slate-400">[INFO] Provisioning compute cluster...</p>
-                                <p class="text-slate-400 max-w-full truncate animate-pulse">[INFO] Connecting to Hyper Storage {{ job.inputPath }}...</p>
-                            </div>
-                            <div v-else-if="job.status === 'Training'">
-                                <p>[INFO] Downloading dataset from S3: {{ job.inputPath }}...</p>
-                                <p>[INFO] Unpacking tensors...</p>
-                                <p>[INFO] Starting epoch 1/50...</p>
-                                <p>[METRIC] Epoch 1 - Loss: 0.8124, Accuracy: 0.65</p>
-                                <p>[METRIC] Epoch 2 - Loss: 0.6190, Accuracy: 0.72</p>
-                                <p>[METRIC] Epoch 3 - Loss: 0.4421, Accuracy: 0.81</p>
-                                <p class="animate-pulse">_</p>
-                            </div>
-                            <div v-else-if="job.status === 'Completed'" class="text-slate-300">
-                                <p>[INFO] Training completed successfully.</p>
-                                <p>[METRIC] Final Loss: 0.1201, Final Accuracy: 0.94</p>
-                                <p class="text-[#38bdf8]">[INFO] Uploading model artifacts to {{ job.outputPath }}...</p>
-                                <p class="text-[#38bdf8]">[SUCCESS] Artifacts safely stored in Hyper Storage bucket.</p>
-                                <p>[INFO] Instance torn down.</p>
-                            </div>
-                            <div v-else-if="job.status === 'Failed'" class="text-red-400">
-                                <p>[ERROR] Out of memory (OOM) during forward pass.</p>
-                                <p>[ERROR] Traceback: ... tensor size mismatch in matrix multiplication.</p>
-                                <p>[INFO] Aborting job.</p>
-                            </div>
-                            <div v-else-if="job.status === 'Canceled'" class="text-amber-400">
-                                <p>[WARN] Received termination signal from console user.</p>
-                                <p>[WARN] Halting training loop...</p>
-                                <p>[INFO] Job safely canceled.</p>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
+            <div>
+              <p class="text-slate-400">Instance</p>
+              <p class="font-semibold">{{ job.instance }}</p>
             </div>
+
+            <div>
+              <p class="text-slate-400">Progress</p>
+              <p class="font-semibold">{{ job.progress ?? 0 }}%</p>
+            </div>
+
+          </div>
         </div>
 
-        <!-- 404 Fallback -->
-        <div v-else class="flex items-center justify-center min-h-screen">
-            <div class="text-center">
-                <h1 class="text-6xl font-black mb-4">404</h1>
-                <p class="text-xl text-slate-400 mb-8">Training Job Not Found</p>
-                <router-link to="/sagemaker" class="px-8 py-3 bg-pink-600 text-white font-bold rounded-lg hover:bg-pink-500 transition-colors">
-                    Return to Registry
-                </router-link>
+        <!-- RESOURCE USAGE (SIMULATED FOR NOW) -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+          <h2 class="text-xl font-semibold mb-4">Resource Usage</h2>
+
+          <div class="grid grid-cols-3 gap-4">
+
+            <div class="p-4 bg-slate-800/40 rounded-lg">
+              <p class="text-slate-400 text-xs">CPU Usage</p>
+              <p class="text-lg font-bold">72%</p>
             </div>
+
+            <div class="p-4 bg-slate-800/40 rounded-lg">
+              <p class="text-slate-400 text-xs">GPU Usage</p>
+              <p class="text-lg font-bold">58%</p>
+            </div>
+
+            <div class="p-4 bg-slate-800/40 rounded-lg">
+              <p class="text-slate-400 text-xs">Memory</p>
+              <p class="text-lg font-bold">11.2 GB</p>
+            </div>
+
+          </div>
         </div>
+
+        <!-- DATASETS -->
+        <div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+          <h2 class="text-xl font-semibold mb-4">Dataset</h2>
+
+          <p class="text-slate-400 text-sm">Input</p>
+          <p class="mb-4 text-white">{{ job.input_path }}</p>
+
+          <p class="text-slate-400 text-sm">Output</p>
+          <p class="text-white">{{ job.output_path }}</p>
+        </div>
+
+       <!-- DEPLOYMENT SECTION -->
+<div class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+
+  <h2 class="text-xl font-semibold mb-4">Deployment</h2>
+
+  <!-- STATUS INFO -->
+  <div class="mb-4">
+    <p v-if="isCompleted" class="text-green-400 text-sm">
+      ✓ Model is ready for deployment
+    </p>
+
+    <p v-else-if="isDeployed" class="text-emerald-400 text-sm">
+      ✓ Model is deployed and active
+    </p>
+
+    <p v-else class="text-slate-500 text-sm">
+      Model must complete training before deployment
+    </p>
+  </div>
+
+  <!-- DEPLOY BUTTON (ALWAYS PRESENT WHEN ALLOWED) -->
+  <button
+    v-if="isCompleted && !isDeployed"
+    @click="deployModel"
+    :disabled="deploying"
+    class="px-6 py-3 bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-semibold transition"
+  >
+    {{ deploying ? 'Deploying...' : 'Deploy Model' }}
+  </button>
+
+  <!-- DEPLOYED ACTIONS -->
+  <div v-if="isDeployed" class="space-y-3">
+
+    <div class="p-4 bg-slate-800 rounded-lg">
+      <p class="text-xs text-slate-400">Model ID</p>
+      <p class="text-white font-mono text-sm">
+        {{ deployedModel?.id || job?.model_id }}
+      </p>
     </div>
+
+    <div class="flex gap-3">
+
+      <button
+        class="px-5 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-semibold"
+        @click="$router.push(`/models/${deployedModel?.id || job?.model_id}`)"
+      >
+        View Model
+      </button>
+
+      <button
+        class="px-5 py-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm font-semibold"
+      >
+        Test Inference
+      </button>
+
+    </div>
+
+  </div>
+
+</div>
+
+        <!-- TEST DEPLOYMENT -->
+        <div v-if="job?.status === 'Deployed'" class="bg-slate-900/60 border border-slate-800 rounded-2xl p-6">
+
+          <h2 class="text-xl font-semibold mb-4">Test Model</h2>
+
+          <textarea
+            class="w-full bg-slate-950 border border-slate-800 rounded-lg p-3 text-white"
+            placeholder="Enter prompt..."
+          ></textarea>
+
+          <button class="mt-4 px-5 py-2 bg-blue-600 rounded-lg">
+            Run Inference
+          </button>
+
+        </div>
+
+      </div>
+
+    </div>
+  </div>
 </template>

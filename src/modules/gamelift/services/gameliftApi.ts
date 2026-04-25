@@ -37,6 +37,6 @@ export async function fetchGameManifest(gameId: string) {
 
 
 export async function fetchGame(gameId: string) {
-  const res = await apiClient.get(`gamelift/games/${gameId}`)
-  return res.data.data
+//   const res = await apiClient.get(`gamelift/games/${gameId}`)
+//   return res.data.data
 }

@@ -40,3 +40,5 @@ export async function fetchGame(gameId: string) {
 //   const res = await apiClient.get(`gamelift/games/${gameId}`)
 //   return res.data.data
 }
+
+

@@ -162,9 +162,11 @@ onMounted(async () => {
                                     <span class="font-mono text-xs text-[#879196]">{{ game.game_id || game.id || '–' }}</span>
                                 </td>
                                 <td class="py-5 px-8 text-center">
-                                    <button class="text-[10px] font-black text-[#879196] hover:text-[#ff9900] uppercase tracking-widest transition-colors font-mono border border-[#eaeded] hover:border-[#ff9900] px-3 py-1.5">
-                                        Inspect
-                                    </button>
+                                 <router-link
+    :to="`/gamelift/games/${game.game_id || game.id}`"
+    class="text-[10px] font-black text-[#879196] hover:text-[#ff9900] uppercase tracking-widest transition-colors font-mono border border-[#eaeded] hover:border-[#ff9900] px-3 py-1.5 inline-block">
+    Inspect
+</router-link>
                                 </td>
                             </tr>
                         </tbody>

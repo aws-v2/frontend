@@ -32,7 +32,13 @@ const gameliftRoutes: RouteRecordRaw[] = [
         path: '/gamelift/games/:id',
         name: 'gamelift-server',
         component: () => import('./pages/GameLiftServerPage.vue'),
+    },
+    {
+        path: '/gamelift/play/:id',
+        name: 'gamelift-play',
+        component: () => import('./pages/Game.vue'),
     }
+
 ]
 
 export default gameliftRoutes

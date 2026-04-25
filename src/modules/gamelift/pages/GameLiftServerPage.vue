@@ -94,7 +94,7 @@ const playGame = () => {
               <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M8 5v14l11-7z"/>
               </svg>
-              {{ starting ? 'Starting...' : 'Play Game' }}
+              {{ starting ? 'Starting...' : 'Test Play Game' }}
             </button>
           </div>
         </header>

@@ -206,7 +206,7 @@ const stats = computed(() => {
           </div>
 
           <button
-            class="px-5 py-2 bg-blue-600 rounded-lg"
+            class="px-5 py-2 bg-blue-600 rounded-lg" 
             @click="router.push('/training/new')"
           >
             New Job

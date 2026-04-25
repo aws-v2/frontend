@@ -27,6 +27,11 @@ const gameliftRoutes: RouteRecordRaw[] = [
         name: 'gamelift-create-fleet',
         component: () => import('./pages/CreateFleetPage.vue'),
         meta: { requiresAuth: true }
+    },
+    {
+        path: '/gamelift/games/:id',
+        name: 'gamelift-server',
+        component: () => import('./pages/GameLiftServerPage.vue'),
     }
 ]
 

@@ -2,7 +2,7 @@ name: CI - Test and PR to Staging
 
 on:
   pull_request:
-    branches: [staging]
+    branches: [main]
   push:
     branches: [ "main" ]
 

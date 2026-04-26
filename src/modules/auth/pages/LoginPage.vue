@@ -26,17 +26,11 @@ const handleLogin = async (e: Event) => {
 
         // Check if MFA is required for login using store values for reliability
         if (authStore.mfaRequired) {
-            console.log('MFA is required for login')
             router.push({ name: 'mfa' })
         }
         // Otherwise go directly to dashboard as requested
         else {
-            console.log('MFA is not *required* for login')
             router.push({ name: 'dashboard' })
-
-
-            const result = await router.push({ name: 'dashboard' })
-console.log('Navigation result:', result) // undefined = success, NavigationFailure object = blocked
         }
 
 

@@ -1,8 +1,10 @@
 name: CI - Test and PR to Staging
 
 on:
+  pull_request:
+    branches: [mainc]
   push:
-    branches: [ "main" ]
+    branches: [ mainc ]
 
 permissions:
   contents: write
@@ -11,6 +13,7 @@ permissions:
 
 jobs:
   full-suite:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

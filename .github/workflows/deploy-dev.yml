@@ -71,6 +71,8 @@ jobs:
           tags: qarani/frontend-server:dev
           build-args: |
             VITE_APP_PROFILE=dev
+
+
             
 
   dev-open-pr-to-staging:

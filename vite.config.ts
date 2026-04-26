@@ -26,4 +26,7 @@ export default defineConfig({
       },
     },
   },
+  test: {
+    include: ['src/**/*.unit.test.ts'],
+  }
 })

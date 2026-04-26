@@ -14,7 +14,7 @@
     "type-check": "vue-tsc --build",
     "format": "prettier --write --experimental-cli src/",
     "test": "vitest run",
-    "test:unit": "vitest run src/modules/auth/__tests__/unit_tests",
+"test:unit": "vitest run",
     "test:api": "vitest run src/modules/auth/__tests__/api_tests",
     "test:e2e": "vitest run src/modules/auth/__tests__/e2e_tests",
     "test:watch": "vitest",

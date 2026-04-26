@@ -2,10 +2,10 @@ name: CD - Build, Deploy and PR to Main
 
 on:
   pull_request:
-    branches: [staging]
+    branches: [stagingc]
 
   push:
-    branches: [staging]
+    branches: [stagingc]
 
 jobs:
 

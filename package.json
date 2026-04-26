@@ -14,9 +14,9 @@
     "type-check": "vue-tsc --build",
     "format": "prettier --write --experimental-cli src/",
     "test": "vitest run",
-    "test:unit": "vitest run --include **/*.unit.test.ts",
-    "test:api": "vitest run --include **/*.api.test.ts",
-    "test:e2e": "vitest run --include **/*.e2e.test.ts",
+    "test:unit": "vitest run \"**/*.unit.test.ts\"",
+    "test:api": "vitest run \"**/*.api.test.ts\"",
+    "test:e2e": "vitest run \"**/*.e2e.test.ts\"",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
 

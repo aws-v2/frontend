@@ -13,7 +13,8 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repo
+        uses: actions/checkout@v4
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -24,7 +25,20 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run CI checks (Build and Type-check)
+      # ── 1. Type-check (fast fail if TS is broken)
+      - name: Type check
+        run: npm run type-check
+
+      # ── 2. Run unit + API + E2E (Vitest)
+      - name: Run tests
+        run: npm run test
+
+      # Optional: separate coverage (recommended)
+      - name: Run tests with coverage
+        run: npm run test:coverage
+
+      # ── 3. Build (only if everything passed)
+      - name: Build app
         run: npm run build
 
   open-pr-to-staging:

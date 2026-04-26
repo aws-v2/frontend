@@ -14,8 +14,8 @@ permissions:
 
 jobs:
   unit:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -34,12 +34,24 @@ jobs:
 
       - name: Run unit tests
         run: npm run test:unit
+  api:
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - run: npm ci
+      - run: npm run test:api
+
 
 
   open-pr-to-staging:
-    needs: unit
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    needs: [unit, api]
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
         with:

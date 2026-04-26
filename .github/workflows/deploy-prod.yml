@@ -2,9 +2,9 @@ name: CI - Test and PR to Staging
 
 on:
   pull_request:
-    branches: [mainc]
+    branches: [main]
   push:
-    branches: [ mainc ]
+    branches: [main]
 
 permissions:
   contents: write

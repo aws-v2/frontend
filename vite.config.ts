@@ -26,4 +26,11 @@ export default defineConfig({
       },
     },
   },
+test: {
+  include: [
+    'src/**/*.unit.test.ts',
+    'src/**/*.api.test.ts',
+    'src/**/*.e2e.test.ts',
+  ],
+}
 })

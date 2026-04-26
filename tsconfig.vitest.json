@@ -1,0 +1,17 @@
+{
+  "extends": "./tsconfig.app.json",
+  "include": [
+    "env.d.ts",
+    "src/**/*",
+    "src/**/*.vue",
+    "src/**/__tests__/**/*",
+    "src/test/**/*"
+  ],
+  "compilerOptions": {
+    "lib": ["ESNext", "DOM"],
+    "types": ["vitest/globals", "pinia"],
+    "paths": {
+      "@/*": ["./src/*"]
+    }
+  }
+}

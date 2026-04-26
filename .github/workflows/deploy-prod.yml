@@ -12,7 +12,7 @@ permissions:
 
 
 jobs:
-  full-suite:
+  prod-full-suite:
     if: github.event_name == 'pull_request' || github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
@@ -27,9 +27,9 @@ jobs:
 
 
 
-  build-and-push:
+  prod-build-image:
     runs-on: ubuntu-latest
-    needs: full-suite
+    needs: prod-full-suite
     if: github.event_name == 'push'
     steps:
 
@@ -54,8 +54,8 @@ jobs:
             VITE_APP_PROFILE=prod
 
 
-  deploy:
-    needs: build-and-push
+  prod-deploy:
+    needs: prod-build-image
     runs-on: ubuntu-latest
     if: github.event_name == 'push'
     steps:

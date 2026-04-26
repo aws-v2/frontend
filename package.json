@@ -14,15 +14,12 @@
     "type-check": "vue-tsc --build",
     "format": "prettier --write --experimental-cli src/",
     "test": "vitest run",
-"test:unit": "vitest run",
-    "test:api": "vitest run src/modules/auth/__tests__/api_tests",
-    "test:e2e": "vitest run src/modules/auth/__tests__/e2e_tests",
+    "test:unit": "vitest run",
+    "test:api": "vitest run",
+    "test:e2e": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-
-
     "test:coverage": "vitest run --coverage"
-
   },
   "dependencies": {
     "@types/markdown-it": "^14.1.2",

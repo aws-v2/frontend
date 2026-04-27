@@ -37,6 +37,7 @@ jobs:
 
   dev-api-test:
     if: github.event_name == 'pull_request' || github.event_name == 'push'
+    needs: dev-unit-test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

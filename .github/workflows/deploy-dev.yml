@@ -1,4 +1,4 @@
-name: CI - Test and PR to Staging
+name: CI/CD - Test and PR to Staging
 
 on:
   push:

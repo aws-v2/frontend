@@ -52,6 +52,7 @@ jobs:
           tags: qarani/frontend-server:prod
           build-args: |
             VITE_APP_PROFILE=prod
+            VITE_API_BASE_URL=http://localhost:8080/api/v1/change-me
 
 
   prod-deploy:
@@ -72,7 +73,6 @@ jobs:
           host: ${{ secrets.PROD_HOST }}
           username: ${{ secrets.PROD_USERNAME }}
           key: ${{ secrets.PROD_SSH_KEY }}
-          passphrase: ${{ secrets.PROD_SSH_PASSPHRASE }}
           script: |
             docker network create aws-prod-network || true
             docker pull qarani/frontend-server:prod

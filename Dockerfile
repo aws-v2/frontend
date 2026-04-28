@@ -19,7 +19,7 @@ ENV VITE_APP_PROFILE=${VITE_APP_PROFILE}
 ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
 
 # Build app
-RUN npm run build
+RUN npm run build-only
 
 
 # ---------- Production stage ----------

@@ -94,6 +94,7 @@ jobs:
               --name frontend-server-prod \
               --network aws-prod-network \
               --env API_GATEWAY_HOST=api-gateway-prod \
+              --constraint 'node.role == cloud' \
               --mount type=bind,source=/opt/frontend/config-prod.json,target=/usr/share/nginx/html/config.json,readonly \
               --publish 5173:80 \
               qarani/frontend-server:prod

@@ -92,6 +92,8 @@ async function login(payload: any) {
   try {
     console.log('Attempting login for:', payload.email)
   const response = await apiClient.post<any>('/auth/login', payload)
+
+  
     const inner = response.data.data  // ✅ unwrap the envelope
     
     setSession({
@@ -129,7 +131,7 @@ async function login(payload: any) {
   }
 
 async function register(payload: any) {
-  const response = await apiClient.post<any>('auth/register', payload)
+  const response = await apiClient.post<any>('/auth/register', payload)
   const inner = response.data.data  // ✅
   setSession({ ...inner, email: inner.email || payload.email })
   return inner

@@ -29,7 +29,7 @@ const registerModel = async () => {
 
   loading.value = true
   step.value = 'registering'
-  statusMessage.value = 'Registering model...'
+  statusMessage.value = 'Registering model.........'
 
   try {
     const authStore = useAuthStore()

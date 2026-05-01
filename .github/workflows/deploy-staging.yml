@@ -111,7 +111,7 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GH_PAT }}
         run: |
-          git fetch origin staging main
+          git fetch origin staging main.....
 
           if [ -z "$(git log origin/main..origin/staging --oneline)" ]; then
             echo "No commits between staging and main. Skipping PR..."

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import axios from 'axios'
 import apiClient from '@/shared/api/apiClient'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 const name = ref('')
 const file = ref<File | null>(null)
 
@@ -32,19 +32,12 @@ const registerModel = async () => {
   statusMessage.value = 'Registering model...'
 
   try {
-    const token = localStorage.getItem('auth_token')
-
-    const res = await apiClient.post(
-      '/llm/models/register',
-      {
-        name: name.value
-      },
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+    const authStore = useAuthStore()
+    const res = await apiClient.post('/llm/models/register', { name: name.value }, {
+      headers: {
+        'Authorization': `Bearer ${authStore.token}`
       }
-    )
+    })
 
     modelId.value = res.data.model_id
     uploadUrl.value = res.data.upload_url
@@ -66,13 +59,12 @@ const uploadFile = async () => {
 
   step.value = 'uploading'
   statusMessage.value = 'Uploading GGUF model...'
-    const token = localStorage.getItem('auth_token')
-
   try {
-    await axios.put(uploadUrl.value, file.value, {
+    const authStore = useAuthStore()
+    await apiClient.put(uploadUrl.value, file.value, {
       headers: {
         'Content-Type': file.value.type || 'application/octet-stream',
-        'Authorization': `Bearer ${token}` // 👈 add this
+        'Authorization': `Bearer ${authStore.token}`
       }
     })
 

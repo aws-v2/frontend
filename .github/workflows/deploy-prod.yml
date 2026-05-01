@@ -93,9 +93,7 @@ jobs:
             docker service create \
               --name frontend-server-prod \
               --network aws-prod-network \
-              --env VITE_API_BASE_URL=http://localhost:8080 \
-              --env VITE_APP_PROFILE=prod \
-              --env API_GATEWAY_HOST=api-gateway-prod \
+              --mount type=bind,source=/opt/frontend/config-prod.json,target=/usr/share/nginx/html/config.json,readonly \
               --publish 5173:80 \
               qarani/frontend-server:prod
 

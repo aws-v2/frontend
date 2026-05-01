@@ -42,6 +42,11 @@ async function probe(baseUrl: string): Promise<boolean> {
  * Result is cached for the session.
  */
 async function resolveStagingUrl(): Promise<string> {
+  const appProfile = getEnv('VITE_APP_PROFILE') as ServiceEnv
+  if (appProfile === 'prod') {
+    console.info('[prod] Using production URL:', SERVICE_URLS.prod)
+    return SERVICE_URLS.prod
+  }
   if (resolvedStagingUrl) return resolvedStagingUrl
 
   const tailscaleUrl = `http://${STAGING_TAILSCALE_IP}:8080/api/v1`

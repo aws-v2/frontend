@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import axios from 'axios'
-
+import apiClient from '@/shared/api/apiClient'
 const name = ref('')
 const file = ref<File | null>(null)
 
@@ -34,8 +34,8 @@ const registerModel = async () => {
   try {
     const token = localStorage.getItem('auth_token')
 
-    const res = await axios.post(
-      '/api/v1/llm/models/register',
+    const res = await apiClient.post(
+      '/llm/models/register',
       {
         name: name.value
       },

@@ -42,6 +42,9 @@ async function resolveStagingUrl(): Promise<string> {
   if (appProfile === 'prod') {
     return SERVICE_URLS.prod
   }
+  if (appProfile === 'staging') {
+    return SERVICE_URLS.staging
+  }
   if (resolvedStagingUrl) return resolvedStagingUrl
 
   const stagingTailscaleIp = config.VITE_STAGING_TAILSCALE_IP

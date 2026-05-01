@@ -14,9 +14,9 @@ apiClient.interceptors.request.use(
     // If URL starts with / and doesn't have a protocol, resolve base URL
     if (config.url && config.url.startsWith('/') && !config.url.startsWith('//')) {
       const serviceName = config.url.split('/')[1] || 'default'
-      console.log('serviceName', serviceName)
+      // console.log('serviceName', serviceName)
       config.baseURL = (await featureFlags.getServiceUrl(serviceName)).replace(/\/$/, '')
-      console.log('config.baseURL', config.baseURL)
+      // console.log('config.baseURL', config.baseURL)
     }
 
     const authStore = useAuthStore()

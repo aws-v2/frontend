@@ -23,9 +23,25 @@ export async function loadRemoteConfig(): Promise<RemoteConfig> {
   } catch {
     console.warn(`[config] Remote config unavailable at ${CONFIG_FILE}, falling back to import.meta.env`)
     cachedConfig = {
-      VITE_APP_PROFILE: import.meta.env.VITE_APP_PROFILE ?? 'dev',
-      VITE_STAGING_TAILSCALE_IP: import.meta.env.VITE_STAGING_TAILSCALE_IP ?? '',
-      VITE_STAGING_LOCAL_IP: import.meta.env.VITE_STAGING_LOCAL_IP ?? '',
+      VITE_APP_PROFILE:            import.meta.env.VITE_APP_PROFILE            ?? 'dev',
+      VITE_API_BASE_URL:           import.meta.env.VITE_API_BASE_URL           ?? '',
+      VITE_STAGING_TAILSCALE_IP:   import.meta.env.VITE_STAGING_TAILSCALE_IP   ?? '',
+      VITE_STAGING_LOCAL_IP:       import.meta.env.VITE_STAGING_LOCAL_IP       ?? '',
+      VITE_SHOW_GAMING_COMING_SOON:import.meta.env.VITE_SHOW_GAMING_COMING_SOON ?? 'false',
+      VITE_FF_SERVICE_S3:          import.meta.env.VITE_FF_SERVICE_S3          ?? 'dev',
+      VITE_FF_SERVICE_RDS:         import.meta.env.VITE_FF_SERVICE_RDS         ?? 'dev',
+      VITE_FF_SERVICE_NETWORK:     import.meta.env.VITE_FF_SERVICE_NETWORK     ?? 'dev',
+      VITE_FF_SERVICE_METRICS:     import.meta.env.VITE_FF_SERVICE_METRICS     ?? 'dev',
+      VITE_FF_SERVICE_LAMBDA:      import.meta.env.VITE_FF_SERVICE_LAMBDA      ?? 'dev',
+      VITE_FF_SERVICE_GAMELIFT:    import.meta.env.VITE_FF_SERVICE_GAMELIFT    ?? 'dev',
+      VITE_FF_SERVICE_FARGATE:     import.meta.env.VITE_FF_SERVICE_FARGATE     ?? 'dev',
+      VITE_FF_SERVICE_EC2:         import.meta.env.VITE_FF_SERVICE_EC2         ?? 'dev',
+      VITE_FF_SERVICE_IDENTITY:    import.meta.env.VITE_FF_SERVICE_IDENTITY    ?? 'dev',
+      VITE_FF_SERVICE_CONFIG:      import.meta.env.VITE_FF_SERVICE_CONFIG      ?? 'dev',
+      VITE_FF_SERVICE_BILLING:     import.meta.env.VITE_FF_SERVICE_BILLING     ?? 'dev',
+      VITE_FF_SERVICE_AUTH:        import.meta.env.VITE_FF_SERVICE_AUTH        ?? 'dev',
+      VITE_FF_SERVICE_LLM:         import.meta.env.VITE_FF_SERVICE_LLM         ?? 'dev',
+      VITE_FF_SERVICE_GATEWAY:     import.meta.env.VITE_FF_SERVICE_GATEWAY     ?? 'dev',
     }
   }
   return cachedConfig!

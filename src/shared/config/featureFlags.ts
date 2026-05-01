@@ -72,26 +72,40 @@ export const featureFlags = {
    * Resolves the base URL for a service.
    * Priority: localStorage -> remoteConfig (VITE_FF_SERVICE_X) -> Global profile -> Default
    */
-  async getServiceUrl(service: string): Promise<string> {
-    const config = getRemoteConfig()
-    const envKey = `VITE_FF_SERVICE_${service.toUpperCase()}`
-    const storageKey = `ff_service_${service.toLowerCase()}`
+async getServiceUrl(service: string): Promise<string> {
+  const config = getRemoteConfig()
+  const envKey = `VITE_FF_SERVICE_${service.toUpperCase()}`
+  const storageKey = `ff_service_${service.toLowerCase()}`
 
-    const override = getStorage(storageKey) || config[envKey] || config.VITE_APP_PROFILE
-    const env: ServiceEnv = (override as ServiceEnv) || 'dev'
+  const profile = config.VITE_APP_PROFILE as ServiceEnv
+  const override = getStorage(storageKey) || config[envKey]
 
-    let baseUrl: string
 
-    if (env === 'staging') {
-      baseUrl = await resolveStagingUrl()
-    } else if (env === 'prod') {
-      baseUrl = SERVICE_URLS.prod
-    } else {
-      baseUrl = config.VITE_API_BASE_URL || SERVICE_URLS.dev
-    }
+console.log(`the configs : ${JSON.stringify(config)}`)
+console.log(`the override : ${JSON.stringify(override)}`)
+console.log(`the envKey : ${JSON.stringify(envKey)}`)
+console.log(`profile: ${config.VITE_APP_PROFILE}`)
 
-    return baseUrl.replace(/\/$/, '') + '/'
-  },
+
+
+
+  // If dev, respect whatever the service flag says, else stick to profile
+  const env: ServiceEnv = (profile === 'dev'
+    ? (override as ServiceEnv) || 'dev'
+    : profile) || 'dev'
+
+  let baseUrl: string
+
+  if (env === 'staging') {
+    baseUrl = await resolveStagingUrl()
+  } else if (env === 'prod') {
+    baseUrl = SERVICE_URLS.prod
+  } else {
+    baseUrl = config.VITE_API_BASE_URL || SERVICE_URLS.dev
+  }
+
+  return baseUrl.replace(/\/$/, '') + '/'
+},
 
   /**
    * Checks if a feature is enabled.

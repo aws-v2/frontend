@@ -91,8 +91,7 @@ export const useAuthStore = defineStore('auth', () => {
 async function login(payload: any) {
   try {
     console.log('Attempting login for:', payload.email)
-    const response = await apiClient.post<any>(`${apiClient.defaults.baseURL}auth/login`, payload)
-    
+  const response = await apiClient.post<any>('/auth/login', payload)
     const inner = response.data.data  // ✅ unwrap the envelope
     
     setSession({

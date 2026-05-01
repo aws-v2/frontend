@@ -14,7 +14,8 @@ let pollingInterval: ReturnType<typeof setInterval> | null = null
 
 export async function loadRemoteConfig(): Promise<RemoteConfig> {
   try {
-    const res = await fetch('/config.json', { cache: 'no-store' })
+    const CONFIG_FILE="/opt/frontend/config.json"
+    const res = await fetch(CONFIG_FILE, { cache: 'no-store' })
     if (!res.ok) throw new Error('config.json not found')
     cachedConfig = await res.json()
     console.info('[config] Loaded remote config:', cachedConfig)

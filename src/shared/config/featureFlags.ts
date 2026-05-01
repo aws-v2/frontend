@@ -1,19 +1,13 @@
-/**
- * Feature Flag and Dynamic Service URL Manager
- */
+import { getRemoteConfig } from '@/shared/config/remoteConfig'
 
 export type ServiceEnv = 'dev' | 'staging' | 'prod'
 
-const STAGING_TAILSCALE_IP = import.meta.env.VITE_STAGING_TAILSCALE_IP
-const STAGING_LOCAL_IP = import.meta.env.VITE_STAGING_LOCAL_IP
-
 const SERVICE_URLS: Record<ServiceEnv, string> = {
   dev: 'http://localhost:8080/api/v1',
-  staging: `http://${STAGING_TAILSCALE_IP}:8080/api/v1`, // resolved dynamically at runtime
+  staging: '', // Resolved dynamically in resolveStagingUrl
   prod: 'http://13.48.129.233:8080/api/v1'
 }
 
-const getEnv = (key: string) => import.meta.env[key]
 const getStorage = (key: string) => localStorage.getItem(key)
 
 // Cache so we only probe once per session
@@ -42,24 +36,28 @@ async function probe(baseUrl: string): Promise<boolean> {
  * Result is cached for the session.
  */
 async function resolveStagingUrl(): Promise<string> {
-  const appProfile = getEnv('VITE_APP_PROFILE') as ServiceEnv
+  const config = getRemoteConfig()
+  const appProfile = config.VITE_APP_PROFILE as ServiceEnv
+  
   if (appProfile === 'prod') {
-    console.info('[prod] Using production URL:', SERVICE_URLS.prod)
     return SERVICE_URLS.prod
   }
   if (resolvedStagingUrl) return resolvedStagingUrl
 
-  const tailscaleUrl = `http://${STAGING_TAILSCALE_IP}:8080/api/v1`
-  const localUrl = `http://${STAGING_LOCAL_IP}:8080/api/v1`
+  const stagingTailscaleIp = config.VITE_STAGING_TAILSCALE_IP
+  const stagingLocalIp = config.VITE_STAGING_LOCAL_IP
 
-  if (await probe(tailscaleUrl)) {
+  const tailscaleUrl = `http://${stagingTailscaleIp}:8080/api/v1`
+  const localUrl = `http://${stagingLocalIp}:8080/api/v1`
+
+  if (stagingTailscaleIp && await probe(tailscaleUrl)) {
     console.info('[staging] Reachable via Tailscale:', tailscaleUrl)
     resolvedStagingUrl = tailscaleUrl
-  } else if (await probe(localUrl)) {
+  } else if (stagingLocalIp && await probe(localUrl)) {
     console.info('[staging] Tailscale failed, using local IP:', localUrl)
     resolvedStagingUrl = localUrl
   } else {
-    console.warn('[staging] Both Tailscale and local unreachable. Defaulting to Tailscale.')
+    console.warn('[staging] Both Tailscale and local unreachable or not configured. Defaulting to Tailscale.')
     resolvedStagingUrl = tailscaleUrl
   }
 
@@ -69,22 +67,24 @@ async function resolveStagingUrl(): Promise<string> {
 export const featureFlags = {
   /**
    * Resolves the base URL for a service.
-   * For staging, probes Tailscale first and falls back to local IP.
-   * Priority: localStorage -> .env (VITE_FF_SERVICE_X) -> Global profile -> Default
+   * Priority: localStorage -> remoteConfig (VITE_FF_SERVICE_X) -> Global profile -> Default
    */
   async getServiceUrl(service: string): Promise<string> {
+    const config = getRemoteConfig()
     const envKey = `VITE_FF_SERVICE_${service.toUpperCase()}`
     const storageKey = `ff_service_${service.toLowerCase()}`
 
-    const override = getStorage(storageKey) || getEnv(envKey) || getEnv('VITE_APP_PROFILE')
+    const override = getStorage(storageKey) || config[envKey] || config.VITE_APP_PROFILE
     const env: ServiceEnv = (override as ServiceEnv) || 'dev'
 
     let baseUrl: string
 
     if (env === 'staging') {
       baseUrl = await resolveStagingUrl()
+    } else if (env === 'prod') {
+      baseUrl = SERVICE_URLS.prod
     } else {
-      baseUrl = SERVICE_URLS[env] || SERVICE_URLS.dev
+      baseUrl = config.VITE_API_BASE_URL || SERVICE_URLS.dev
     }
 
     return baseUrl.replace(/\/$/, '') + '/'
@@ -92,17 +92,18 @@ export const featureFlags = {
 
   /**
    * Checks if a feature is enabled.
-   * Supports toggling via localStorage for easy debugging.
+   * Checks localStorage, then remoteConfig.
    */
   isEnabled(flag: string, defaultValue = false): boolean {
+    const config = getRemoteConfig()
     const envKey = `VITE_FF_${flag.toUpperCase()}`
     const storageKey = `ff_${flag.toLowerCase()}`
 
     const storageVal = getStorage(storageKey)
     if (storageVal !== null) return storageVal === 'true'
 
-    const envVal = getEnv(envKey)
-    if (envVal !== undefined) return envVal === 'true'
+    const configVal = config[envKey]
+    if (configVal !== undefined) return configVal === 'true'
 
     return defaultValue
   },
@@ -121,7 +122,6 @@ export const featureFlags = {
 
   /**
    * Forces re-probe of staging URL on next getServiceUrl call.
-   * Useful if the network changes mid-session.
    */
   resetStagingCache() {
     resolvedStagingUrl = null

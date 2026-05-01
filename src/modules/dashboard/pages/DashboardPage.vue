@@ -292,29 +292,39 @@ const navigateTo = (path: string) => {
                             <template v-else>
                                 <div v-for="n in 14" :key="n" class="flex-1 h-32 bg-[#eaeded]/50 animate-pulse"></div>
                             </template>
-                        </div>
-
-                        <!-- Billing dash line overlay + Storage Throughput -->
+                        </div>                        <!-- Billing dash line overlay + Storage Throughput -->
                         <svg viewBox="0 0 100 240" preserveAspectRatio="none"
                             class="absolute left-16 right-0 top-0 bottom-10 w-full h-full pointer-events-none overflow-visible">
-                            <!-- Serwin Orange Trend Line (Data Entering) -->
+                            <!-- Serwin Orange Trend Line (Object Storage) -->
                             <path
-                                v-if="storageLensData && storageLensData.timeSeries && storageLensData.timeSeries.length && storageLensData.summary"
-                                :d="`M 0,${240 - ((storageLensData!.timeSeries[0]?.storage || 0) / (storageLensData!.summary.totalStorage || 1) * 180 + 20)} ${storageLensData!.timeSeries.map((p, i) => 'L ' + (i * (100 / (storageLensData!.timeSeries!.length - 1))) + ',' + (240 - ((p.storage || 0) / (storageLensData!.summary!.totalStorage || 1) * 180 + 20))).join(' ')}`"
+                                v-if="storageLensData && storageLensData.timeSeries && storageLensData.timeSeries.length > 1 && storageLensData.summary"
+                                :d="`M 0,${240 - ((storageLensData.timeSeries[0]?.storage || 0) / (storageLensData.summary.totalStorage || 1) * 180 + 20)} ${storageLensData.timeSeries.map((p, i) => 'L ' + (i * (100 / (storageLensData.timeSeries.length - 1))) + ',' + (240 - ((p.storage || 0) / (storageLensData.summary.totalStorage || 1) * 180 + 20))).join(' ')}`"
                                 stroke="#ff9900" stroke-width="2" fill="none" stroke-linejoin="round"
                                 stroke-linecap="round" />
-
+                            <!-- Static dot for single point -->
+                            <circle
+                                v-else-if="storageLensData && storageLensData.timeSeries && storageLensData.timeSeries.length === 1 && storageLensData.summary"
+                                :cx="50"
+                                :cy="240 - ((storageLensData.timeSeries[0]?.storage || 0) / (storageLensData.summary.totalStorage || 1) * 180 + 20)"
+                                r="3" fill="#ff9900" />
+ 
                             <!-- YELLOW STORAGE THROUGHPUT LINE -->
                             <path
-                                v-if="storageLensData && storageLensData.timeSeries && storageLensData.timeSeries.length"
-                                :d="`M 0,${240 - ((storageLensData!.timeSeries[0]?.throughput || 0) / 150000000 * 180 + 10)} ${storageLensData!.timeSeries.map((p, i) => 'L ' + (i * (100 / (storageLensData!.timeSeries!.length - 1))) + ',' + (240 - ((p.throughput || 0) / 150000000 * 180 + 10))).join(' ')}`"
+                                v-if="storageLensData && storageLensData.timeSeries && storageLensData.timeSeries.length > 1"
+                                :d="`M 0,${240 - ((storageLensData.timeSeries[0]?.throughput || 0) / 150000000 * 180 + 10)} ${storageLensData.timeSeries.map((p, i) => 'L ' + (i * (100 / (storageLensData.timeSeries.length - 1))) + ',' + (240 - ((p.throughput || 0) / 150000000 * 180 + 10))).join(' ')}`"
                                 stroke="#FFFB00" stroke-width="1.5" fill="none" stroke-linejoin="round"
                                 stroke-linecap="round" class="drop-shadow-[0_0_4px_rgba(255,251,0,0.3)]" />
+                            <!-- Static dot for single point -->
+                            <circle
+                                v-else-if="storageLensData && storageLensData.timeSeries && storageLensData.timeSeries.length === 1"
+                                :cx="50"
+                                :cy="240 - ((storageLensData.timeSeries[0]?.throughput || 0) / 150000000 * 180 + 10)"
+                                r="3" fill="#FFFB00" />
                         </svg>
                     </div>
-
+ 
                     <div
-                        class="flex justify-between mt-6 ml-16 text-[10px] font-black uppercase tracking-[0.3em] text-[#879196]">
+                        class="flex justify-between mt-6 ml-16 text-[10px] font-black uppercase tracking-[0.3em] text-[#879196] font-urbanist">
                         <span>T-MINUS 24H</span>
                         <span>REGION PEAK</span>
                         <span>MID-CYCLE</span>

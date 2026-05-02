@@ -57,7 +57,7 @@ async function resolveStagingUrl(): Promise<string> {
     console.info('[staging] Reachable via Tailscale:', tailscaleUrl)
     resolvedStagingUrl = tailscaleUrl
   } else if (stagingLocalIp && await probe(localUrl)) {
-    console.info('[staging] Tailscale failed, using local IP:', localUrl)
+    console.info('[staging] Tailscale failed, using local IP:', tailscaleUrl)
     resolvedStagingUrl = localUrl
   } else {
     console.warn('[staging] Both Tailscale and local unreachable or not configured. Defaulting to Tailscale.')

@@ -11,12 +11,9 @@ const apiClient = axios.create({
 // Request Interceptor: Dynamic routing based on service name
 apiClient.interceptors.request.use(
   async (config) => {
-    // If URL starts with / and doesn't have a protocol, resolve base URL
     if (config.url && config.url.startsWith('/') && !config.url.startsWith('//')) {
       const serviceName = config.url.split('/')[1] || 'default'
-      // console.log('serviceName', serviceName)
       config.baseURL = (await featureFlags.getServiceUrl(serviceName)).replace(/\/$/, '')
-      // console.log('config.baseURL', config.baseURL)
     }
 
     const authStore = useAuthStore()
@@ -39,5 +36,43 @@ apiClient.interceptors.response.use(
     return Promise.reject(error)
   },
 )
+
+// Stream method — resolves base URL + auth the same way interceptors do
+apiClient.stream = async (url: string, body?: unknown): Promise<ReadableStreamDefaultReader<Uint8Array>> => {
+ const serviceName = url.startsWith('/') ? (url.split('/')[1] ?? 'default') : 'default'
+  
+  const baseURL = (await featureFlags.getServiceUrl(serviceName)).replace(/\/$/, '')
+
+  const authStore = useAuthStore()
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  }
+  if (authStore.token) {
+    headers['Authorization'] = `Bearer ${authStore.token}`
+  }
+
+  const response = await fetch(`${baseURL}${url}`, {
+    method: 'POST',
+    headers,
+    body: body ? JSON.stringify(body) : undefined,
+  })
+
+  if (response.status === 401) {
+    useAuthStore().logout()
+    throw new Error('Unauthorized')
+  }
+
+  if (!response.ok) throw new Error(`HTTP error: ${response.status}`)
+  if (!response.body) throw new Error('ReadableStream not supported in this browser')
+
+  return response.body.getReader()
+}
+
+
+declare module 'axios' {
+  interface AxiosInstance {
+    stream: (url: string, body?: unknown) => Promise<ReadableStreamDefaultReader<Uint8Array>>
+  }
+}
 
 export default apiClient

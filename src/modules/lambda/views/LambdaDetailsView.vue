@@ -161,30 +161,14 @@ const runTestBench = async () => {
   executionOutput.value = ''
 
   try {
-    // Validate JSON
-    JSON.parse(testPayload.value)
+    JSON.parse(testPayload.value) // validate JSON
 
-    const authStore = useAuthStore()
-    const baseUrl = (apiClient.defaults.baseURL || '').replace(/\/$/, '')
+    const reader = await apiClient.stream(
+      `/lambda/functions/${currentFunction.value?.name}/test`,
+      JSON.parse(testPayload.value)
+    )
 
-    const response = await fetch(`${baseUrl}/lambda/functions/${currentFunction.value?.name}/test`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${authStore.token}`
-      },
-      body: testPayload.value
-    })
-
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`)
-    }
-
-    const reader = response.body?.getReader()
     const decoder = new TextDecoder()
-
-    if (!reader) throw new Error('ReadableStream not supported')
-
     let partialData = ''
 
     while (true) {
@@ -194,43 +178,35 @@ const runTestBench = async () => {
       const chunk = decoder.decode(value, { stream: true })
       partialData += chunk
 
-      // Process SSE lines
       const lines = partialData.split('\n')
-      // Keep last incomplete line
       partialData = lines.pop() || ''
 
       for (const line of lines) {
         const trimmedLine = line.trim()
-        if (trimmedLine.startsWith('data:')) {
-          const rawData = trimmedLine.slice(5).trim()
-          if (!rawData) continue
+        if (!trimmedLine.startsWith('data:')) continue
 
-          try {
-            const data = JSON.parse(rawData)
+        const rawData = trimmedLine.slice(5).trim()
+        if (!rawData) continue
 
-            // Handle structured logs
-            if (data.message) {
-              executionOutput.value += `[SYSTEM] ${data.message}\n`
-            }
-            if (data.stdout) {
-              executionOutput.value += data.stdout
-            }
-            if (data.stderr) {
-              executionOutput.value += `[ERROR] ${data.stderr}\n`
-            }
-            if (data.status === 'success' && data.execution_result) {
-              executionOutput.value += `\n[DONE] ${data.execution_result} (Exit: ${data.exit_code || 0})\n`
-            }
+        try {
+          const data = JSON.parse(rawData)  // now correctly an object
 
-            // Auto-scroll logic if terminal is available
-            nextTick(() => {
-              const terminal = document.querySelector('.terminal-container')
-              if (terminal) terminal.scrollTop = terminal.scrollHeight
-            })
-          } catch (e) {
-            // Fallback for non-JSON or partial data
-            if (rawData) executionOutput.value += rawData + '\n'
-          }
+if (data.message)  executionOutput.value += `[SYSTEM] ${data.message}\n`
+if (data.stdout)   executionOutput.value += data.stdout
+if (data.stderr)   executionOutput.value += `[ERROR] ${data.stderr}\n`
+if (data.status === 'error') {
+    executionOutput.value += `[ERROR] ${data.message || data.error || 'execution failed'}\n`
+}
+if (data.status === 'success' && data.execution_result) {
+    executionOutput.value += `\n[DONE] ${data.execution_result} (Exit: ${data.exit_code || 0})\n`
+}
+
+          nextTick(() => {
+            const terminal = document.querySelector('.terminal-container')
+            if (terminal) terminal.scrollTop = terminal.scrollHeight
+          })
+        } catch {
+          if (rawData) executionOutput.value += rawData + '\n'
         }
       }
     }
@@ -241,6 +217,9 @@ const runTestBench = async () => {
     isExecuting.value = false
   }
 }
+
+
+
 
 const saveConfig = async () => {
   if (!currentFunction.value?.name) return

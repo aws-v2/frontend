@@ -15,6 +15,7 @@ export interface DocManifest {
     service: string;
     version?: string;
     categories: DocCategory[];
+    isInternal: boolean;
 }
 
 export interface DocResponse {
@@ -45,7 +46,6 @@ const SERVICE_REGISTRY: Record<string, string> = {
     config: '/config',
     auth: '/auth',
     sagemaker: '/llm',
-
 };
 
 // ── JWT helpers ───────────────────────────────────────────────────────────────
@@ -53,21 +53,15 @@ const SERVICE_REGISTRY: Record<string, string> = {
 function decodeJWTPayload(token: string): Record<string, any> | null {
     try {
         const parts = token.split('.');
-        if (parts.length < 2 || !parts[1]) {
-            return null;
-        }
-
-        const base64 = parts[1];
-        const padded = base64.padEnd(
-            base64.length + (4 - (base64.length % 4)) % 4,
-            '='
-        );
-
+        if (parts.length < 2 || !parts[1]) return null;
+        const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/'); // Ensure valid base64
+        const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, '=');
         return JSON.parse(atob(padded));
     } catch {
         return null;
     }
 }
+
 function getRoleFromToken(): UserRole {
     const token = localStorage.getItem('auth_token') ?? sessionStorage.getItem('auth_token');
     if (!token) return null;
@@ -79,33 +73,20 @@ function getToken(): string | null {
     return localStorage.getItem('auth_token') ?? sessionStorage.getItem('auth_token');
 }
 
-function isPrivileged(role: UserRole): boolean {
-    return role === 'ADMIN' || role === 'ENGINEER';
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const useDocsStore = defineStore('docs', {
     state: () => ({
-        // public manifests — no auth required
+        // Unified Manifest Store: Contains processed categories (Public + Internal if Admin)
         manifests: {} as Record<string, DocManifest>,
         manifestErrors: {} as Record<string, string>,
-
-        // internal manifests — ADMIN/ENGINEER only
-        internalManifests: {} as Record<string, DocManifest>,
-        internalManifestErrors: {} as Record<string, string>,
 
         currentDoc: null as DocResponse | null,
         activeService: null as string | null,
         loading: false,
         error: null as string | null,
 
-        // resolved once on fetch, used by sidebar
         userRole: null as UserRole,
-
-        // sidebar collapse state — public starts collapsed for privileged users
-        publicCollapsed: false,
-
         drawer: {
             isOpen: false,
             service: null as string | null,
@@ -114,7 +95,7 @@ export const useDocsStore = defineStore('docs', {
     }),
 
     getters: {
-        isPrivilegedUser: (state) => isPrivileged(state.userRole),
+        isPrivilegedUser: (state) => state.userRole === 'ADMIN' || state.userRole === 'ENGINEER',
     },
 
     actions: {
@@ -128,74 +109,32 @@ export const useDocsStore = defineStore('docs', {
             this.drawer.isOpen = false;
         },
 
-        togglePublicCollapsed() {
-            this.publicCollapsed = !this.publicCollapsed;
-        },
-
-        // ── Fetch all manifests based on role ─────────────────────────────────
+        // ── Unified Fetch: Automatically handles role-based filtering backend ────
         async fetchAllManifests() {
             this.loading = true;
-            this.error = null;
-            this.manifestErrors = {};
-            this.internalManifestErrors = {};
-
-            // resolve role once
             this.userRole = getRoleFromToken();
+            const token = getToken();
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
-            // public docs — no auth, fetch for everyone
-            const publicFetches = Object.entries(SERVICE_REGISTRY).map(async ([service, basePath]) => {
+            const fetches = Object.entries(SERVICE_REGISTRY).map(async ([service, basePath]) => {
                 try {
-                    const response = await apiClient.get(`${basePath}/docs`);
+                    // Unified endpoint: one call, returns what you are allowed to see
+                    const response = await apiClient.get(`${basePath}/docs`, { headers });
                     if (response.data?.data) {
                         this.manifests[service] = response.data.data;
-                    } else {
-                        this.manifestErrors[service] = 'Service returned an empty response.';
                     }
                 } catch (err: any) {
                     const status = err?.response?.status;
-                    this.manifestErrors[service] = status
-                        ? `Failed to load — server returned ${status}.`
-                        : 'Service is unreachable. Check that it is running.';
+                    this.manifestErrors[service] = status === 404 ? 'Service has no docs.' : 'Unreachable.';
                 }
             });
 
-            await Promise.allSettled(publicFetches);
-
-            console.log(`isPrivileged(this.userRole):`, isPrivileged(this.userRole));
-
-
-            // internal docs — ADMIN/ENGINEER only
-            if (isPrivileged(this.userRole)) {
-                // public section starts collapsed for privileged users
-                this.publicCollapsed = true;
-
-                const token = getToken();
-                const internalFetches = Object.entries(SERVICE_REGISTRY).map(async ([service, basePath]) => {
-                    try {
-                        const response = await apiClient.get(`${basePath}/internal/docs`, {
-                            headers: { Authorization: `Bearer ${token}` },
-                        });
-                        if (response.data?.data) {
-                            this.internalManifests[service] = response.data.data;
-                        } else {
-                            this.internalManifestErrors[service] = 'Service returned an empty response.';
-                        }
-                    } catch (err: any) {
-                        const status = err?.response?.status;
-                        this.internalManifestErrors[service] = status
-                            ? `Failed to load — server returned ${status}.`
-                            : 'Service is unreachable.';
-                    }
-                });
-
-                await Promise.allSettled(internalFetches);
-            }
-
+            await Promise.allSettled(fetches);
             this.loading = false;
         },
 
-        // ── Fetch doc content — checks internal first for privileged users ────
-        async fetchDocContent(service: string, slug: string, internal = false) {
+        // ── Unified Doc Fetching: No more "internal" flag needed in local calls ────
+        async fetchDocContent(service: string, slug: string) {
             this.loading = true;
             this.error = null;
             this.currentDoc = null;
@@ -203,40 +142,32 @@ export const useDocsStore = defineStore('docs', {
 
             const basePath = SERVICE_REGISTRY[service];
             if (!basePath) {
-                this.error = `Unknown service "${service}". It is not registered.`;
+                this.error = `Unknown service "${service}".`;
                 this.loading = false;
                 return;
             }
 
-            const path = internal ? `${basePath}/internal/docs/${slug}` : `${basePath}/docs/${slug}`;
-            const headers = internal ? { Authorization: `Bearer ${getToken()}` } : {};
+            const token = getToken();
+            const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
             try {
-                const response = await apiClient.get(path, { headers });
+                // Single unified path: /api/v1/[service]/docs/[slug]
+                const response = await apiClient.get(`${basePath}/docs/${slug}`, { headers });
                 if (response.data?.data) {
                     this.currentDoc = response.data.data;
-                } else {
-                    this.error = `"${slug}" was found but the server returned no content.`;
                 }
             } catch (err: any) {
                 const status = err?.response?.status;
-                if (status === 404) {
-                    this.error = `No documentation found for "${slug}" in the ${service} service.`;
-                } else if (status === 401 || status === 403) {
-                    this.error = `You do not have permission to view this document.`;
-                } else if (status) {
-                    this.error = `Could not load this page — the ${service} service returned ${status}.`;
+                if (status === 401 || status === 403) {
+                    this.error = "Unauthorized: Admin privileges required.";
+                } else if (status === 404) {
+                    this.error = "Document not found.";
                 } else {
-                    this.error = `The ${service} service is unreachable. Check that it is running.`;
+                    this.error = "Could not load documentation.";
                 }
             } finally {
                 this.loading = false;
             }
-        },
-
-        getAssetUrl(service: string, filename: string) {
-            const basePath = SERVICE_REGISTRY[service] ?? `/${service}`;
-            return `${basePath}/docs/assets/${filename}`;
-        },
+        }
     },
 });

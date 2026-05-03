@@ -74,16 +74,33 @@ jobs:
           username: ${{ secrets.PROD_USERNAME }}
           key: ${{ secrets.PROD_SSH_KEY }}
           script: |
-            docker network create aws-prod-network || true
+            set -e
+
+            echo "Initializing Docker Swarm (if not already)..."
+            docker swarm init || true
+
+            echo "Creating overlay network (if not exists)..."
+            docker network create --driver overlay aws-prod-network || true
+
+            echo "Pulling latest frontend image..."
             docker pull qarani/frontend-server:prod
-            docker stop frontend-server-prod || true
-            docker rm frontend-server-prod || true
-            docker run -d \
+
+            echo "Removing old service (if exists)..."
+            docker service rm frontend-server-prod || true
+
+            echo "Deploying frontend as a Swarm service..."
+
+            docker service create \
               --name frontend-server-prod \
               --network aws-prod-network \
-              -e VITE_API_BASE_URL=http://localhost:8080 \
-              -e VITE_APP_PROFILE=prod \
-              -e API_GATEWAY_HOST=api-gateway-prod \
-              -p 5173:80 \
+              --env API_GATEWAY_HOST=api-gateway-prod \
+              --constraint 'node.role == cloud' \
+              --mount type=bind,source=/opt/frontend/config-prod.json,target=/usr/share/nginx/html/config.json,readonly \
+              --publish 5173:80 \
               qarani/frontend-server:prod
 
+            echo "Listing services..."
+            docker service ls
+
+            echo "Checking service tasks..."
+            docker service ps frontend-server-prod

@@ -12,7 +12,7 @@ const selectedKeyPair = ref('None')
 const selectedDistro = ref('ubuntu')
 const selectedVersion = ref('ubuntu-22.04')
 
-const sshKey = 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQCL2nT/HmmOKj7OAVfTVAP8eLBtm1uZ9jGUBqst/qIPwx5mhPUTeKyG1hgUbOukmu7bvEy0hoS7MDNUI8oc4KNdUGEA+NwcjZ07UKAnl0hrggMjxebwp8HvZJVt6meJ9oRNLRmi+smfVG2y3zWlJCUf89sT1+gfM3XsWsUhOvOElwUpQfx2k7jO43WI3/xqStP4Tc47cBUJV9ih8Xc3VBtqyUFj7K13Zm4l1VUnZOFz+RrO/M3bXp3GOUZcdUvmBgHBIF32DyDmcmoTbaIDZT/fptzx0efy5x/ckJRcat+7C4eEQdXxRCbLbR+hxqHmrag7GrD1V3Mm8rZa0ajo4O/jDXgL/Ir22XBtVImULbtvZ0tzE940BCWTQVAObU4gGeMry4A9BqD5cgnpzdmqDdoruh8bZeKwSDzqB/IrFPeCK4++4q+ZKIVbLp/J5i6Nei8/dO27ENsD/oQ60qwp/Y73cHsT18dMgqvDfhROnsKmusmltEQx8B4Dir7JDQktG+ig7bw0kg5Oh99YI2KYP0DXwTdxrYynH0mwGNboYb/hO2wdlJajUUycyZ11zb3hPENTE7zy6KZUyz2zkF+xUBYRx3yNa8CRGTRICd+ecxO0/JrRRJXnDK7HJph5N1xThl3QKDmoKVimBZE6BDMI3FsoqRA1NCR4UAOZYrvVgXDspQ== emqarani@gmail.com'
+const sshKey = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAWSD46Vyxczl1G8cSz0Pi5G9UExByRnFMML5QY/lyRK github-actions-prod'
 
 const imageMap = {
     "ubuntu-20.04": "/var/lib/libvirt/images/ubuntu-20.04.qcow2",

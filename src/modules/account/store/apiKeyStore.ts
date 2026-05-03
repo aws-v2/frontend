@@ -6,9 +6,10 @@ export interface ApiKeyResponse {
     id: string
     name: string
     accessKeyId: string
-    secretAccessKey?: string
+    secretKey: string
     createdAt: string
     lastUsedAt?: string
+    expiresAt?: string
     status: 'ACTIVE' | 'REVOKED'
 }
 
@@ -31,22 +32,20 @@ export const useApiKeyStore = defineStore('apiKey', () => {
         }
     }
 
-    async function createApiKey(name: string) {
-        try {
-            loading.value = true
-            error.value = null
-            const response = await apiClient.post<ApiKeyResponse>('/auth/api-keys', { name })
-            // Add the new key to the list (backend returns full object including masked accessKeyId)
-            apiKeys.value.push(response.data)
-            return response.data
-        } catch (err: any) {
-            console.error('Failed to create API key:', err)
-            error.value = err.response?.data?.error || 'Failed to create API key'
-            throw err
-        } finally {
-            loading.value = false
-        }
+async function createApiKey(name: string, validityDays: number = 90) {
+    try {
+        loading.value = true
+        error.value = null
+        const response = await apiClient.post<ApiKeyResponse>('/auth/api-keys', { name, validityDays })
+        apiKeys.value.push(response.data)
+        return response.data
+    } catch (err: any) {
+        error.value = err.response?.data?.error || 'Failed to create API key'
+        throw err
+    } finally {
+        loading.value = false
     }
+}
 
     async function revokeApiKey(keyId: string) {
         try {

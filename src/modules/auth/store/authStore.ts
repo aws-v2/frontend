@@ -88,24 +88,24 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.setItem('auth_mfa_required', 'false')
   }
 
-async function login(payload: any) {
-  try {
-    console.log('Attempting login for:', payload.email)
-  const response = await apiClient.post<any>('/auth/login', payload)
+  async function login(payload: any) {
+    try {
+      console.log('Attempting login for:', payload.email)
+      const response = await apiClient.post<any>('/auth/login', payload)
 
-  
-    const inner = response.data.data  // ✅ unwrap the envelope
-    
-    setSession({
-      ...inner,
-      email: inner.email || payload.email,
-    })
-    return inner
-  } catch (error) {
-    console.error('Login failed:', error)
-    throw error
+
+      const inner = response.data.data  // ✅ unwrap the envelope
+
+      setSession({
+        ...inner,
+        email: inner.email || payload.email,
+      })
+      return inner
+    } catch (error) {
+      console.error('Login failed:', error)
+      throw error
+    }
   }
-}
 
   async function forgotPassword(payload: { email: string }) {
     try {
@@ -130,19 +130,19 @@ async function login(payload: any) {
     }
   }
 
-async function register(payload: any) {
-  const response = await apiClient.post<any>('/auth/register', payload)
-  const inner = response.data.data  // ✅
-  setSession({ ...inner, email: inner.email || payload.email })
-  return inner
-}
+  async function register(payload: any) {
+    const response = await apiClient.post<any>('/auth/register', payload)
+    const inner = response.data.data  // ✅
+    setSession({ ...inner, email: inner.email || payload.email })
+    return inner
+  }
 
-async function verifyMfa(code: string) {
-  const response = await apiClient.post<any>('auth/mfa/verify', { code, email: email.value })
-  const inner = response.data.data  // ✅
-  setSession(inner)
-  return inner
-}
+  async function verifyMfa(code: string) {
+    const response = await apiClient.post<any>('auth/mfa/verify', { code, email: email.value })
+    const inner = response.data.data  // ✅
+    setSession(inner)
+    return inner
+  }
 
 
 

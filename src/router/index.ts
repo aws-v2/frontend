@@ -43,12 +43,8 @@ router.beforeEach(async (to, from, next) => {
 
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth)
   const isPublicOnly = to.matched.some((record) => record.meta.publicOnly)
-  const isMfaPage = to.name === 'mfa'
 
-  if (isMfaPage && authStore.mfaRequired) {
-    // Allow access to MFA page if challenge is pending
-    next()
-  } else if (requiresAuth && !authStore.isAuthenticated) {
+  if (requiresAuth && !authStore.isAuthenticated) {
     // Protected route + Not logged in -> Login
     next({ name: 'login' })
   } else if (isPublicOnly && authStore.isAuthenticated) {

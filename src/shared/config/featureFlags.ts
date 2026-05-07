@@ -73,6 +73,7 @@ export const featureFlags = {
    * Priority: localStorage -> remoteConfig (VITE_FF_SERVICE_X) -> Global profile -> Default
    */
   async getServiceUrl(service: string): Promise<string> {
+    console.log(`--------------->${service}`)
     const config = getRemoteConfig()
     const envKey = `VITE_FF_SERVICE_${service.toUpperCase()}`
     const storageKey = `ff_service_${service.toLowerCase()}`
@@ -93,6 +94,7 @@ export const featureFlags = {
     } else {
       baseUrl = config.VITE_API_BASE_URL || SERVICE_URLS.dev
     }
+
 
     return baseUrl.replace(/\/$/, '') + '/'
   },

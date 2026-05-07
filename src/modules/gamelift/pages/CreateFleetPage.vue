@@ -47,15 +47,17 @@ async function handleSubmit() {
         try { manifest = JSON.parse(manifestText) } catch { throw new Error('Invalid package: game.json is malformed JSON') }
         uploadProgress.value = 40
         uploadStatus.value = 'Requesting presigned upload URL...'
-        const initData = await initUpload({ game_name: form.value.game_name, vm_id: form.value.vm_id, manifest })
+        const initData = await initUpload(  { game_name: form.value.game_name, vm_id: form.value.vm_id, manifest })
         uploadProgress.value = 60
-        const finalUrl = initData.upload_url || initData.url
+        console.log('Received upload data:', initData)
+        const finalUrl = initData
         if (!finalUrl) throw new Error('Server did not return a valid upload URL.')
         uploadStatus.value = 'Uploading package to Hyper Storage...'
-        await uploadToS3(finalUrl, selectedFile.value!)
+        await uploadToS3(finalUrl.replace('/api/v1', ''), selectedFile.value!)
         uploadProgress.value = 100
         successData.value = initData
     } catch (err: any) {
+        console.log(err.message)
         error.value = err.message || 'An error occurred during upload.'
         uploadProgress.value = 0
     } finally { loading.value = false; uploadStatus.value = '' }

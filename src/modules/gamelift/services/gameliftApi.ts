@@ -15,7 +15,7 @@ export async function initUpload(gameData: {
   console.log('[initUpload] → POST /gamelift/games/init-upload | payload:', JSON.stringify(gameData, null, 2))
   const res = await apiClient.post('/gamelift/games/init-upload', gameData)
   console.log('[initUpload] ← status:', res.status, '| raw res.data:', res.data)
-  const uploadURL = res.data.upload_url as string
+  const uploadURL = res.data as string
   console.log('[initUpload] ← upload_url extracted:', uploadURL)
   return uploadURL
 }
@@ -28,12 +28,7 @@ export async function uploadToS3(url: string, file: File) {
 
   let res
   try {
-    res = await apiClient.put(url, file, {
-      headers: { 'Content-Type': 'application/octet-stream' },
-      onUploadProgress: (e) => {
-        console.log(`[uploadToS3]   progress: ${e.loaded} / ${e.total} bytes`)
-      },
-    })
+    res = await apiClient.put(url, file)
   } catch (err: any) {
     console.error('[uploadToS3] ✗ request failed')
     console.error('[uploadToS3]   error message:', err.message)

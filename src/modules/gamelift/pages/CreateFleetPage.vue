@@ -49,11 +49,11 @@ async function handleSubmit() {
         uploadStatus.value = 'Requesting presigned upload URL...'
         const initData = await initUpload(  { game_name: form.value.game_name, vm_id: form.value.vm_id, manifest })
         uploadProgress.value = 60
-        console.log('Received upload data:', initData)
+        console.log('Received upload data:', initData.upload_url)
         const finalUrl = initData
         if (!finalUrl) throw new Error('Server did not return a valid upload URL.')
         uploadStatus.value = 'Uploading package to Hyper Storage...'
-        await uploadToS3(finalUrl.replace('/api/v1', ''), selectedFile.value!)
+        await uploadToS3(finalUrl.upload_url.replace('/api/v1', ''), selectedFile.value!)
         uploadProgress.value = 100
         successData.value = initData
     } catch (err: any) {

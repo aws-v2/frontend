@@ -92,9 +92,10 @@ jobs:
               --name frontend-server \
               --network aws-staging-network \
               -e API_GATEWAY_HOST=api-gateway-staging \
+              -e API_GATEWAY_HOST2=api-gateway-staging-2 \
               -v /opt/frontend/config-staging.json:/usr/share/nginx/html/config.json:ro \
               -p 5173:80 \
-              qarani/frontend-server:staging
+              qarani/frontend-server:stagingqarani/frontend-server:staging
 
 
   staging-open-pr-to-main:

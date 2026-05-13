@@ -179,7 +179,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function verifyEmail(token: string) {
     try {
       loading.value = true
-      const response = await apiClient.get('auth/verify-email', { params: { token } })
+      const response = await apiClient.get('/auth/verify-email', { params: { token } })
       if (user.value) {
         user.value.emailVerified = true
       }
@@ -196,9 +196,11 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       loading.value = true
       // Simulating real API call
-      const response = await apiClient.get('auth/me')
-      user.value = response.data
-      return response.data
+      const response = await apiClient.get('/auth/me')
+      user.value = response.data.data
+      console.log(response.data.data)
+      return response.data.data
+
     } catch (error) {
       console.error('Failed to fetch user profile:', error)
       // Fallback/Mock for local dev if 404

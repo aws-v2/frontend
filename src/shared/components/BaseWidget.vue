@@ -3,6 +3,8 @@ defineProps<{
     title: string
     showInfo?: boolean
 }>()
+
+defineEmits(['info-click'])
 </script>
 
 <template>
@@ -14,7 +16,10 @@ defineProps<{
                 <h3 class="text-[11px] font-black text-[#232f3e] uppercase tracking-[0.2em]">
                     {{ title }}
                 </h3>
-                <span v-if="showInfo" class="text-[#879196] hover:text-[#ff9900] cursor-pointer transition-colors p-1">
+                <span v-if="showInfo" 
+                    @click="$emit('info-click')"
+                    class="text-[#879196] hover:text-[#ff9900] cursor-pointer transition-colors p-1"
+                >
                     <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                             d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -22,7 +27,10 @@ defineProps<{
                 </span>
             </div>
 
-            <button class="p-1.5 text-[#879196] hover:text-[#232f3e] hover:bg-[#eaeded] transition-all">
+            <div v-if="$slots.actions" class="flex items-center">
+                <slot name="actions" />
+            </div>
+            <button v-else class="p-1.5 text-[#879196] hover:text-[#232f3e] hover:bg-[#eaeded] transition-all">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                         d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />

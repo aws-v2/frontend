@@ -36,7 +36,7 @@ onMounted(async () => {
   // Test backend availability
   try {
     const healthCheckUrl = `/ec2/instances/${instanceId}/health` // Hypothical check
-    console.log('[Terminal] Testing backend connectivity via:', healthCheckUrl)
+    console.log('[Terminal] Testihostng backend connectivity via:', healthCheckUrl)
     // We don't await here to not block UI, just log the attempt
   } catch (e) {
     console.warn('[Terminal] Backend connectivity test failed (expected if not implemented)')
@@ -44,6 +44,17 @@ onMounted(async () => {
 
   initTerminal()
 })
+
+
+
+
+
+
+
+
+
+
+
 
 let socket: WebSocket | null = null
 
@@ -79,9 +90,9 @@ const initTerminal = () => {
   
   // Initialize WebSocket
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-  const host = 'localhost:8080' // Direct connection to EC2 service (bypassing gateway)
+  const host =`localhost:${9030}` // Direct connection to EC2 service (bypassing gateway)
   const token = authStore.token
-  const wsUrl = `${protocol}//${host}/api/v1/ec2/instances/${instanceId}/terminal?token=${token}`
+  const wsUrl = `ws://localhost:8080/api/v1/ec2/instances/${instanceId}/terminal?token=${token}`
   
   console.log('[Terminal] Handshake initiated at:', `${protocol}//${host}/api/v1/ec2/instances/${instanceId}/terminal?token=***`)
   

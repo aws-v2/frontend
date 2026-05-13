@@ -3,9 +3,21 @@ import { onMounted, ref } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useApiKeyStore, type ApiKeyResponse } from '@/modules/account/store/apiKeyStore'
 import BaseWidget from '@/shared/components/BaseWidget.vue'
+import { useToastStore } from '@/shared/store/toastStore'
  
 const authStore  = useAuthStore()
 const apiKeyStore = useApiKeyStore()
+const toastStore = useToastStore()
+
+const handleRequestVerification = async () => {
+    try {
+        await authStore.verifyEmail(authStore.user.verificationToken)
+        toastStore.addToast('Verification email has been sent to your inbox.', 'success')
+    } catch (err: any) {
+        console.log(`this is the error ${err.response}`)
+        toastStore.addToast(err.response?.data?.message || 'Failed to send verification email.', 'error')
+    }
+}
  
 const showCreateModal        = ref(false)
 const showRevealModal        = ref(false)
@@ -122,8 +134,22 @@ const copyToClipboard = (text: string) => navigator.clipboard.writeText(text)
                             <p class="text-[#545b64] font-bold tracking-widest uppercase text-xs mb-4">{{ authStore.email }}</p>
                             <div class="flex flex-wrap gap-4">
                                 <div class="px-3 py-1 bg-[#232f3e] text-white text-[9px] font-black uppercase tracking-widest">Enterprise Tier</div>
+                                <div v-if="authStore.emailVerified" class="px-3 py-1 border-2 border-emerald-100 bg-emerald-50 text-emerald-600 text-[9px] font-black uppercase tracking-widest flex items-center gap-1.5">
+                                    <span class="w-2 h-2 bg-emerald-500 rounded-full"></span>
+                                    Identity Verified
+                                </div>
+                                <button 
+                                    v-else 
+                                    @click="handleRequestVerification"
+                                    :disabled="apiKeyStore.loading"
+                                    class="px-3 py-1 border-2 border-red-200 bg-red-50 text-red-600 text-[9px] font-black uppercase tracking-widest hover:bg-red-100 transition-all flex items-center gap-1.5 shadow-[2px_2px_0px_#dc2626] disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                    <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                                    Verify Emailq
+                                    {{ authStore.emailVerified }}
+                                </button>
                                 <div class="px-3 py-1 border-2 border-[#eaeded] text-[#879196] text-[9px] font-black uppercase tracking-widest">
-                                    Joined {{ authStore.user?.joinedAt || '2026' }}
+                                    Joined {{ authStore.user?.createdAt || '2026' }}
                                 </div>
                             </div>
                         </div>
@@ -132,56 +158,60 @@ const copyToClipboard = (text: string) => navigator.clipboard.writeText(text)
  
                 <!-- API Keys Widget -->
                 <BaseWidget title="API Access Keys" show-info @info-click="() => {}">
- 
+
                     <template #actions>
-                        <div class="relative">
-                            <!-- Trigger -->
+                        <div class="flex items-center gap-3">
                             <button
-                                @click="toggleMenu"
-                               @blur="closeDotsMenu"
-                                class="w-8 h-8 flex items-center justify-center border-2 border-[#eaeded] hover:border-[#232f3e] hover:bg-[#232f3e] text-[#879196] hover:text-white transition-all"
-                                title="Key options"
+                                @click="openCreateModal"
+                                :disabled="!authStore.emailVerified"
+                                :title="!authStore.emailVerified ? 'Verification required' : ''"
+                                class="px-4 py-1.5 bg-[#232f3e] text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#ff9900] transition-all flex items-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#232f3e]"
                             >
-                                <span class="flex flex-col gap-[3px] items-center justify-center">
-                                    <span class="w-[3px] h-[3px] rounded-full bg-current" />
-                                    <span class="w-[3px] h-[3px] rounded-full bg-current" />
-                                    <span class="w-[3px] h-[3px] rounded-full bg-current" />
-                                </span>
+                                <span class="text-sm font-black leading-none">+</span>
+                                Create Key
                             </button>
- 
-                            <!-- Dropdown — teleported to body to escape any overflow:hidden parent -->
-                            <Teleport to="body">
-                                <Transition
-                                    enter-active-class="transition-all duration-150 ease-out"
-                                    enter-from-class="opacity-0 translate-y-1"
-                                    enter-to-class="opacity-100 translate-y-0"
-                                    leave-active-class="transition-all duration-100 ease-in"
-                                    leave-from-class="opacity-100 translate-y-0"
-                                    leave-to-class="opacity-0 translate-y-1"
+                            
+                            <div class="relative">
+                                <!-- Trigger -->
+                                <button
+                                    @click="toggleMenu"
+                                    @blur="closeDotsMenu"
+                                    class="w-8 h-8 flex items-center justify-center border-2 border-[#eaeded] hover:border-[#232f3e] hover:bg-[#232f3e] text-[#879196] hover:text-white transition-all"
+                                    title="Key options"
                                 >
-                                    <div
-                                        v-if="showDotsMenu"
-                                        class="fixed z-[9999] w-48 bg-white border-2 border-[#232f3e] shadow-[4px_4px_0px_#232f3e]"
-                                        :style="menuStyle"
+                                    <span class="flex flex-col gap-[3px] items-center justify-center">
+                                        <span class="w-[3px] h-[3px] rounded-full bg-current" />
+                                        <span class="w-[3px] h-[3px] rounded-full bg-current" />
+                                        <span class="w-[3px] h-[3px] rounded-full bg-current" />
+                                    </span>
+                                </button>
+    
+                                <!-- Dropdown — teleported to body to escape any overflow:hidden parent -->
+                                <Teleport to="body">
+                                    <Transition
+                                        enter-active-class="transition-all duration-150 ease-out"
+                                        enter-from-class="opacity-0 translate-y-1"
+                                        enter-to-class="opacity-100 translate-y-0"
+                                        leave-active-class="transition-all duration-100 ease-in"
+                                        leave-from-class="opacity-100 translate-y-0"
+                                        leave-to-class="opacity-0 translate-y-1"
                                     >
-                                        <button
-                                            @mousedown.prevent="openCreateModal"
-                                            class="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#232f3e] hover:bg-[#ff9900] hover:text-white transition-colors text-left"
+                                        <div
+                                            v-if="showDotsMenu"
+                                            class="fixed z-[9999] w-48 bg-white border-2 border-[#232f3e] shadow-[4px_4px_0px_#232f3e]"
+                                            :style="menuStyle"
                                         >
-                                            <span class="w-4 h-4 flex items-center justify-center border-2 border-current text-[10px] font-black leading-none">+</span>
-                                            Create New Key
-                                        </button>
-                                        <div class="border-t border-[#eaeded]" />
-                                        <button
-                                            @mousedown.prevent="apiKeyStore.listApiKeys(); showDotsMenu = false"
-                                            class="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#879196] hover:bg-[#fafafa] transition-colors text-left"
-                                        >
-                                            <span class="w-4 h-4 flex items-center justify-center border-2 border-current text-[10px] font-black leading-none">↻</span>
-                                            Refresh
-                                        </button>
-                                    </div>
-                                </Transition>
-                            </Teleport>
+                                            <button
+                                                @mousedown.prevent="apiKeyStore.listApiKeys(); showDotsMenu = false"
+                                                class="w-full flex items-center gap-3 px-4 py-3 text-[10px] font-black uppercase tracking-widest text-[#232f3e] hover:bg-[#ff9900] hover:text-white transition-colors text-left"
+                                            >
+                                                <span class="w-4 h-4 flex items-center justify-center border-2 border-current text-[10px] font-black leading-none">↻</span>
+                                                Refresh Registry
+                                            </button>
+                                        </div>
+                                    </Transition>
+                                </Teleport>
+                            </div>
                         </div>
                     </template>
  

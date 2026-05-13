@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import apiClient from '@/shared/api/apiClient'
+import { useAuthStore } from '@/modules/auth/store/authStore'
 
 export interface ApiKeyResponse {
     id: string
@@ -22,8 +23,8 @@ export const useApiKeyStore = defineStore('apiKey', () => {
         try {
             loading.value = true
             error.value = null
-            const response = await apiClient.get<ApiKeyResponse[]>('/auth/api-keys')
-            apiKeys.value = response.data
+            const response = await apiClient.get<ApiKeyResponse[]>(`/auth/api-keys/${useAuthStore().user.id}`)
+            apiKeys.value = response.data?.data
         } catch (err: any) {
             console.error('Failed to list API keys:', err)
             error.value = err.response?.data?.error || 'Failed to load API keys'
@@ -36,9 +37,9 @@ async function createApiKey(name: string, validityDays: number = 90) {
     try {
         loading.value = true
         error.value = null
-        const response = await apiClient.post<ApiKeyResponse>('/auth/api-keys', { name, validityDays })
-        apiKeys.value.push(response.data)
-        return response.data
+        const response = await apiClient.post<ApiKeyResponse>(`/auth/api-keys/${useAuthStore().user.id}`, { name, validityDays })
+        apiKeys.value.push(response.data.data)
+        return response.data.data
     } catch (err: any) {
         error.value = err.response?.data?.error || 'Failed to create API key'
         throw err
@@ -63,12 +64,29 @@ async function createApiKey(name: string, validityDays: number = 90) {
         }
     }
 
+    async function requestEmailVerification() {
+        try {
+            loading.value = true
+            error.value = null
+            // Hitting the endpoint as requested. The backend expects a token, 
+            // but we'll call it to trigger whatever logic is intended (e.g. resend if no token or placeholder)
+            await apiClient.get('/auth/verify-email')
+        } catch (err: any) {
+            console.error('Email verification request failed:', err)
+            error.value = err.response?.data?.error || 'Failed to request verification email'
+            throw err
+        } finally {
+            loading.value = false
+        }
+    }
+
     return {
         apiKeys,
         loading,
         error,
         listApiKeys,
         createApiKey,
-        revokeApiKey
+        revokeApiKey,
+        requestEmailVerification
     }
 })

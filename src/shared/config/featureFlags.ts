@@ -68,12 +68,8 @@ async function resolveStagingUrl(): Promise<string> {
 }
 
 export const featureFlags = {
-  /**
-   * Resolves the base URL for a service.
-   * Priority: localStorage -> remoteConfig (VITE_FF_SERVICE_X) -> Global profile -> Default
-   */
+  
   async getServiceUrl(service: string): Promise<string> {
-    console.log(`--------------->${service}`)
     const config = getRemoteConfig()
     const envKey = `VITE_FF_SERVICE_${service.toUpperCase()}`
     const storageKey = `ff_service_${service.toLowerCase()}`

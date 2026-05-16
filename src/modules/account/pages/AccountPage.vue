@@ -248,7 +248,22 @@ const copyToClipboard = (text: string) => navigator.clipboard.writeText(text)
                                     class="border-b border-[#eaeded] hover:bg-[#fafafa] transition-colors"
                                 >
                                     <td class="px-8 py-5 text-xs font-black text-[#232f3e]">{{ key.name }}</td>
-                                    <td class="px-8 py-5 text-xs font-mono text-[#545b64]">{{ key.accessKeyId }}</td>
+                                  <td class="px-8 py-5 text-xs font-mono text-[#545b64]">
+    <div class="flex items-center gap-2">
+        <span class="block max-w-[160px] truncate" :title="key.apiKey">
+            {{ key.apiKey }}
+        </span>
+        <button
+            @click="copyToClipboard(key.apiKey)"
+            class="shrink-0 text-[#879196] hover:text-[#232f3e] transition-colors"
+            title="Copy"
+        >
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+        </button>
+    </div>
+</td>
                                     <td class="px-8 py-5 text-xs font-bold text-[#545b64] italic">
                                         {{ new Date(key.createdAt).toLocaleDateString() }}
                                     </td>
@@ -509,8 +524,8 @@ const copyToClipboard = (text: string) => navigator.clipboard.writeText(text)
                 <div>
                     <p class="text-[10px] font-black uppercase tracking-widest text-[#879196] mb-2">Access Key ID</p>
                     <div class="flex items-center gap-2 border-2 border-[#eaeded] px-4 py-3">
-                        <span class="flex-1 font-mono text-xs text-[#232f3e] truncate">{{ createdKey.accessKeyId }}</span>
-                        <button @click="copyToClipboard(createdKey!.accessKeyId)"
+                        <span class="flex-1 font-mono text-xs text-[#232f3e] truncate">{{ createdKey.datat }}</span>
+                        <button @click="copyToClipboard(createdKey!.data)"
                             class="text-[9px] font-black uppercase tracking-widest text-[#ff9900] hover:text-[#232f3e] transition-colors shrink-0">
                             Copy
                         </button>
@@ -520,8 +535,8 @@ const copyToClipboard = (text: string) => navigator.clipboard.writeText(text)
                 <div>
                     <p class="text-[10px] font-black uppercase tracking-widest text-[#879196] mb-2">Secret Key</p>
                     <div class="flex items-center gap-2 border-2 border-[#ff9900] bg-[#ff9900]/5 px-4 py-3">
-                        <span class="flex-1 font-mono text-xs text-[#232f3e] break-all">{{ createdKey.secretKey }}</span>
-                        <button @click="copyToClipboard(createdKey.secretKey)"
+                        <span class="flex-1 font-mono text-xs text-[#232f3e] break-all">{{ createdKey.data }}</span>
+                        <button @click="copyToClipboard(createdKey.data)"
                             class="text-[9px] font-black uppercase tracking-widest text-[#ff9900] hover:text-[#232f3e] transition-colors shrink-0">
                             Copy
                         </button>

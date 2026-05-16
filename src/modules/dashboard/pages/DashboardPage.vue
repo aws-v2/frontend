@@ -6,6 +6,7 @@ import BaseWidget from '@/shared/components/BaseWidget.vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useComputeStore } from '@/modules/compute/store/computeStore'
 import { useS3Store } from '@/modules/s3/store/s3Store'
+import apiClient from '@/shared/api/apiClient'
 
 const authStore = useAuthStore()
 const computeStore = useComputeStore()
@@ -82,6 +83,18 @@ const recentActivity = [
 const navigateTo = (path: string) => {
     router.push(path)
 }
+
+const updateAgent = async () => {
+    try {
+        const response = await apiClient.post('/compute/host/update-agent',{
+            version: '1.0.0',
+            sha256: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+        })
+        console.log(response.data)
+    } catch (error) {
+        console.error(error)
+    }
+}
 </script>
 
 <template>
@@ -111,6 +124,14 @@ const navigateTo = (path: string) => {
                     <button @click="router.push('/docs')"
                         class="px-6 py-3 bg-white border-2 border-[#232f3e] text-[#232f3e] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#232f3e] hover:text-white transition-all transform active:scale-95">
                         Documentation
+                    </button>
+                    <button @click="updateAgent()"
+                        class="px-6 py-3 bg-[#232f3e] text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#1a2530] transition-all transform active:scale-95 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                d="M4 4v6h6M20 20v-6h-6M5.64 18.36A9 9 0 1018.36 5.64" />
+                        </svg>
+                        Update Agent
                     </button>
                     <button @click="isResourceModalOpen = true"
                         class="px-7 py-3 bg-[#ff9900] text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#ec7211] transition-all transform active:scale-95 flex items-center gap-2">

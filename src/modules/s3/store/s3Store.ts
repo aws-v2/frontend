@@ -307,7 +307,7 @@ export const useS3Store = defineStore('s3', () => {
   const fetchFileDetails = async (bucketId: string, objectKey: string) => {
     isLoading.value = true
     try {
-      const response = await apiClient.get<{ code: number; message: string; data: S3Object }>(`/s3/files/${bucketId}/${objectKey}`)
+      const response = await apiClient.get<{ code: number; message: string; data: S3Object }>(`/s3/files/${bucketId}/files/${objectKey}`)
       currentFile.value = response.data?.data || (response.data as any) || null
     } catch (error) {
       console.error(`Failed to fetch file details for ${objectKey} in bucket ${bucketId}:`, error)

@@ -84,15 +84,25 @@ const navigateTo = (path: string) => {
     router.push(path)
 }
 
+
+const showUpdateModal = ref(false)
+const updateForm = ref({  sha256: '', file_name: '' })
+const updating = ref(false)
+
 const updateAgent = async () => {
+    updating.value = true
     try {
-        const response = await apiClient.post('/compute/host/update-agent',{
-            version: '1.0.0',
-            sha256: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+        const response = await apiClient.post('/compute/host/update-agent', {
+            sha256:    updateForm.value.sha256,
+            file_name: updateForm.value.file_name,
         })
         console.log(response.data)
+        showUpdateModal.value = false
+        updateForm.value = {  sha256: '', file_name: '' }
     } catch (error) {
         console.error(error)
+    } finally {
+        updating.value = false
     }
 }
 </script>
@@ -125,14 +135,84 @@ const updateAgent = async () => {
                         class="px-6 py-3 bg-white border-2 border-[#232f3e] text-[#232f3e] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#232f3e] hover:text-white transition-all transform active:scale-95">
                         Documentation
                     </button>
-                    <button @click="updateAgent()"
-                        class="px-6 py-3 bg-[#232f3e] text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#1a2530] transition-all transform active:scale-95 flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                                d="M4 4v6h6M20 20v-6h-6M5.64 18.36A9 9 0 1018.36 5.64" />
-                        </svg>
-                        Update Agent
-                    </button>
+                   <button @click="showUpdateModal = true"
+            class="px-6 py-3 bg-[#232f3e] text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#1a2530] transition-all transform active:scale-95 flex items-center gap-2">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                    d="M4 4v6h6M20 20v-6h-6M5.64 18.36A9 9 0 1018.36 5.64" />
+            </svg>
+            Update Agent
+        </button>
+                    
+
+
+
+ <!-- Modal -->
+        <Teleport to="body">
+            <Transition name="fade">
+                <div v-if="showUpdateModal"
+                    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                    @click.self="showUpdateModal = false">
+
+                    <div class="bg-white w-full max-w-md mx-4 shadow-2xl border border-[#232f3e]/10">
+                        <!-- Header -->
+                        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                            <div>
+                                <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#ff9900]">System</p>
+                                <h2 class="text-[#232f3e] font-black text-lg uppercase tracking-wide">Update Agent</h2>
+                            </div>
+                            <button @click="showUpdateModal = false"
+                                class="text-[#545b64] hover:text-[#232f3e] transition-colors">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
+
+                        <!-- Fields -->
+                        <div class="px-6 py-5 space-y-4">
+                             
+                            <div>
+                                <label class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
+                                    File Name
+                                </label>
+                                <input v-model="updateForm.file_name" type="text" placeholder="e.g. agent-v1.0.3"
+                                    class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-medium focus:outline-none focus:border-[#ff9900] transition-colors" />
+                            </div>
+                            <div>
+                                <label class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
+                                    SHA256
+                                </label>
+                                <input v-model="updateForm.sha256" type="text" placeholder="64-char hex hash"
+                                    class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-mono focus:outline-none focus:border-[#ff9900] transition-colors" />
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex gap-3 px-6 pb-6">
+                            <button @click="showUpdateModal = false"
+                                class="flex-1 px-4 py-3 border-2 border-[#232f3e] text-[#232f3e] text-[9px] font-black uppercase tracking-[0.18em] hover:bg-gray-50 transition-all">
+                                Cancel
+                            </button>
+                            <button @click="updateAgent"
+                                :disabled=" !updateForm.file_name || updating"
+                                class="flex-1 px-4 py-3 bg-[#232f3e] text-white text-[9px] font-black uppercase tracking-[0.18em] hover:bg-[#1a2530] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                <svg v-if="updating" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                                </svg>
+                                {{ updating ? 'Pushing...' : 'Push Update' }}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </Transition>
+        </Teleport>
+
+
+
+
+
                     <button @click="isResourceModalOpen = true"
                         class="px-7 py-3 bg-[#ff9900] text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#ec7211] transition-all transform active:scale-95 flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">

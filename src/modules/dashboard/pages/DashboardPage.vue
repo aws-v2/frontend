@@ -88,7 +88,8 @@ const updateAgent = async () => {
     try {
         const response = await apiClient.post('/compute/host/update-agent',{
             version: '1.0.0',
-            sha256: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef'
+            sha256: '1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef',
+            file_name:'agent-f4b0d3a'
         })
         console.log(response.data)
     } catch (error) {

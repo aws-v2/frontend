@@ -29,40 +29,101 @@ function handleFileChange(event: Event) {
     selectedFile.value = file; error.value = ''
 }
 
+async function calculateSHA256(file: File): Promise<string> {
+    const arrayBuffer = await file.arrayBuffer();
+    const hashBuffer = await crypto.subtle.digest('SHA-256', arrayBuffer);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
 async function handleSubmit() {
     if (!form.value.game_name || !form.value.vm_id || !selectedFile.value) {
         error.value = 'Please fill in all fields and select a package file.'
         return
     }
-    loading.value = true; error.value = ''; uploadProgress.value = 10
+
+    loading.value = true
+    error.value = ''
+    uploadProgress.value = 5
+
     try {
+        uploadStatus.value = 'Calculating package integrity (SHA256)...'
+
+        const sha256 = await calculateSHA256(selectedFile.value)
+
+        uploadProgress.value = 15
+
         uploadStatus.value = 'Inspecting package manifest...'
+
         const jszip = new JSZip()
         const zipContent = await jszip.loadAsync(selectedFile.value)
+
         uploadProgress.value = 25
+
         const manifestFile = zipContent.file('game.json')
-        if (!manifestFile) throw new Error('Invalid package: Missing game.json in the ZIP root')
+
+        if (!manifestFile) {
+            throw new Error('Invalid package: Missing game.json in the ZIP root')
+        }
+
         const manifestText = await manifestFile.async('text')
+
         let manifest: object
-        try { manifest = JSON.parse(manifestText) } catch { throw new Error('Invalid package: game.json is malformed JSON') }
+
+        try {
+            manifest = JSON.parse(manifestText)
+        } catch {
+            throw new Error('Invalid package: game.json is malformed JSON')
+        }
+
         uploadProgress.value = 40
+
         uploadStatus.value = 'Requesting presigned upload URL...'
-        const initData = await initUpload(  { game_name: form.value.game_name, vm_id: form.value.vm_id, manifest })
+
+        // ✅ CREATE MULTIPART FORM DATA
+        const formData = new FormData()
+
+        formData.append('game_name', form.value.game_name)
+        formData.append('vm_id', form.value.vm_id)
+        formData.append('sha256', sha256)
+        formData.append('package_name', selectedFile.value.name)
+        formData.append('manifest', JSON.stringify(manifest))
+
+        // ✅ THIS IS THE IMPORTANT PART
+        formData.append('file', selectedFile.value)
+
+        const initData = await initUpload(formData)
+
         uploadProgress.value = 60
-        console.log('Received upload data:', initData.upload_url)
-        const finalUrl = initData
-        if (!finalUrl) throw new Error('Server did not return a valid upload URL.')
+
+        console.log('Received upload data:', initData)
+
+        if (!initData?.upload_url) {
+            throw new Error('Server did not return a valid upload URL.')
+        }
+
         uploadStatus.value = 'Uploading package to Hyper Storage...'
-        await uploadToS3(finalUrl.upload_url.replace('/api/v1', ''), selectedFile.value!)
+
+        await uploadToS3(
+            initData.upload_url.replace('/api/v1', ''),
+            selectedFile.value
+        )
+
         uploadProgress.value = 100
+
         successData.value = initData
+
     } catch (err: any) {
         console.log(err.message)
-        error.value = err.message || 'An error occurred during upload.'
-        uploadProgress.value = 0
-    } finally { loading.value = false; uploadStatus.value = '' }
-}
 
+        error.value = err.message || 'An error occurred during upload.'
+
+        uploadProgress.value = 0
+    } finally {
+        loading.value = false
+        uploadStatus.value = ''
+    }
+}
 function resetForm() {
     successData.value = null; form.value.game_name = ''; form.value.vm_id = ''
     selectedFile.value = null; uploadProgress.value = 0; error.value = ''

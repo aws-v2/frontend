@@ -15,7 +15,12 @@ export interface DocManifest {
     service: string;
     version?: string;
     categories: DocCategory[];
-    isInternal: boolean;
+}
+
+// The backend now returns a map of manifests based on authorization
+export interface UnifiedManifestResponse {
+    public: DocManifest;
+    internal?: DocManifest;
 }
 
 export interface DocResponse {
@@ -54,7 +59,7 @@ function decodeJWTPayload(token: string): Record<string, any> | null {
     try {
         const parts = token.split('.');
         if (parts.length < 2 || !parts[1]) return null;
-        const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/'); // Ensure valid base64
+        const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
         const padded = base64.padEnd(base64.length + (4 - (base64.length % 4)) % 4, '=');
         return JSON.parse(atob(padded));
     } catch {
@@ -77,8 +82,8 @@ function getToken(): string | null {
 
 export const useDocsStore = defineStore('docs', {
     state: () => ({
-        // Unified Manifest Store: Contains processed categories (Public + Internal if Admin)
-        manifests: {} as Record<string, DocManifest>,
+        // Stores nested manifests per service: { gamelift: { public: ..., internal: ... } }
+        manifests: {} as Record<string, UnifiedManifestResponse>,
         manifestErrors: {} as Record<string, string>,
 
         currentDoc: null as DocResponse | null,
@@ -113,19 +118,19 @@ export const useDocsStore = defineStore('docs', {
         async fetchAllManifests() {
             this.loading = true;
             this.userRole = getRoleFromToken();
-            const token = getToken();
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
 
             const fetches = Object.entries(SERVICE_REGISTRY).map(async ([service, basePath]) => {
                 try {
-                    // Unified endpoint: one call, returns what you are allowed to see
-                    const response = await apiClient.get(`${basePath}/docs`, { headers });
+                    // One call to get all authorized manifest scopes for this service
+                    // The backend returns { data: { public: {...}, internal: {...} } }
+                    // apiClient interceptor handles Authorization header
+                    const response = await apiClient.get(`${basePath}/docs`);
                     if (response.data?.data) {
                         this.manifests[service] = response.data.data;
                     }
                 } catch (err: any) {
                     const status = err?.response?.status;
-                    this.manifestErrors[service] = status === 404 ? 'Service has no docs.' : 'Unreachable.';
+                    this.manifestErrors[service] = status === 404 ? 'No documentation found.' : 'Unreachable.';
                 }
             });
 
@@ -133,7 +138,7 @@ export const useDocsStore = defineStore('docs', {
             this.loading = false;
         },
 
-        // ── Unified Doc Fetching: No more "internal" flag needed in local calls ────
+        // ── Unified Doc Fetching: Access is handled by the backend ────
         async fetchDocContent(service: string, slug: string) {
             this.loading = true;
             this.error = null;
@@ -147,19 +152,17 @@ export const useDocsStore = defineStore('docs', {
                 return;
             }
 
-            const token = getToken();
-            const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
             try {
-                // Single unified path: /api/v1/[service]/docs/[slug]
-                const response = await apiClient.get(`${basePath}/docs/${slug}`, { headers });
+                // The backend checks both public and internal folders based on your JWT role
+                // apiClient interceptor handles Authorization header
+                const response = await apiClient.get(`${basePath}/docs/${slug}`);
                 if (response.data?.data) {
                     this.currentDoc = response.data.data;
                 }
             } catch (err: any) {
                 const status = err?.response?.status;
                 if (status === 401 || status === 403) {
-                    this.error = "Unauthorized: Admin privileges required.";
+                    this.error = "Unauthorized: Access denied.";
                 } else if (status === 404) {
                     this.error = "Document not found.";
                 } else {

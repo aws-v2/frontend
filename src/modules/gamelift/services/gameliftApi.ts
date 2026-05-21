@@ -1,58 +1,227 @@
 import apiClient from '@/shared/api/apiClient'
+import { baseLogger } from '@/shared/config/logger'
 
+/**
+ * Small helper to time requests consistently
+ */
+function startTimer(label: string) {
+  const start = Date.now()
+  return {
+    end: (meta?: Record<string, any>) => {
+      const duration = Date.now() - start
+      baseLogger.info(`[${label}] completed`, {
+        duration_ms: duration,
+        ...meta,
+      })
+    },
+  }
+}
+
+/**
+ * Fetch all games
+ */
 export async function fetchGames() {
-  console.log('[fetchGames] → GET /gamelift/games')
-  const res = await apiClient.get('/gamelift/games')
-  console.log('[fetchGames] ← status:', res.status, '| data:', res.data)
-  return res.data
-}
+  const timer = startTimer('fetchGames')
 
-export async function initUpload(gameData: {
-  game_name: string
-  vm_id: string
-  manifest: object
-}) {
-  console.log('[initUpload] → POST /gamelift/games/init-upload | payload:', JSON.stringify(gameData, null, 2))
-  const res = await apiClient.post('/gamelift/games/init-upload', gameData)
-  console.log('[initUpload] ← status:', res.status, '| raw res.data:', res.data)
-  const uploadURL = res.data as string
-  console.log('[initUpload] ← upload_url extracted:', uploadURL)
-  return uploadURL
-}
+  baseLogger.info('[fetchGames] request started', {
+    method: 'GET',
+    endpoint: '/gamelift/games',
+  })
 
-export async function uploadToS3(url: string, file: File) {
-  console.log('[uploadToS3] → PUT')
-  console.log('[uploadToS3]   url:', url)
-  console.log('[uploadToS3]   url starts with /:', url.startsWith('/'))
-  console.log('[uploadToS3]   file name:', file.name, '| size:', file.size, '| type:', file.type)
-
-  let res
   try {
-    res = await apiClient.put(url, file)
+    const res = await apiClient.get('/gamelift/games')
+
+    baseLogger.info('[fetchGames] response received', {
+      status: res.status,
+      has_data: !!res.data,
+    })
+
+    timer.end({
+      status: res.status,
+    })
+
+    return res.data
   } catch (err: any) {
-    console.error('[uploadToS3] ✗ request failed')
-    console.error('[uploadToS3]   error message:', err.message)
-    console.error('[uploadToS3]   config url:', err.config?.url)
-    console.error('[uploadToS3]   config baseURL:', err.config?.baseURL)
-    console.error('[uploadToS3]   response status:', err.response?.status)
-    console.error('[uploadToS3]   response data:', err.response?.data)
+    baseLogger.error('[fetchGames] request failed', {
+      message: err.message,
+      status: err.response?.status,
+      data: err.response?.data,
+    })
     throw err
   }
-
-  console.log('[uploadToS3] ← status:', res.status, '| data:', res.data)
-  return res
 }
 
+/**
+ * Init upload session (GameLift → Storage Service via backend)
+ */
+export async function initUpload(formData: FormData) {
+  const timer = startTimer('initUpload')
+
+  baseLogger.info('[initUpload] request started', {
+    endpoint: '/gamelift/games/init-upload',
+    game_name: formData.get('game_name'),
+    vm_id: formData.get('vm_id'),
+    package_name: formData.get('package_name'),
+    has_file: !!formData.get('file'),
+  })
+
+  try {
+    const res = await apiClient.post(
+      '/gamelift/games/init-upload',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    )
+
+    // 🔥 FULL RESPONSE LOG
+    baseLogger.info('[initUpload] raw response received', {
+      status: res.status,
+      data: res.data,
+    })
+
+    const result = res.data as {
+      game_id: string
+      upload_url: string
+      object_key: string
+      sha256_hint?: string
+    }
+
+    timer.end({
+      status: res.status,
+      game_id: result.game_id,
+      object_key: result.object_key,
+    })
+
+    baseLogger.info('[initUpload] upload metadata received', {
+      game_id: result.game_id,
+      object_key: result.object_key,
+      upload_url: result.upload_url,
+      sha256_hint: result.sha256_hint,
+    })
+
+    return result
+  } catch (err: any) {
+    baseLogger.error('[initUpload] request failed', {
+      message: err.message,
+      status: err.response?.status,
+      data: err.response?.data,
+    })
+
+    throw err
+  }
+}
+/**
+ * Direct upload to S3 / object storage via presigned URL
+ */
+export async function uploadToS3(url: string, file: File) {
+  const timer = startTimer('uploadToS3')
+
+  baseLogger.info('[uploadToS3] upload started', {
+    url,
+    file_name: file.name,
+    file_size: file.size,
+    file_type: file.type,
+  })
+
+  try {
+    const res = await apiClient.put(url, file, {
+      headers: {
+        'Content-Type': file.type || 'application/octet-stream',
+      },
+      // important for presigned URLs (avoid interceptors modifying request)
+      transformRequest: [(data) => data],
+    })
+
+    baseLogger.info('[uploadToS3] upload successful', {
+      status: res.status,
+    })
+
+    timer.end({
+      status: res.status,
+      file_size: file.size,
+    })
+
+    return res
+  } catch (err: any) {
+    baseLogger.error('[uploadToS3] upload failed', {
+      message: err.message,
+      url,
+      file_name: file.name,
+      status: err.response?.status,
+      response_data: err.response?.data,
+    })
+
+    throw err
+  }
+}
+
+/**
+ * Fetch game manifest (CAS-ready metadata)
+ */
 export async function fetchGameManifest(gameId: string) {
-  console.log(`[fetchGameManifest] → GET /gamelift/games/${gameId}/manifest`)
-  const res = await apiClient.get(`/gamelift/games/${gameId}/manifest`)
-  console.log('[fetchGameManifest] ← status:', res.status, '| data:', res.data)
-  return res.data.data
+  const timer = startTimer('fetchGameManifest')
+
+  baseLogger.info('[fetchGameManifest] request started', {
+    endpoint: `/gamelift/games/${gameId}/manifest`,
+    game_id: gameId,
+  })
+
+  try {
+    const res = await apiClient.get(`/gamelift/games/${gameId}/manifest`)
+
+    baseLogger.info('[fetchGameManifest] response received', {
+      status: res.status,
+    })
+
+    timer.end({
+      status: res.status,
+      game_id: gameId,
+    })
+
+    return res.data.data
+  } catch (err: any) {
+    baseLogger.error('[fetchGameManifest] request failed', {
+      message: err.message,
+      game_id: gameId,
+      status: err.response?.status,
+    })
+    throw err
+  }
 }
 
+/**
+ * Fetch single game
+ */
 export async function fetchGame(gameId: string) {
-  console.log(`[fetchGame] → GET /gamelift/games/${gameId}`)
-  const res = await apiClient.get(`/gamelift/games/${gameId}`)
-  console.log('[fetchGame] ← status:', res.status, '| data:', res.data)
-  return res.data.data
+  const timer = startTimer('fetchGame')
+
+  baseLogger.info('[fetchGame] request started', {
+    endpoint: `/gamelift/games/${gameId}`,
+    game_id: gameId,
+  })
+
+  try {
+    const res = await apiClient.get(`/gamelift/games/${gameId}`)
+
+    baseLogger.info('[fetchGame] response received', {
+      status: res.status,
+    })
+
+    timer.end({
+      status: res.status,
+      game_id: gameId,
+    })
+
+    return res.data.data
+  } catch (err: any) {
+    baseLogger.error('[fetchGame] request failed', {
+      message: err.message,
+      game_id: gameId,
+      status: err.response?.status,
+    })
+    throw err
+  }
 }

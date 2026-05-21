@@ -2,75 +2,64 @@
 import { onMounted, ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import PublicNavbar from '@/shared/components/PublicNavbar.vue'
+import { useDocsStore } from '../store/docsStore'
+import { BookOpen, ShieldCheck, Search, Database, Server, Cpu, Layers, BarChart3, Settings, Shield, ArrowRight } from 'lucide-vue-next'
 
 const router = useRouter()
+const docsStore = useDocsStore()
 const searchQuery = ref('')
 
-const docs = [
-    {
-        id: 'getting-started',
-        tag: 'Quickstart',
-        title: 'Getting Started',
-        description: 'Launch your first cluster in under 5 minutes with our step-by-step setup guide.',
-        linkText: 'Explore Guide →',
-        route: '/docs/content/intro',
-        status: 'coming-soon'
-    },
-    {
-        id: 'compute',
-        tag: 'Services',
-        title: 'Compute & Lambda',
-        description: 'Detailed documentation for EC2-compatible instances, bare metal nodes, and serverless functions.',
-        linkText: 'View Reference →',
-        route: '/docs/content/compute-overview',
-        status: 'coming-soon'
-    },
-    {
-        id: 'storage',
-        tag: 'Services',
-        title: 'Hyper Storage (S3)',
-        description: 'Learn how to manage object storage buckets, handle migrations, and optimize egress costs.',
-        linkText: 'Learn More →',
-        route: '/docs/content/storage-overview',
-        status: 'active'
-    },
-    {
-        id: 'ai',
-        tag: 'Intelligence',
-        title: 'AI Services',
-        description: 'Build and deploy machine learning models with SageMaker Pro and Serwin AI infrastructure.',
-        linkText: 'Explore AI →',
-        route: '/docs/content/ai-overview',
-        status: 'coming-soon'
-    },
-    {
-        id: 'gaming',
-        tag: 'Workloads',
-        title: 'Gaming & High Performance',
-        description: 'Optimize your multiplayer backend with GameLift and low-latency mesh networking.',
-        linkText: 'View Gaming Docs →',
-        route: '/docs/content/gaming-overview',
-        status: 'coming-soon'
-    },
-    {
-        id: 'api',
-        tag: 'Developers',
-        title: 'API Reference',
-        description: 'Full REST API documentation for programmatic access to all Serwin Systems resources.',
-        linkText: 'Open API Docs →',
-        route: '/docs/api-reference',
-        status: 'coming-soon'
-    }
-]
+const isPrivileged = computed(() => docsStore.isPrivilegedUser)
 
-const filteredDocs = computed(() => {
-    if (!searchQuery.value) return docs
-    const query = searchQuery.value.toLowerCase()
-    return docs.filter(doc =>
-        doc.title.toLowerCase().includes(query) ||
-        doc.description.toLowerCase().includes(query) ||
-        doc.tag.toLowerCase().includes(query)
-    )
+// Flatten manifests into a format suitable for the landing page
+const allDocs = computed(() => {
+    const items: any[] = []
+    
+    Object.entries(docsStore.manifests).forEach(([serviceId, unified]) => {
+        // Handle Internal
+        if (unified.internal) {
+            items.push({
+                id: `${serviceId}-internal`,
+                service: serviceId,
+                title: `${unified.internal.service} (Internal)`,
+                description: `Deep-dive technical specifications, internal architecture, and security protocols for ${unified.internal.service}.`,
+                tag: 'TECHNICAL SPEC',
+                status: 'active',
+                isInternal: true,
+                route: { name: 'docs-content', params: { service: serviceId } }
+            })
+        }
+        
+        // Handle Public
+        if (unified.public) {
+            items.push({
+                id: `${serviceId}-public`,
+                service: serviceId,
+                title: unified.public.service,
+                description: `General guides, API documentation, and quickstart tutorials for ${unified.public.service}.`,
+                tag: 'DOCUMENTATION',
+                status: 'active',
+                isInternal: false,
+                route: { name: 'docs-content', params: { service: serviceId } }
+            })
+        }
+    })
+    
+    return items
+})
+
+const filteredInternalDocs = computed(() => {
+    const internal = allDocs.value.filter(d => d.isInternal)
+    if (!searchQuery.value) return internal
+    const q = searchQuery.value.toLowerCase()
+    return internal.filter(d => d.title.toLowerCase().includes(q) || d.description.toLowerCase().includes(q))
+})
+
+const filteredPublicDocs = computed(() => {
+    const publicDocs = allDocs.value.filter(d => !d.isInternal)
+    if (!searchQuery.value) return publicDocs
+    const q = searchQuery.value.toLowerCase()
+    return publicDocs.filter(d => d.title.toLowerCase().includes(q) || d.description.toLowerCase().includes(q))
 })
 
 const navigateToDoc = (doc: any) => {
@@ -79,9 +68,25 @@ const navigateToDoc = (doc: any) => {
     }
 }
 
-onMounted(() => {
+onMounted(async () => {
     window.scrollTo(0, 0)
+    if (Object.keys(docsStore.manifests).length === 0) {
+        await docsStore.fetchAllManifests()
+    }
 })
+
+const getIcon = (service: string) => {
+    const icons: Record<string, any> = {
+        gamelift: Server,
+        fargate: Cpu,
+        lambda: Layers,
+        metrics: BarChart3,
+        config: Settings,
+        auth: Shield,
+        database: Database
+    }
+    return icons[service.toLowerCase()] || BookOpen
+}
 </script>
 
 <template>
@@ -95,63 +100,85 @@ onMounted(() => {
         <section class="py-24 bg-[#fafafa] border-b border-[#eaeded]">
             <div class="max-w-7xl mx-auto px-6">
                 <div class="max-w-3xl">
-                    <h1 class="text-5xl md:text-7xl font-black text-[#232f3e] mb-8 tracking-tighter">Documentation</h1>
+                    <div v-if="isPrivileged" class="mb-6 inline-flex items-center gap-2 px-3 py-1 bg-orange-50 border border-orange-100 rounded-full text-[10px] font-black text-orange-600 uppercase tracking-widest">
+                        <ShieldCheck :size="12" />
+                        Admin Access Active
+                    </div>
+                    <h1 class="text-5xl md:text-7xl font-black text-[#232f3e] mb-8 tracking-tighter">Serwin Docs</h1>
                     <p class="text-xl text-[#545b64] mb-12 font-medium leading-relaxed">
-                        Everything you need to build, scale, and manage your infrastructure on Serwin Systems. From
-                        quickstart guides to deep-dive API references.
+                        Unified resource center for engineering and infrastructure management.
                     </p>
                     <div class="relative max-w-xl">
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                            <svg class="h-5 w-5 text-[#879196]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                            </svg>
+                            <Search class="h-5 w-5 text-[#879196]" />
                         </div>
-                        <input v-model="searchQuery" type="text" placeholder="Search documentation..."
+                        <input v-model="searchQuery" type="text" placeholder="Search technical guides..."
                             class="w-full pl-12 pr-4 py-4 bg-white border-2 border-[#232f3e] focus:outline-none focus:border-[#ff9900] text-lg font-bold placeholder-[#879196] transition-all" />
-                        <button v-if="searchQuery" @click="searchQuery = ''"
-                            class="absolute inset-y-0 right-0 pr-4 flex items-center text-[#879196] hover:text-[#232f3e]">
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Main Content Grid -->
+        <!-- Main Content -->
         <main class="py-20 max-w-7xl mx-auto px-6">
-            <div v-if="filteredDocs.length > 0" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                <div v-for="doc in filteredDocs" :key="doc.id" @click="navigateToDoc(doc)" :class="[
-                    'border-2 p-10 transition-all flex flex-col items-start bg-white relative overflow-hidden',
-                    doc.status === 'active' ? 'border-[#eaeded] hover:border-[#232f3e] cursor-pointer group' : 'border-[#eaeded]/50 opacity-60 cursor-not-allowed grayscale-[0.5]'
-                ]">
+            
+            <!-- 1. Internal Documents (Admin Only) -->
+            <div v-if="isPrivileged && filteredInternalDocs.length > 0" class="mb-24">
+                <div class="flex items-center gap-4 mb-10">
+                    <h2 class="text-3xl font-black text-[#232f3e] tracking-tighter uppercase italic">Internal Infrastructure</h2>
+                    <div class="flex-1 h-px bg-orange-100"></div>
+                </div>
+                
+                <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div v-for="doc in filteredInternalDocs" :key="doc.id" @click="navigateToDoc(doc)"
+                        class="border-2 border-orange-100 p-10 transition-all flex flex-col items-start bg-gradient-to-br from-white to-orange-50/20 relative overflow-hidden cursor-pointer group hover:border-orange-500 hover:shadow-xl">
+                        
+                        <div class="absolute -right-4 -top-4 text-orange-100 opacity-20 group-hover:opacity-40 transition-opacity">
+                            <component :is="getIcon(doc.service)" :size="120" />
+                        </div>
 
-                    <!-- Coming Soon Ribbon/Badge -->
-                    <div v-if="doc.status === 'coming-soon'"
-                        class="absolute top-4 right-4 bg-[#232f3e] text-white text-[10px] font-black px-2 py-1 uppercase tracking-tighter">
-                        Coming Soon
-                    </div>
+                        <div class="text-[10px] font-black text-[#ff9900] uppercase tracking-widest mb-6 flex items-center gap-2">
+                            <ShieldCheck :size="12" />
+                            {{ doc.tag }}
+                        </div>
+                        <h3 class="text-2xl font-black text-[#232f3e] mb-4 group-hover:text-orange-600">{{ doc.title }}</h3>
+                        <p class="text-[#545b64] mb-10 leading-relaxed font-medium relative z-10">{{ doc.description }}</p>
 
-                    <div class="text-[10px] font-black text-[#ff9900] uppercase tracking-widest mb-6">{{ doc.tag }}
-                    </div>
-                    <h3 class="text-2xl font-black text-[#232f3e] mb-4">{{ doc.title }}</h3>
-                    <p class="text-[#545b64] mb-10 leading-relaxed font-medium">{{ doc.description }}</p>
-
-                    <div v-if="doc.status === 'active'"
-                        class="mt-auto text-[#0073bb] font-bold uppercase tracking-widest text-sm group-hover:text-[#ff9900] transition-colors">
-                        {{ doc.linkText }}
-                    </div>
-                    <div v-else class="mt-auto text-[#879196] font-bold uppercase tracking-widest text-sm">
-                        Locked
+                        <div class="mt-auto text-orange-600 font-black uppercase tracking-widest text-xs flex items-center gap-2 transition-all group-hover:translate-x-2">
+                            Access Internal Spec
+                            <ArrowRight :size="14" />
+                        </div>
                     </div>
                 </div>
             </div>
-            <div v-else class="py-20 text-center">
-                <div class="text-4xl font-black text-[#232f3e] mb-4">No results found</div>
-                <p class="text-[#545b64] font-medium">Try searching for something else or browse our categories.</p>
+
+            <!-- 2. Public Documents -->
+            <div>
+                <div v-if="isPrivileged" class="flex items-center gap-4 mb-10">
+                    <h2 class="text-2xl font-black text-[#879196] tracking-tighter uppercase italic">Public Documentation</h2>
+                    <div class="flex-1 h-px bg-gray-100"></div>
+                </div>
+
+                <div v-if="filteredPublicDocs.length > 0" class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+                    <div v-for="doc in filteredPublicDocs" :key="doc.id" @click="navigateToDoc(doc)" :class="[
+                        'border-2 p-10 transition-all flex flex-col items-start bg-white relative overflow-hidden',
+                        doc.status === 'active' ? 'border-[#eaeded] hover:border-[#232f3e] cursor-pointer group' : 'border-[#eaeded]/50 opacity-60 cursor-not-allowed grayscale-[0.5]'
+                    ]">
+
+                        <div class="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-6">{{ doc.tag }}</div>
+                        <h3 class="text-2xl font-black text-[#232f3e] mb-4">{{ doc.title }}</h3>
+                        <p class="text-[#545b64] mb-10 leading-relaxed font-medium">{{ doc.description }}</p>
+
+                        <div v-if="doc.status === 'active'"
+                            class="mt-auto text-[#0073bb] font-bold uppercase tracking-widest text-sm group-hover:text-[#ff9900] transition-colors">
+                            View Documentation
+                        </div>
+                    </div>
+                </div>
+                <div v-else-if="!isPrivileged || filteredPublicDocs.length === 0" class="py-20 text-center">
+                    <div class="text-4xl font-black text-[#232f3e] mb-4">No documentation found</div>
+                    <p class="text-[#545b64] font-medium">Please contact support if you believe this is an error.</p>
+                </div>
             </div>
         </main>
 

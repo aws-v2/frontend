@@ -131,7 +131,10 @@ const fetchInitialData = async () => {
     if (service && slug) {
         await docsStore.fetchDocContent(service as string, slug as string);
     } else if (service) {
-        const manifest = docsStore.manifests[service as string];
+        const unified = docsStore.manifests[service as string];
+        // For Admins, prioritize internal. For others (or if no internal), fallback to public.
+        const manifest = (docsStore.isPrivilegedUser && unified?.internal) ? unified.internal : unified?.public;
+        
         if (manifest?.categories[0]?.items[0]) {
             router.replace({
                 name: 'docs-content',
@@ -148,12 +151,27 @@ const fetchInitialData = async () => {
 const redirectToFirstAvailableDoc = () => {
     const manifests = docsStore.manifests;
 
-    for (const service of Object.keys(manifests)) {
-        const firstItem = manifests[service]?.categories?.[0]?.items?.[0];
-        if (firstItem) {
+    // First attempt: Look for Internal docs if user is privileged
+    if (docsStore.isPrivilegedUser) {
+        for (const serviceId of Object.keys(manifests)) {
+            const firstInternalItem = manifests[serviceId]?.internal?.categories?.[0]?.items?.[0];
+            if (firstInternalItem) {
+                router.replace({
+                    name: 'docs-content',
+                    params: { service: serviceId, slug: firstInternalItem.slug }
+                });
+                return;
+            }
+        }
+    }
+
+    // Second attempt: Fallback to Public docs for everyone
+    for (const serviceId of Object.keys(manifests)) {
+        const firstPublicItem = manifests[serviceId]?.public?.categories?.[0]?.items?.[0];
+        if (firstPublicItem) {
             router.replace({
                 name: 'docs-content',
-                params: { service, slug: firstItem.slug }
+                params: { service: serviceId, slug: firstPublicItem.slug }
             });
             return;
         }

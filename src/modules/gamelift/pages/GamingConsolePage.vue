@@ -39,140 +39,316 @@ onMounted(async () => {
     }
 })
 </script>
-
 <template>
-    <div class="min-h-screen pb-24 bg-white font-urbanist selection:bg-[#ff9900]/30">
-        <div class="absolute inset-0 bg-[linear-gradient(rgba(0,0,0,0.02)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,0.02)_1px,transparent_1px)] bg-[size:40px_40px] pointer-events-none [mask-image:linear-gradient(to_bottom,black_70%,transparent_100%)]"></div>
+  <div class="min-h-screen bg-[#070a10] font-mono text-[#c9d1d9]">
 
-        <div class="relative z-10 max-w-[1600px] mx-auto px-8 md:px-16 pt-24 pb-20">
-
-            <!-- Header -->
-            <header class="flex flex-col md:flex-row justify-between items-start md:items-end gap-8 mb-16">
-                <div>
-                    <div class="inline-flex items-center gap-2 mb-4 px-3 py-1 bg-white border border-[#ff9900]/30 text-[#ff9900] text-[10px] font-black tracking-[0.2em] uppercase">
-                        <div class="w-1.5 h-1.5 bg-[#ff9900] animate-pulse rounded-full"></div>
-                        GameLift Edge Network
-                    </div>
-                    <h1 class="text-5xl md:text-6xl font-black text-[#232f3e] uppercase tracking-tighter mb-4">Game <span class="text-[#ff9900]">Registry</span></h1>
-                    <p class="text-[#545b64] font-medium max-w-xl leading-relaxed text-lg">
-                        Manage your live game server fleets, monitor active sessions, and deploy new bundles.
-                    </p>
-                </div>
-                <router-link to="/gamelift/fleets/create"
-                    class="px-7 py-4 bg-[#ff9900] text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#ec7211] transition-all transform active:scale-95 flex items-center gap-2 whitespace-nowrap">
-                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                    </svg>
-                    Deploy New Game
-                </router-link>
-            </header>
-
-            <!-- Stat Cards -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-16">
-                <div class="bg-[#fafafa] border-2 border-[#232f3e] p-6 relative overflow-hidden group">
-                    <div class="absolute top-0 right-0 w-2 h-full bg-[#ff9900]"></div>
-                    <p class="text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Total Games</p>
-                    <p class="text-5xl font-black text-[#232f3e]">{{ loading ? '–' : stats.total }}</p>
-                </div>
-                <div class="bg-[#fafafa] border-2 border-[#232f3e] p-6 relative overflow-hidden group">
-                    <div class="absolute top-0 right-0 w-2 h-full bg-emerald-500"></div>
-                    <p class="text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Live Fleets</p>
-                    <p class="text-5xl font-black text-emerald-600">{{ loading ? '–' : stats.live }}</p>
-                </div>
-                <div class="bg-[#fafafa] border-2 border-[#232f3e] p-6 relative overflow-hidden group">
-                    <div class="absolute top-0 right-0 w-2 h-full bg-amber-500"></div>
-                    <p class="text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Deploying</p>
-                    <p class="text-5xl font-black text-amber-600">{{ loading ? '–' : stats.deploying }}</p>
-                </div>
-                <div class="bg-[#fafafa] border-2 border-[#232f3e] p-6 relative overflow-hidden group">
-                    <div class="absolute top-0 right-0 w-2 h-full bg-red-500"></div>
-                    <p class="text-[10px] font-black text-[#879196] uppercase tracking-widest mb-3">Stopped</p>
-                    <p class="text-5xl font-black text-red-600">{{ loading ? '–' : stats.stopped }}</p>
-                </div>
-            </div>
-
-            <!-- Games Registry Table -->
-            <div class="border-2 border-[#232f3e] overflow-hidden">
-                <div class="px-8 py-6 bg-[#fafafa] border-b-2 border-[#eaeded] flex items-center justify-between">
-                    <h2 class="text-xl font-black text-[#232f3e] uppercase tracking-tighter">Registered Game Fleets</h2>
-                    <div class="flex items-center gap-2">
-                        <div class="w-2 h-2 bg-emerald-500 animate-ping rounded-full"></div>
-                        <span class="text-[9px] text-[#545b64] font-black uppercase tracking-[0.3em]">Live Stream</span>
-                    </div>
-                </div>
-
-                <!-- Loading -->
-                <div v-if="loading" class="p-16 text-center">
-                    <div class="w-8 h-8 border-2 border-[#ff9900] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                    <p class="text-[10px] font-black text-[#879196] uppercase tracking-widest">Syncing registry...</p>
-                </div>
-
-                <!-- Error -->
-                <div v-else-if="error" class="p-16 text-center">
-                    <p class="text-sm font-bold text-red-600 mb-2">{{ error }}</p>
-                    <p class="text-[10px] text-[#879196] font-black uppercase tracking-widest">Check that the GameLift backend is running on port 8080.</p>
-                </div>
-
-                <!-- Empty -->
-                <div v-else-if="games.length === 0" class="p-16 text-center">
-                    <div class="w-16 h-16 bg-[#fafafa] border-2 border-dashed border-[#eaeded] flex items-center justify-center mx-auto mb-6">
-                        <svg class="w-8 h-8 text-[#879196]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 11a1 1 0 11-2 0 1 1 0 012 0zm-4-4a1 1 0 11-2 0 1 1 0 012 0zm4 8a1 1 0 11-2 0 1 1 0 012 0zm-8-4a1 1 0 11-2 0 1 1 0 012 0zm11 0a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tighter mb-2">No Games Registered</h3>
-                    <p class="text-[#545b64] font-medium mb-8">Your game registry is empty. Deploy your first game bundle to get started.</p>
-                    <router-link to="/gamelift/fleets/create"
-                        class="px-8 py-4 bg-[#ff9900] text-white text-xs font-black uppercase tracking-[0.2em] hover:bg-[#ec7211] transition-all inline-flex items-center gap-2">
-                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M12 4v16m8-8H4" />
-                        </svg>
-                        Deploy First Game
-                    </router-link>
-                </div>
-
-                <!-- Table -->
-                <div v-else class="overflow-x-auto">
-                    <table class="w-full text-left">
-                        <thead>
-                            <tr class="border-b-2 border-[#eaeded] bg-[#fafafa]">
-                                <th class="py-5 px-8 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase">Game</th>
-                                <th class="py-5 px-8 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase">Status</th>
-                                <th class="py-5 px-8 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase hidden md:table-cell">VM / Fleet</th>
-                                <th class="py-5 px-8 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase hidden lg:table-cell">Game ID</th>
-                                <th class="py-5 px-8 text-[10px] font-black tracking-[0.2em] text-[#879196] uppercase text-center">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr v-for="game in games" :key="game.game_id || game.id"
-                                class="border-b border-[#eaeded] hover:bg-[#fffbf3] transition-colors group">
-                                <td class="py-5 px-8">
-                                    <div class="font-black text-[#232f3e] group-hover:text-[#ff9900] transition-colors">{{ game.game_name || game.name }}</div>
-                                </td>
-                                <td class="py-5 px-8">
-                                    <span class="inline-flex items-center gap-1.5 px-3 py-1 border text-[10px] font-black uppercase tracking-widest" :class="getStatusColor(game.status)">
-                                        <span v-if="game.status === 'active' || game.status === 'running'" class="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-ping"></span>
-                                        {{ game.status || 'Unknown' }}
-                                    </span>
-                                </td>
-                                <td class="py-5 px-8 hidden md:table-cell">
-                                    <span class="font-mono text-sm text-[#545b64]">{{ game.vm_id || '–' }}</span>
-                                </td>
-                                <td class="py-5 px-8 hidden lg:table-cell">
-                                    <span class="font-mono text-xs text-[#879196]">{{ game.game_id || game.id || '–' }}</span>
-                                </td>
-                                <td class="py-5 px-8 text-center">
-                                 <router-link
-    :to="`/gamelift/games/${game.game_id || game.id}`"
-    class="text-[10px] font-black text-[#879196] hover:text-[#ff9900] uppercase tracking-widest transition-colors font-mono border border-[#eaeded] hover:border-[#ff9900] px-3 py-1.5 inline-block">
-    Inspect
-</router-link>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        </div>
+    <!-- Ambient grid texture -->
+    <div class="fixed inset-0 pointer-events-none z-0"
+      style="background-image: linear-gradient(rgba(255,153,0,0.025) 1px, transparent 1px), linear-gradient(90deg, rgba(255,153,0,0.025) 1px, transparent 1px); background-size: 48px 48px;">
     </div>
+
+    <!-- Top system bar -->
+    <div class="relative z-10 border-b border-[#ff9900]/20 bg-[#070a10]/80 backdrop-blur-sm">
+      <div class="max-w-[1600px] mx-auto px-8 md:px-16 h-11 flex items-center justify-between">
+        <div class="flex items-center gap-6">
+          <span class="text-[10px] text-[#ff9900] font-bold tracking-[0.3em] uppercase">GameLift</span>
+          <span class="text-[#2a3340] text-xs">|</span>
+          <span class="text-[10px] text-[#5a6472] tracking-widest uppercase">Edge Network Console</span>
+        </div>
+        <div class="flex items-center gap-3">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block"></span>
+          <span class="text-[10px] text-[#5a6472] tracking-widest uppercase">Systems Operational</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="relative z-10 max-w-[1600px] mx-auto px-8 md:px-16 pt-16 pb-24">
+
+      <!-- ── HEADER ───────────────────────────────────────────── -->
+      <header class="mb-14">
+        <div class="inline-flex items-center gap-2 mb-5 px-3 py-1.5 border border-[#ff9900]/30 bg-[#ff9900]/5 text-[#ff9900] text-[10px] font-bold tracking-[0.25em] uppercase">
+          <span class="w-1.5 h-1.5 bg-[#ff9900] rounded-full animate-pulse"></span>
+          GameLift Edge Network
+        </div>
+        <h1 class="text-5xl md:text-7xl font-black text-[#e8eaed] uppercase tracking-tighter leading-none mb-4">
+          Game <span class="text-[#ff9900]">Registry</span>
+        </h1>
+        <p class="text-[#5a6472] text-sm leading-relaxed max-w-xl font-sans tracking-wide">
+          Manage live game server fleets, monitor active sessions, and deploy new bundles across the edge network.
+        </p>
+      </header>
+
+      <!-- ── STAT CARDS ──────────────────────────────────────── -->
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-14">
+
+        <div class="bg-[#0d1117] border border-[#1e2530] p-6 relative overflow-hidden hover:border-[#ff9900]/40 transition-colors">
+          <div class="absolute top-0 left-0 h-px w-full bg-gradient-to-r from-[#ff9900]/60 to-transparent"></div>
+          <p class="text-[9px] font-bold text-[#5a6472] uppercase tracking-[0.3em] mb-4">Total Games</p>
+          <p class="text-5xl font-black text-[#e8eaed]">{{ loading ? '—' : stats.total }}</p>
+          <div class="absolute bottom-0 right-0 w-16 h-16 border-l border-t border-[#ff9900]/10 translate-x-4 translate-y-4"></div>
+        </div>
+
+        <div class="bg-[#0d1117] border border-[#1e2530] p-6 relative overflow-hidden hover:border-emerald-500/40 transition-colors">
+          <div class="absolute top-0 left-0 h-px w-full bg-gradient-to-r from-emerald-500/60 to-transparent"></div>
+          <p class="text-[9px] font-bold text-[#5a6472] uppercase tracking-[0.3em] mb-4">Live Fleets</p>
+          <p class="text-5xl font-black text-emerald-400">{{ loading ? '—' : stats.live }}</p>
+          <div class="absolute bottom-0 right-0 w-16 h-16 border-l border-t border-emerald-500/10 translate-x-4 translate-y-4"></div>
+        </div>
+
+        <div class="bg-[#0d1117] border border-[#1e2530] p-6 relative overflow-hidden hover:border-amber-500/40 transition-colors">
+          <div class="absolute top-0 left-0 h-px w-full bg-gradient-to-r from-amber-500/60 to-transparent"></div>
+          <p class="text-[9px] font-bold text-[#5a6472] uppercase tracking-[0.3em] mb-4">Deploying</p>
+          <p class="text-5xl font-black text-amber-400">{{ loading ? '—' : stats.deploying }}</p>
+          <div class="absolute bottom-0 right-0 w-16 h-16 border-l border-t border-amber-500/10 translate-x-4 translate-y-4"></div>
+        </div>
+
+        <div class="bg-[#0d1117] border border-[#1e2530] p-6 relative overflow-hidden hover:border-red-500/40 transition-colors">
+          <div class="absolute top-0 left-0 h-px w-full bg-gradient-to-r from-red-500/60 to-transparent"></div>
+          <p class="text-[9px] font-bold text-[#5a6472] uppercase tracking-[0.3em] mb-4">Stopped</p>
+          <p class="text-5xl font-black text-red-400">{{ loading ? '—' : stats.stopped }}</p>
+          <div class="absolute bottom-0 right-0 w-16 h-16 border-l border-t border-red-500/10 translate-x-4 translate-y-4"></div>
+        </div>
+
+      </div>
+
+      <!-- ── SIDE BY SIDE: FLEETS TABLE + RENDER JOBS ────────── -->
+      <div class="grid grid-cols-1 lg:grid-cols-[1fr_380px] gap-6 mb-10">
+
+        <!-- LEFT — Game Fleets Table -->
+        <div class="bg-[#0d1117] border border-[#1e2530] overflow-hidden flex flex-col">
+
+          <div class="px-7 py-5 border-b border-[#1e2530] flex items-center justify-between bg-[#0a0d13] shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-px h-5 bg-emerald-400"></div>
+              <h2 class="text-[11px] font-black text-[#e8eaed] uppercase tracking-[0.25em]">Registered Game Fleets</h2>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+              <span class="text-[9px] text-[#5a6472] font-bold uppercase tracking-[0.3em]">Live Stream</span>
+            </div>
+          </div>
+
+          <!-- Loading -->
+          <div v-if="loading" class="p-20 text-center flex-1 flex flex-col items-center justify-center">
+            <div class="w-8 h-8 border border-[#ff9900] border-t-transparent rounded-full animate-spin mx-auto mb-5"></div>
+            <p class="text-[10px] font-bold text-[#5a6472] uppercase tracking-[0.3em]">Syncing registry...</p>
+          </div>
+
+          <!-- Error -->
+          <div v-else-if="error" class="p-20 text-center flex-1 flex flex-col items-center justify-center">
+            <div class="inline-flex items-center gap-2 px-4 py-3 border border-red-500/30 bg-red-500/5 mb-4">
+              <svg class="w-4 h-4 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z" />
+              </svg>
+              <p class="text-xs font-bold text-red-400">{{ error }}</p>
+            </div>
+            <p class="text-[10px] text-[#5a6472] font-bold uppercase tracking-[0.25em]">
+              Ensure the GameLift backend is running on port 8080
+            </p>
+          </div>
+
+          <!-- Empty -->
+          <div v-else-if="games.length === 0" class="p-20 text-center flex-1 flex flex-col items-center justify-center">
+            <div class="w-20 h-20 border border-dashed border-[#1e2530] flex items-center justify-center mx-auto mb-8 relative">
+              <div class="absolute inset-0 border border-dashed border-[#1e2530] scale-110 opacity-40"></div>
+              <svg class="w-9 h-9 text-[#3a4450]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M15 11a1 1 0 11-2 0 1 1 0 012 0zm-4-4a1 1 0 11-2 0 1 1 0 012 0zm4 8a1 1 0 11-2 0 1 1 0 012 0zm-8-4a1 1 0 11-2 0 1 1 0 012 0zm11 0a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+            <h3 class="text-2xl font-black text-[#e8eaed] uppercase tracking-tighter mb-2">No Games Registered</h3>
+            <p class="text-[#5a6472] font-sans text-sm">Your game registry is empty. Deploy your first game bundle to get started.</p>
+          </div>
+
+          <!-- Table -->
+          <div v-else class="overflow-x-auto flex-1">
+            <table class="w-full text-left">
+              <thead>
+                <tr class="border-b border-[#1e2530]">
+                  <th class="py-4 px-7 text-[9px] font-black tracking-[0.3em] text-[#3a4450] uppercase">Game</th>
+                  <th class="py-4 px-7 text-[9px] font-black tracking-[0.3em] text-[#3a4450] uppercase">Status</th>
+                  <th class="py-4 px-7 text-[9px] font-black tracking-[0.3em] text-[#3a4450] uppercase hidden md:table-cell">VM / Fleet</th>
+                  <th class="py-4 px-7 text-[9px] font-black tracking-[0.3em] text-[#3a4450] uppercase hidden lg:table-cell">Game ID</th>
+                  <th class="py-4 px-7 text-[9px] font-black tracking-[0.3em] text-[#3a4450] uppercase text-center">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="game in games" :key="game.game_id || game.id"
+                  class="border-b border-[#1e2530] hover:bg-[#ff9900]/3 transition-colors group">
+
+                  <td class="py-5 px-7">
+                    <span class="text-sm font-bold text-[#c9d1d9] group-hover:text-[#ff9900] transition-colors">
+                      {{ game.game_name || game.name }}
+                    </span>
+                  </td>
+
+                  <td class="py-5 px-7">
+                    <span class="inline-flex items-center gap-1.5 px-3 py-1 text-[9px] font-black uppercase tracking-[0.2em] border"
+                      :class="getStatusColor(game.status)">
+                      <span v-if="game.status === 'active' || game.status === 'running'"
+                        class="w-1 h-1 rounded-full bg-emerald-400 animate-ping"></span>
+                      {{ game.status || 'Unknown' }}
+                    </span>
+                  </td>
+
+                  <td class="py-5 px-7 hidden md:table-cell">
+                    <span class="text-sm text-[#5a6472]">{{ game.vm_id || '—' }}</span>
+                  </td>
+
+                  <td class="py-5 px-7 hidden lg:table-cell">
+                    <span class="text-xs text-[#3a4450]">{{ game.game_id || game.id || '—' }}</span>
+                  </td>
+
+                  <td class="py-5 px-7 text-center">
+                    <router-link
+                      :to="`/gamelift/games/${game.game_id || game.id}`"
+                      class="text-[9px] font-black text-[#5a6472] hover:text-[#ff9900] uppercase tracking-[0.2em] transition-colors border border-[#1e2530] hover:border-[#ff9900]/40 px-4 py-1.5 inline-block hover:bg-[#ff9900]/5">
+                      Inspect →
+                    </router-link>
+                  </td>
+
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Table footer -->
+          <div class="px-7 py-4 border-t border-[#1e2530] bg-[#0a0d13] flex items-center justify-between shrink-0">
+            <p class="text-[9px] text-[#3a4450] font-bold uppercase tracking-[0.25em]">
+              {{ games.length }} fleet{{ games.length !== 1 ? 's' : '' }} registered
+            </p>
+            <div class="flex items-center gap-2">
+              <span class="w-1 h-1 rounded-full bg-[#ff9900]/60"></span>
+              <span class="w-1 h-1 rounded-full bg-[#ff9900]/40"></span>
+              <span class="w-1 h-1 rounded-full bg-[#ff9900]/20"></span>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- RIGHT — Render Jobs -->
+        <div class="bg-[#0d1117] border border-[#1e2530] overflow-hidden flex flex-col">
+
+          <div class="px-7 py-5 border-b border-[#1e2530] flex items-center justify-between bg-[#0a0d13] shrink-0">
+            <div class="flex items-center gap-3">
+              <div class="w-px h-5 bg-amber-400"></div>
+              <h2 class="text-[11px] font-black text-[#e8eaed] uppercase tracking-[0.25em]">Render Jobs</h2>
+            </div>
+            <div class="flex items-center gap-2">
+              <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+              <span class="text-[9px] text-[#5a6472] font-bold uppercase tracking-[0.3em]">Queue</span>
+            </div>
+          </div>
+
+          <!-- Jobs list -->
+          <div class="divide-y divide-[#1e2530] flex-1">
+
+            <div class="px-6 py-5 hover:bg-[#ff9900]/3 transition-colors group">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-sm font-bold text-[#c9d1d9] group-hover:text-[#e8eaed] transition-colors truncate">Apartment Floor Render #5</p>
+                  <p class="text-[11px] text-[#5a6472] mt-1 font-sans">Frames 1–250 · Blender · High Quality</p>
+                </div>
+                <span class="text-[9px] font-black uppercase tracking-[0.2em] text-amber-400 border border-amber-400/30 bg-amber-400/5 px-2.5 py-1 shrink-0">
+                  Queued
+                </span>
+              </div>
+              <!-- Faux progress bar (queued = empty) -->
+              <div class="mt-3 h-px bg-[#1e2530] w-full relative overflow-hidden">
+                <div class="absolute inset-y-0 left-0 w-0 bg-amber-400/40"></div>
+              </div>
+            </div>
+
+            <div class="px-6 py-5 hover:bg-[#ff9900]/3 transition-colors group">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-sm font-bold text-[#c9d1d9] group-hover:text-[#e8eaed] transition-colors truncate">Cinematic Flythrough</p>
+                  <p class="text-[11px] text-[#5a6472] mt-1 font-sans">Frames 1–600 · Blender · GPU Node</p>
+                </div>
+                <span class="text-[9px] font-black uppercase tracking-[0.2em] text-red-400 border border-red-400/30 bg-red-400/5 px-2.5 py-1 shrink-0 flex items-center gap-1.5">
+                  <span class="w-1 h-1 rounded-full bg-red-400 animate-ping"></span>
+                  Running
+                </span>
+              </div>
+              <!-- Faux progress bar (running = ~60%) -->
+              <div class="mt-3 h-px bg-[#1e2530] w-full relative overflow-hidden">
+                <div class="absolute inset-y-0 left-0 w-[60%] bg-red-400/50"></div>
+              </div>
+            </div>
+
+            <div class="px-6 py-5 hover:bg-[#ff9900]/3 transition-colors group">
+              <div class="flex items-start justify-between gap-3">
+                <div class="min-w-0">
+                  <p class="text-sm font-bold text-[#c9d1d9] group-hover:text-[#e8eaed] transition-colors truncate">Kitchen Lighting Pass</p>
+                  <p class="text-[11px] text-[#5a6472] mt-1 font-sans">Frames 1–120 · Blender · CPU Node</p>
+                </div>
+                <span class="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400 border border-emerald-400/30 bg-emerald-400/5 px-2.5 py-1 shrink-0">
+                  Completed
+                </span>
+              </div>
+              <!-- Faux progress bar (completed = full) -->
+              <div class="mt-3 h-px bg-[#1e2530] w-full relative overflow-hidden">
+                <div class="absolute inset-y-0 left-0 w-full bg-emerald-400/40"></div>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Panel footer -->
+          <div class="px-6 py-4 border-t border-[#1e2530] bg-[#0a0d13] shrink-0">
+            <p class="text-[9px] font-bold text-[#3a4450] uppercase tracking-[0.2em]">
+              Backend integration pending
+            </p>
+          </div>
+
+        </div>
+        <!-- end right column -->
+
+      </div>
+      <!-- end side-by-side grid -->
+
+      <!-- ── BOTTOM ACTION BUTTONS ───────────────────────────── -->
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+        <!-- Deploy New Game -->
+        <router-link to="/gamelift/fleets/create"
+          class="group relative flex items-center gap-5 px-8 py-6 bg-[#ff9900] text-[#070a10] hover:bg-[#ffaa22] transition-colors overflow-hidden">
+          <span class="absolute inset-0 bg-white/10 translate-x-full group-hover:translate-x-0 transition-transform duration-500 skew-x-12"></span>
+          <div class="relative z-10 w-10 h-10 bg-[#070a10]/15 flex items-center justify-center shrink-0">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347c-.75.412-1.667-.13-1.667-.986V5.653Z" />
+            </svg>
+          </div>
+          <div class="relative z-10">
+            <p class="text-[10px] font-black uppercase tracking-[0.3em] mb-0.5 opacity-60">Game Fleet</p>
+            <p class="text-base font-black uppercase tracking-tight">Deploy New Game</p>
+          </div>
+          <svg class="w-5 h-5 ml-auto relative z-10 opacity-50 group-hover:opacity-100 group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+          </svg>
+        </router-link>
+
+        <!-- Create Render Job -->
+        <router-link to="/gamelift/render-jobs/create"
+          class="group relative flex items-center gap-5 px-8 py-6 bg-[#0d1117] border border-[#1e2530] text-[#e8eaed] hover:border-[#ff9900]/50 hover:bg-[#ff9900]/5 transition-colors overflow-hidden">
+          <span class="absolute top-0 left-0 h-px w-0 bg-[#ff9900]/60 group-hover:w-full transition-all duration-500"></span>
+          <div class="relative z-10 w-10 h-10 border border-[#1e2530] group-hover:border-[#ff9900]/40 flex items-center justify-center shrink-0 transition-colors">
+            <svg class="w-5 h-5 text-[#ff9900]" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6.827 6.175A2.31 2.31 0 0 1 5.186 7.23c-.38.054-.757.112-1.134.175C2.999 7.58 2.25 8.507 2.25 9.574V18a2.25 2.25 0 0 0 2.25 2.25h15A2.25 2.25 0 0 0 21.75 18V9.574c0-1.067-.75-1.994-1.802-2.169a47.865 47.865 0 0 0-1.134-.175 2.31 2.31 0 0 1-1.64-1.055l-.822-1.316a2.192 2.192 0 0 0-1.736-1.039 48.774 48.774 0 0 0-5.232 0 2.192 2.192 0 0 0-1.736 1.039l-.821 1.316Z" />
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 12.75a4.5 4.5 0 1 1-9 0 4.5 4.5 0 0 1 9 0ZM18.75 10.5h.008v.008h-.008V10.5Z" />
+            </svg>
+          </div>
+          <div class="relative z-10">
+            <p class="text-[10px] font-black uppercase tracking-[0.3em] mb-0.5 text-[#5a6472]">Render Queue</p>
+            <p class="text-base font-black uppercase tracking-tight">Create Render Job</p>
+          </div>
+          <svg class="w-5 h-5 ml-auto text-[#5a6472] group-hover:text-[#ff9900] group-hover:translate-x-1 transition-all" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+          </svg>
+        </router-link>
+
+      </div>
+      <!-- end action buttons -->
+
+    </div>
+  </div>
 </template>

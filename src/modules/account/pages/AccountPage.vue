@@ -230,6 +230,7 @@ const copyToClipboard = (text: string) => navigator.clipboard.writeText(text)
                     </div>
  
                     <!-- Keys table -->
+                    <!-- Keys table -->
                     <div v-else class="overflow-x-auto">
                         <table class="w-full text-left">
                             <thead>

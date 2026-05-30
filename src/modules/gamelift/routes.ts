@@ -37,6 +37,12 @@ const gameliftRoutes: RouteRecordRaw[] = [
         path: '/gamelift/play/:id',
         name: 'gamelift-play',
         component: () => import('./pages/Game.vue'),
+    },
+
+    {
+        path: '/gamelift/render-jobs/create',
+        name: 'gamelift-render-jobs-create',
+        component: () => import('./pages/CreateRenderJobPage.vue'),
     }
 
 ]

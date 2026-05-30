@@ -14,7 +14,14 @@ apiClient.interceptors.request.use(
   async (config) => {
     if (config.url && config.url.startsWith('/') && !config.url.startsWith('//')) {
       const serviceName = config.url.split('/')[1] || 'default'
-      config.baseURL = (await featureFlags.getServiceUrl(serviceName)).replace(/\/$/, '')
+      const base = await featureFlags.getServiceUrl(serviceName)
+      config.baseURL = base.replace(/\/$/, '')
+      
+      // Axios quirk: leading slash on url strips prefix (like /api/v1) from baseURL.
+      // We manually ensure it's treated as relative to the concatenated result.
+      if (config.url.startsWith('/')) {
+        config.url = config.url.substring(1)
+      }
     }
 
     const authStore = useAuthStore()
@@ -35,7 +42,10 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      useAuthStore().logout()
+      const authStore = useAuthStore()
+      if (authStore.token) {
+        authStore.logout()
+      }
     }
     return Promise.reject(error)
   },
@@ -55,7 +65,8 @@ apiClient.stream = async (url: string, body?: unknown): Promise<ReadableStreamDe
     headers['Authorization'] = `Bearer ${authStore.token}`
   }
 
-  const response = await fetch(`${baseURL}${url}`, {
+  const fullUrl = `${baseURL}/${url.startsWith('/') ? url.substring(1) : url}`
+  const response = await fetch(fullUrl, {
     method: 'POST',
     headers,
     body: body ? JSON.stringify(body) : undefined,

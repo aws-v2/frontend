@@ -42,6 +42,12 @@ const sagemakerRoutes: RouteRecordRaw[] = [
         name: 'sagemaker-training-new',
         component: () => import('./pages/CreateTrainingJobPage.vue'),
         meta: { requiresAuth: true }
+    },
+    {
+        path: '/sagemaker/projects/:id',
+        name: 'sagemaker-project-details',
+        component: () => import('./pages/SageMakerProjectPage.vue'),
+        meta: { requiresAuth: false }
     }
 ]
 

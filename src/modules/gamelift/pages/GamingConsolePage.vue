@@ -9,11 +9,13 @@ const games = ref<any[]>([])
 const loading = ref(true)
 const error = ref('')
 
+const renderJobs = ref<any[]>([])
+
 const stats = computed(() => ({
     total: games.value.length,
     live: games.value.filter(g => g.status === 'active' || g.status === 'running').length,
     deploying: games.value.filter(g => g.status === 'deploying' || g.status === 'initializing').length,
-    stopped: games.value.filter(g => g.status === 'stopped' || g.status === 'failed').length,
+    renderQueue: renderJobs.value.filter(j => j.status === 'Queued' || j.status === 'Running').length,
 }))
 
 const getStatusColor = (status: string) => {
@@ -28,7 +30,22 @@ const getStatusColor = (status: string) => {
     }
 }
 
+const loadRenderJobs = () => {
+    const stored = localStorage.getItem('renderJobs')
+    if (stored) {
+        renderJobs.value = JSON.parse(stored)
+    } else {
+        // Default mock jobs if none exist
+        renderJobs.value = [
+            { id: '1', name: 'Apartment Floor Render #5', engine: 'Blender', frames: '1-250', status: 'Queued', progress: 0 },
+            { id: '2', name: 'Cinematic Flythrough', engine: 'Blender', frames: '1-600', status: 'Running', progress: 60 },
+            { id: '3', name: 'Kitchen Lighting Pass', engine: 'Blender', frames: '1-120', status: 'Completed', progress: 100 }
+        ]
+    }
+}
+
 onMounted(async () => {
+    loadRenderJobs()
     try {
         const data = await fetchGames()
         games.value = Array.isArray(data) ? data : []
@@ -71,10 +88,10 @@ onMounted(async () => {
           GameLift Edge Network
         </div>
         <h1 class="text-5xl md:text-7xl font-black text-[#e8eaed] uppercase tracking-tighter leading-none mb-4">
-          Game <span class="text-[#ff9900]">Registry</span>
+          Console <span class="text-[#ff9900]">Registry</span>
         </h1>
         <p class="text-[#5a6472] text-sm leading-relaxed max-w-xl font-sans tracking-wide">
-          Manage live game server fleets, monitor active sessions, and deploy new bundles across the edge network.
+          Manage live game server fleets, monitor rendering jobs, and deploy assets across the edge network.
         </p>
       </header>
 
@@ -97,16 +114,16 @@ onMounted(async () => {
 
         <div class="bg-[#0d1117] border border-[#1e2530] p-6 relative overflow-hidden hover:border-amber-500/40 transition-colors">
           <div class="absolute top-0 left-0 h-px w-full bg-gradient-to-r from-amber-500/60 to-transparent"></div>
-          <p class="text-[9px] font-bold text-[#5a6472] uppercase tracking-[0.3em] mb-4">Deploying</p>
-          <p class="text-5xl font-black text-amber-400">{{ loading ? '—' : stats.deploying }}</p>
+          <p class="text-[9px] font-bold text-[#5a6472] uppercase tracking-[0.3em] mb-4">Render Queue</p>
+          <p class="text-5xl font-black text-amber-400">{{ stats.renderQueue }}</p>
           <div class="absolute bottom-0 right-0 w-16 h-16 border-l border-t border-amber-500/10 translate-x-4 translate-y-4"></div>
         </div>
 
-        <div class="bg-[#0d1117] border border-[#1e2530] p-6 relative overflow-hidden hover:border-red-500/40 transition-colors">
-          <div class="absolute top-0 left-0 h-px w-full bg-gradient-to-r from-red-500/60 to-transparent"></div>
-          <p class="text-[9px] font-bold text-[#5a6472] uppercase tracking-[0.3em] mb-4">Stopped</p>
-          <p class="text-5xl font-black text-red-400">{{ loading ? '—' : stats.stopped }}</p>
-          <div class="absolute bottom-0 right-0 w-16 h-16 border-l border-t border-red-500/10 translate-x-4 translate-y-4"></div>
+        <div class="bg-[#0d1117] border border-[#1e2530] p-6 relative overflow-hidden hover:border-amber-500/40 transition-colors">
+          <div class="absolute top-0 left-0 h-px w-full bg-gradient-to-r from-amber-500/60 to-transparent"></div>
+          <p class="text-[9px] font-bold text-[#5a6472] uppercase tracking-[0.3em] mb-4">Deploying</p>
+          <p class="text-5xl font-black text-[#5a6472]/50">{{ loading ? '—' : stats.deploying }}</p>
+          <div class="absolute bottom-0 right-0 w-16 h-16 border-l border-t border-amber-500/10 translate-x-4 translate-y-4"></div>
         </div>
 
       </div>
@@ -234,61 +251,49 @@ onMounted(async () => {
               <h2 class="text-[11px] font-black text-[#e8eaed] uppercase tracking-[0.25em]">Render Jobs</h2>
             </div>
             <div class="flex items-center gap-2">
-              <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-ping"></span>
+              <router-link to="/gamelift/render-jobs/create" class="px-3 py-1 border border-amber-400/30 text-amber-400 text-[9px] font-bold tracking-widest hover:bg-amber-400/10 transition-colors uppercase">
+                New Job +
+              </router-link>
               <span class="text-[9px] text-[#5a6472] font-bold uppercase tracking-[0.3em]">Queue</span>
             </div>
           </div>
 
           <!-- Jobs list -->
-          <div class="divide-y divide-[#1e2530] flex-1">
+          <div class="divide-y divide-[#1e2530] flex-1 overflow-y-auto max-h-[600px]">
 
-            <div class="px-6 py-5 hover:bg-[#ff9900]/3 transition-colors group">
+            <div v-for="job in renderJobs" :key="job.id" class="px-6 py-5 hover:bg-[#ff9900]/3 transition-colors group">
               <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="text-sm font-bold text-[#c9d1d9] group-hover:text-[#e8eaed] transition-colors truncate">Apartment Floor Render #5</p>
-                  <p class="text-[11px] text-[#5a6472] mt-1 font-sans">Frames 1–250 · Blender · High Quality</p>
+                <div class="min-w-0 flex-1">
+                  <p class="text-sm font-bold text-[#c9d1d9] group-hover:text-[#e8eaed] transition-colors truncate">{{ job.name }}</p>
+                  <p class="text-[11px] text-[#5a6472] mt-1 font-sans">Frames {{ job.frames }} · {{ job.engine }} · High Quality</p>
                 </div>
-                <span class="text-[9px] font-black uppercase tracking-[0.2em] text-amber-400 border border-amber-400/30 bg-amber-400/5 px-2.5 py-1 shrink-0">
-                  Queued
+                <span 
+                  class="text-[9px] font-black uppercase tracking-[0.2em] border px-2.5 py-1 shrink-0 flex items-center gap-1.5"
+                  :class="{
+                    'text-amber-400 border-amber-400/30 bg-amber-400/5': job.status === 'Queued' || job.status === 'Running',
+                    'text-emerald-400 border-emerald-400/30 bg-emerald-400/5': job.status === 'Completed',
+                    'text-red-400 border-red-400/30 bg-red-400/5': job.status === 'Failed'
+                  }"
+                >
+                  <span v-if="job.status === 'Running'" class="w-1 h-1 rounded-full bg-amber-400 animate-ping"></span>
+                  {{ job.status }}
                 </span>
               </div>
-              <!-- Faux progress bar (queued = empty) -->
               <div class="mt-3 h-px bg-[#1e2530] w-full relative overflow-hidden">
-                <div class="absolute inset-y-0 left-0 w-0 bg-amber-400/40"></div>
+                <div 
+                  class="absolute inset-y-0 left-0 transition-all duration-1000"
+                  :class="{
+                    'bg-amber-400/40': job.status === 'Queued' || job.status === 'Running',
+                    'bg-emerald-400/40': job.status === 'Completed',
+                    'bg-red-400/40': job.status === 'Failed'
+                  }"
+                  :style="{ width: job.progress + '%' }"
+                ></div>
               </div>
             </div>
 
-            <div class="px-6 py-5 hover:bg-[#ff9900]/3 transition-colors group">
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="text-sm font-bold text-[#c9d1d9] group-hover:text-[#e8eaed] transition-colors truncate">Cinematic Flythrough</p>
-                  <p class="text-[11px] text-[#5a6472] mt-1 font-sans">Frames 1–600 · Blender · GPU Node</p>
-                </div>
-                <span class="text-[9px] font-black uppercase tracking-[0.2em] text-red-400 border border-red-400/30 bg-red-400/5 px-2.5 py-1 shrink-0 flex items-center gap-1.5">
-                  <span class="w-1 h-1 rounded-full bg-red-400 animate-ping"></span>
-                  Running
-                </span>
-              </div>
-              <!-- Faux progress bar (running = ~60%) -->
-              <div class="mt-3 h-px bg-[#1e2530] w-full relative overflow-hidden">
-                <div class="absolute inset-y-0 left-0 w-[60%] bg-red-400/50"></div>
-              </div>
-            </div>
-
-            <div class="px-6 py-5 hover:bg-[#ff9900]/3 transition-colors group">
-              <div class="flex items-start justify-between gap-3">
-                <div class="min-w-0">
-                  <p class="text-sm font-bold text-[#c9d1d9] group-hover:text-[#e8eaed] transition-colors truncate">Kitchen Lighting Pass</p>
-                  <p class="text-[11px] text-[#5a6472] mt-1 font-sans">Frames 1–120 · Blender · CPU Node</p>
-                </div>
-                <span class="text-[9px] font-black uppercase tracking-[0.2em] text-emerald-400 border border-emerald-400/30 bg-emerald-400/5 px-2.5 py-1 shrink-0">
-                  Completed
-                </span>
-              </div>
-              <!-- Faux progress bar (completed = full) -->
-              <div class="mt-3 h-px bg-[#1e2530] w-full relative overflow-hidden">
-                <div class="absolute inset-y-0 left-0 w-full bg-emerald-400/40"></div>
-              </div>
+            <div v-if="renderJobs.length === 0" class="p-10 text-center opacity-40">
+              <p class="text-[10px] uppercase tracking-widest">No active render jobs</p>
             </div>
 
           </div>

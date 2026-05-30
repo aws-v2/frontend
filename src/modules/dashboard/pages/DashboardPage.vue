@@ -69,6 +69,12 @@ const activateService = (service: any, saveToStorage = true) => {
     isResourceModalOpen.value = false
 }
 
+const removeService = (service: any, event: MouseEvent) => {
+    event.stopPropagation()
+    activeServices.value = activeServices.value.filter(s => s.id !== service.id)
+    localStorage.setItem('activeServices', JSON.stringify(activeServices.value.map(s => s.id)))
+}
+
 onMounted(() => {
     checkActiveServices()
     s3Store.fetchStorageLensData()
@@ -264,6 +270,15 @@ const updateAgent = async () => {
                         <div
                             class="absolute top-0 right-0 w-24 h-24 bg-[#ff9900]/5 -rotate-45 translate-x-12 -translate-y-12 transition-transform group-hover:scale-150">
                         </div>
+                        <!-- Unpin / Remove button (hover only) -->
+                        <button
+                            @click="removeService(service, $event)"
+                            class="absolute top-3 right-3 z-20 w-7 h-7 flex items-center justify-center bg-white border border-[#eaeded] text-[#879196] hover:border-red-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
+                            title="Remove from dashboard">
+                            <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
                         <div class="relative z-10 flex items-start justify-between">
                             <div class="flex-1">
                                 <div

@@ -2,6 +2,7 @@
 import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import apiClient from '@/shared/api/apiClient'
+import VMProvisioningStatus from '@/components/VMProvisioningStatus.vue'
 const route = useRoute()
 const router = useRouter()
 
@@ -19,7 +20,7 @@ interface PipelineNode {
   schedule?: string
   cascade?: boolean
   destBucket?: string
-  status?: 'pending'|'running'|'completed'|'failed'
+  status?: 'pending' | 'running' | 'completed' | 'failed'
   started_at?: string
   finished_at?: string
   vm?: string
@@ -167,7 +168,7 @@ const onCanvasDrop = (e: DragEvent) => {
 const showAddNode = ref(false)
 const addNodeFromModal = (type: string) => {
   if (!project.value) return
-  
+
   let node: PipelineNode
   if (splicingEdgeId.value) {
     const edge = project.value.edges.find(e => e.id === splicingEdgeId.value)
@@ -200,7 +201,7 @@ const addNodeFromModal = (type: string) => {
     if (last) project.value.edges.push({ id: `edge-${Date.now()}`, fromNodeId: last.id, toNodeId: node.id })
     selectedNodeId.value = node.id
   }
-  
+
   showAddNode.value = false; saveProject()
 }
 const startSplice = (edgeId: string) => {
@@ -219,8 +220,8 @@ const deleteNode = (nodeId: string) => {
 const edgesSvg = ref<SVGSVGElement | null>(null)
 const drawingEdge = ref(false)
 const drawingFromNodeId = ref<string | null>(null)
-const hoveredEdgeId     = ref<string | null>(null)
-const splicingEdgeId    = ref<string | null>(null)
+const hoveredEdgeId = ref<string | null>(null)
+const splicingEdgeId = ref<string | null>(null)
 
 const startEdgeDraw = (e: MouseEvent, nodeId: string) => {
   drawingEdge.value = true; drawingFromNodeId.value = nodeId
@@ -245,8 +246,8 @@ const computedEdges = computed(() => edges.value.map(edge => {
   const to = nodes.value.find(n => n.id === edge.toNodeId)
   if (!from || !to) return null
   const x1 = from.x + NODE_W, y1 = from.y + NODE_H / 2, x2 = to.x, y2 = to.y + NODE_H / 2, cx = (x1 + x2) / 2
-  return { 
-    id: edge.id, 
+  return {
+    id: edge.id,
     path: `M${x1},${y1} C${cx},${y1} ${cx},${y2} ${x2},${y2}`,
     mx: (x1 + x2) / 2,
     my: (y1 + y2) / 2
@@ -288,7 +289,7 @@ const openScriptProps = (nodeId: string, scriptId: string) => {
 const saveScript = async () => {
   if (!scriptFormNodeId.value || !project.value) return
   const node = project.value.nodes.find(n => n.id === scriptFormNodeId.value); if (!node) return
-  
+
   if (!scriptForm.value.file) {
     log('error', 'Please select a file to upload.')
     return
@@ -307,7 +308,7 @@ const saveScript = async () => {
     const res = await apiClient.post(`/llm/training/jobs/${project.value.id}/scripts/upload`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
-    
+
     if (res.data.upload_url) {
       log('info', `Uploading [${scriptForm.value.file.name}] to storage...`)
       await apiClient.put(res.data.upload_url.replace("/api/v1", ""), scriptForm.value.file, {
@@ -318,7 +319,7 @@ const saveScript = async () => {
     if (res.data.job) {
       project.value = res.data.job
     }
-    
+
     log('info', `Script [${scriptForm.value.file.name}] uploaded successfully.`)
     showScriptModal.value = false
   } catch (e) {
@@ -327,12 +328,24 @@ const saveScript = async () => {
   }
 }
 
+// ─── Provisioning overlay state ──────────────────────────────────────────────
+const activeSessionId = ref<string | null>(null)
+const showProvisioningStatus = ref(false)
+
 const executeNode = async (nodeId: string) => {
   if (!project.value) return
   log('warn', `Executing node [${nodeId}] independently...`)
   try {
-    await apiClient.post(`/llm/training/jobs/${project.value.id}/nodes/${nodeId}/execute`)
-    log('info', `Node [${nodeId}] execution triggered successfully.`)
+    const res = await apiClient.post(`/llm/training/jobs/${project.value.id}/nodes/${nodeId}/execute`)
+    console.log('[Execute] Node Response:', res.data)
+    const sessionId: string | undefined = res.data?.session_id || res.data?.SessionID
+    if (sessionId) {
+      activeSessionId.value = sessionId
+      showProvisioningStatus.value = true
+      log('info', `Node [${nodeId}] execution triggered · session: ${sessionId}`)
+    } else {
+      log('info', `Node [${nodeId}] execution triggered successfully.`)
+    }
   } catch (e) {
     console.error('Failed to execute node', e)
     log('error', `Manual execution failed: ${e}`)
@@ -347,10 +360,18 @@ const executeScript = async (nodeId: string, scriptId: string) => {
 
   log('warn', `Executing script [${script.name}] in node [${nodeId}]...`)
   try {
-    await apiClient.post(`/llm/training/jobs/${project.value.id}/nodes/${nodeId}/execute`, null, {
+    const res = await apiClient.post(`/llm/training/jobs/${project.value.id}/nodes/${nodeId}/execute`, null, {
       params: { script_id: scriptId }
     })
-    log('info', `Script [${script.name}] execution triggered successfully.`)
+    console.log('[Execute] Script Response:', res.data)
+    const sessionId: string | undefined = res.data?.session_id || res.data?.SessionID
+    if (sessionId) {
+      activeSessionId.value = sessionId
+      showProvisioningStatus.value = true
+      log('info', `Script [${script.name}] execution triggered · session: ${sessionId}`)
+    } else {
+      log('info', `Script [${script.name}] execution triggered successfully.`)
+    }
   } catch (e) {
     console.error('Failed to execute script', e)
     log('error', `Script execution failed: ${e}`)
@@ -520,13 +541,14 @@ const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US',
               </marker>
             </defs>
             <g v-for="edge in computedEdges" :key="edge?.id" class="pointer-events-auto group">
-              <path v-if="edge" :d="edge.path" fill="none" stroke="#d1d5db" stroke-width="2" marker-end="url(#arr)" 
+              <path v-if="edge" :d="edge.path" fill="none" stroke="#d1d5db" stroke-width="2" marker-end="url(#arr)"
                 class="hover:stroke-[#ff9900] transition-colors cursor-pointer" />
               <!-- Splice button on edge -->
-              <circle v-if="edge" :cx="edge.mx" :cy="edge.my" r="8" fill="white" stroke="#eaeded" stroke-width="2" 
+              <circle v-if="edge" :cx="edge.mx" :cy="edge.my" r="8" fill="white" stroke="#eaeded" stroke-width="2"
                 class="opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer shadow-sm hover:stroke-[#ff9900]"
                 @click="startSplice(edge.id)" />
-              <text v-if="edge" :x="edge.mx" :y="edge.my+3" text-anchor="middle" font-size="10" font-weight="900" fill="#232f3e"
+              <text v-if="edge" :x="edge.mx" :y="edge.my + 3" text-anchor="middle" font-size="10" font-weight="900"
+                fill="#232f3e"
                 class="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none select-none">+</text>
             </g>
           </svg>
@@ -547,7 +569,9 @@ const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US',
             <div class="flex items-center gap-2 px-3 py-2 border-b border-gray-100">
               <div class="w-6 h-6 rounded flex items-center justify-center text-xs flex-shrink-0"
                 :class="nodeAccent(node.type).icon">
-                {{ { ingest: '⬇', clean: '✦', train: '◈', evaluate: '◉', deploy: '↗', custom: '⟨⟩', gate: '⑂' }[node.type] ??
+                {{ {
+                  ingest: '⬇', clean: '✦', train: '◈', evaluate: '◉', deploy: '↗', custom: '⟨⟩', gate: '⑂'
+                }[node.type] ??
                 '◆' }}
               </div>
               <span class="text-[10px] font-black uppercase tracking-wider text-[#232f3e] flex-1">{{ node.type }}</span>
@@ -568,7 +592,9 @@ const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US',
                 <button @click.stop="executeScript(node.id, script.id)"
                   class="opacity-0 group-hover/script:opacity-100 hover:text-[#ff9900] transition-all p-0.5"
                   title="Execute script">
-                  <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                  <svg class="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
                 </button>
               </div>
               <button
@@ -581,7 +607,7 @@ const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US',
             <!-- Footer: dest bucket -->
             <div class="px-3 pb-2">
               <span class="text-[8px] font-mono text-[#d1d5db] truncate block">{{ node.destBucket ??
-                's3://' +node.type+'/' }}</span>
+                's3://' + node.type + '/' }}</span>
             </div>
 
             <!-- Output port -->
@@ -607,13 +633,14 @@ const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US',
 
         <!-- ── Properties Panel ── -->
         <Transition name="slide-right">
-          <aside v-if="selectedNode" class="w-64 bg-white border-l-2 border-[#eaeded] flex flex-col flex-shrink-0 overflow-y-auto z-10" @click.stop>
+          <aside v-if="selectedNode"
+            class="w-64 bg-white border-l-2 border-[#eaeded] flex flex-col flex-shrink-0 overflow-y-auto z-10"
+            @click.stop>
 
             <!-- Header -->
             <div class="px-4 py-3 border-b-2 border-[#eaeded]">
               <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#ff9900] mb-1">NODE CONFIGURATION</p>
-              <input v-model="selectedNode.label" placeholder="Rename node..."
-                @change="saveProject"
+              <input v-model="selectedNode.label" placeholder="Rename node..." @change="saveProject"
                 class="w-full text-sm font-black text-[#232f3e] focus:outline-none focus:text-[#ff9900] bg-transparent border-none p-0" />
             </div>
 
@@ -628,16 +655,16 @@ const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US',
               </div>
 
               <div>
-                <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#879196] mb-1.5">Schedule & Triggers</p>
+                <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#879196] mb-1.5">Schedule & Triggers
+                </p>
                 <div class="space-y-2">
                   <div class="flex items-center justify-between">
                     <span class="text-[9px] text-[#232f3e] font-black uppercase tracking-wide">Cascade Run</span>
-                    <button
-                      @click="selectedNode.cascade = !selectedNode.cascade; saveProject()"
+                    <button @click="selectedNode.cascade = !selectedNode.cascade; saveProject()"
                       class="w-8 h-4 rounded-full transition-colors relative"
-                      :class="selectedNode.cascade ? 'bg-[#ff9900]' : 'bg-[#eaeded]'"
-                    >
-                      <span class="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all" :class="selectedNode.cascade ? 'left-4' : 'left-0.5'"></span>
+                      :class="selectedNode.cascade ? 'bg-[#ff9900]' : 'bg-[#eaeded]'">
+                      <span class="absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all"
+                        :class="selectedNode.cascade ? 'left-4' : 'left-0.5'"></span>
                     </button>
                   </div>
                   <input v-model="selectedNode.schedule" @change="saveProject" placeholder="Schedule (e.g. 1h, 1am)"
@@ -649,13 +676,16 @@ const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US',
             <!-- Scripts & Routes -->
             <div class="px-4 py-3 border-b border-[#f0f0f0]">
               <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#879196] mb-2">Scripts & Routes</p>
-              <div v-for="script in selectedNode.scripts" :key="script.id" class="mb-2 bg-[#fafafa] rounded p-2 group/prop">
+              <div v-for="script in selectedNode.scripts" :key="script.id"
+                class="mb-2 bg-[#fafafa] rounded p-2 group/prop">
                 <div class="flex items-center justify-between mb-1">
                   <p class="text-[10px] font-mono text-[#232f3e] truncate mr-2">{{ script.name }}</p>
                   <button @click="executeScript(selectedNode.id, script.id)"
                     class="opacity-0 group-hover/prop:opacity-100 text-[#545b64] hover:text-[#ff9900] transition-all"
                     title="Execute script">
-                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                    <svg class="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
                   </button>
                 </div>
                 <div class="flex items-center gap-1 text-[9px] font-mono text-[#879196]">
@@ -663,7 +693,8 @@ const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US',
                   <span class="text-emerald-500 truncate">{{ script.routeTo ?? '(default)' }}</span>
                 </div>
               </div>
-              <button class="w-full mt-1 py-1.5 border border-dashed border-[#eaeded] text-[9px] font-black uppercase tracking-[0.15em] text-[#879196] hover:border-[#ff9900] hover:text-[#ff9900] transition-all flex items-center justify-center gap-1"
+              <button
+                class="w-full mt-1 py-1.5 border border-dashed border-[#eaeded] text-[9px] font-black uppercase tracking-[0.15em] text-[#879196] hover:border-[#ff9900] hover:text-[#ff9900] transition-all flex items-center justify-center gap-1"
                 @click="addScript(selectedNode.id)">
                 + ADD SCRIPT
               </button>
@@ -681,7 +712,8 @@ const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US',
               <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#879196]">Runtime Info</p>
               <div class="flex justify-between items-center text-[9px]">
                 <span class="text-[#879196] uppercase font-black tracking-wide">Status</span>
-                <span class="font-bold uppercase tracking-tight" :class="statusColor(selectedNode.status || 'idle')">{{ selectedNode.status || 'idle' }}</span>
+                <span class="font-bold uppercase tracking-tight" :class="statusColor(selectedNode.status || 'idle')">{{
+                  selectedNode.status || 'idle' }}</span>
               </div>
               <div class="flex justify-between items-center text-[9px]">
                 <span class="text-[#879196] uppercase font-black tracking-wide">Started</span>
@@ -695,11 +727,13 @@ const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US',
 
             <!-- Execute & Delete -->
             <div class="px-4 py-3 space-y-2 mt-auto text-center border-t-2 border-[#eaeded] bg-[#fafafa]">
-              <button class="w-full py-2.5 bg-[#232f3e] text-white text-[9px] font-black uppercase tracking-[0.18em] hover:bg-[#ff9900] transition-all flex items-center justify-center gap-1.5 shadow-sm"
+              <button
+                class="w-full py-2.5 bg-[#232f3e] text-white text-[9px] font-black uppercase tracking-[0.18em] hover:bg-[#ff9900] transition-all flex items-center justify-center gap-1.5 shadow-sm"
                 @click="executeNode(selectedNode.id)">
                 ▶ Execute Node
               </button>
-              <button class="w-full py-2 border border-red-200 text-red-500 text-[8px] font-black uppercase tracking-[0.15em] hover:bg-red-50 transition-all flex items-center justify-center gap-1"
+              <button
+                class="w-full py-2 border border-red-200 text-red-500 text-[8px] font-black uppercase tracking-[0.15em] hover:bg-red-50 transition-all flex items-center justify-center gap-1"
                 @click="deleteNode(selectedNode.id)">
                 ✕ Remove Node
               </button>
@@ -825,7 +859,7 @@ const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US',
             <div>
               <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#ff9900]">Script</p>
               <h3 class="text-lg font-black text-[#232f3e] uppercase tracking-tighter">{{ editingScript ? 'Edit' : 'Add'
-                }}
+              }}
                 Script</h3>
             </div>
             <button @click="showScriptModal = false"
@@ -834,32 +868,46 @@ const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US',
           <div class="px-6 py-4 space-y-4">
             <div>
               <p class="text-[9px] font-black uppercase tracking-[0.18em] text-amber-600 mb-2">FILE-ONLY UPLOAD</p>
-              <label class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">Select Script</label>
-              <div class="border-2 border-dashed border-[#eaeded] rounded-lg p-6 text-center hover:border-[#ff9900] transition-all cursor-pointer relative"
+              <label class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">Select
+                Script</label>
+              <div
+                class="border-2 border-dashed border-[#eaeded] rounded-lg p-6 text-center hover:border-[#ff9900] transition-all cursor-pointer relative"
                 @click="$refs.fileInput.click()">
                 <input type="file" ref="fileInput" class="hidden" @change="onFileSelected" />
-                <p class="text-xs font-bold text-[#232f3e]">{{ scriptForm.file?.name || 'Click to select script file' }}</p>
-                <p class="text-[9px] text-[#879196] mt-1 uppercase tracking-widest">{{ scriptForm.file ? (scriptForm.file.size / 1024).toFixed(1) + ' KB' : 'Python, JS, or Shell' }}</p>
+                <p class="text-xs font-bold text-[#232f3e]">{{ scriptForm.file?.name || 'Click to select script file' }}
+                </p>
+                <p class="text-[9px] text-[#879196] mt-1 uppercase tracking-widest">{{ scriptForm.file ?
+                  (scriptForm.file.size / 1024).toFixed(1) + ' KB' : 'Python, JS, or Shell' }}</p>
               </div>
             </div>
 
             <div v-if="scriptFormNodeType === 'ingest'">
-              <label class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">Routes to cleaner</label>
-              <select v-model="scriptForm.routeTo" class="w-full px-3 py-2.5 border-2 border-[#eaeded] text-sm text-[#232f3e] focus:outline-none focus:border-[#ff9900] transition-colors bg-white font-mono">
+              <label class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">Routes to
+                cleaner</label>
+              <select v-model="scriptForm.routeTo"
+                class="w-full px-3 py-2.5 border-2 border-[#eaeded] text-sm text-[#232f3e] focus:outline-none focus:border-[#ff9900] transition-colors bg-white font-mono">
                 <option value="">(none — use default)</option>
-                <option v-for="cs in nodes.find(n => n.type==='clean')?.scripts ?? []" :key="cs.id" :value="cs.name">{{ cs.name }}</option>
+                <option v-for="cs in nodes.find(n => n.type === 'clean')?.scripts ?? []" :key="cs.id" :value="cs.name">{{
+                  cs.name }}</option>
               </select>
             </div>
           </div>
           <div class="flex gap-3 px-6 pb-6">
             <button @click="showScriptModal = false"
               class="flex-1 py-2.5 border-2 border-[#232f3e] text-[#232f3e] text-[9px] font-black uppercase tracking-[0.18em] hover:bg-gray-50 transition-all">Cancel</button>
-            <button @click="saveScript" :disabled="!scriptForm.file" class="flex-1 py-2.5 bg-[#ff9900] text-white text-[9px] font-black uppercase tracking-[0.18em] hover:bg-[#ec7211] transition-all disabled:opacity-40">
+            <button @click="saveScript" :disabled="!scriptForm.file"
+              class="flex-1 py-2.5 bg-[#ff9900] text-white text-[9px] font-black uppercase tracking-[0.18em] hover:bg-[#ec7211] transition-all disabled:opacity-40">
               {{ editingScript ? 'Save' : 'Upload Script' }}
             </button>
           </div>
         </div>
       </div>
+    </Transition>
+
+    <!-- ══ VM PROVISIONING STATUS OVERLAY ══════════════════════════════════ -->
+    <Transition name="slide-up-fade">
+      <VMProvisioningStatus v-if="showProvisioningStatus && activeSessionId" :sessionId="activeSessionId"
+        @close="showProvisioningStatus = false; activeSessionId = null" />
     </Transition>
 
   </div>
@@ -891,6 +939,17 @@ const formatDate = (iso?: string) => iso ? new Date(iso).toLocaleString('en-US',
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+.slide-up-fade-enter-active,
+.slide-up-fade-leave-active {
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.slide-up-fade-enter-from,
+.slide-up-fade-leave-to {
+  opacity: 0;
+  transform: translateY(16px);
 }
 
 .slide-right-enter-active,

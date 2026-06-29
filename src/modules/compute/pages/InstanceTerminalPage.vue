@@ -12,6 +12,7 @@ const router = useRouter()
 const computeStore = useComputeStore()
 const authStore = useAuthStore()
 const instanceId = route.params.id as string
+const sessionId = route.query.session as string
 
 const terminalElement = ref<HTMLElement | null>(null)
 let terminal: Terminal | null = null
@@ -92,9 +93,9 @@ const initTerminal = () => {
   const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
   const host =`localhost:${9030}` // Direct connection to EC2 service (bypassing gateway)
   const token = authStore.token
-  const wsUrl = `ws://localhost:8080/api/v1/ec2/instances/${instanceId}/terminal?token=${token}`
+  const wsUrl = `${protocol}//localhost:8080/api/v1/ec2/instances/${instanceId}/terminal/${sessionId}?token=${token}`
   
-  console.log('[Terminal] Handshake initiated at:', `${protocol}//${host}/api/v1/ec2/instances/${instanceId}/terminal?token=***`)
+  console.log('[Terminal] Handshake initiated at:', `${protocol}//${host}/api/v1/ec2/instances/${instanceId}/terminal?token=${token}`)
   
   try {
     socket = new WebSocket(wsUrl)

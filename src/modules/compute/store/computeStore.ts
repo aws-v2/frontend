@@ -14,6 +14,7 @@ export interface Instance {
     az: string
     image?: string
     cpu?: number
+    session?: string
     ram?: number
     ssh_key?: string
     [key: string]: any
@@ -467,7 +468,8 @@ export const useComputeStore = defineStore('compute', () => {
                     ssh_key: inst.ssh_key,
                     vpc_id: inst.vpc_id,
                     subnet_id: inst.subnet_id,
-                    privateIp: inst.private_ip
+                    privateIp: inst.private_ip,
+                    session:inst.session_id
                 }
             }
         } catch (error) {

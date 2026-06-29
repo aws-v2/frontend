@@ -5,6 +5,7 @@ const props = defineProps<{
   isOpen: boolean
   instance: {
     id: string
+    session:string
     name: string
     publicIp: string
     ssh_key?: string
@@ -43,7 +44,7 @@ const downloadPem = () => {
 
 const openTerminal = () => {
   if (!props.instance) return
-  window.open(`/compute/instances/${props.instance.id}/terminal`, '_blank')
+  window.open(`/compute/instances/${props.instance.id}/terminal?session=${props.instance.session}`, '_blank')
   emit('close')
 }
 </script>

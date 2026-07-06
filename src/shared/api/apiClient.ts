@@ -5,7 +5,8 @@ import { featureFlags } from '@/shared/config/featureFlags'
 const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
-    'X-Request-Source': 'web-serwin'
+    'X-Request-Source': 'web-serwin',
+    
   },
 })
 

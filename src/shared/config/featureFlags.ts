@@ -75,21 +75,33 @@ export const featureFlags = {
     const storageKey = `ff_service_${service.toLowerCase()}`
 
     const profile = config.VITE_APP_PROFILE as ServiceEnv
-    const override = getStorage(storageKey) || config[envKey]
-    // If dev, respect whatever the service flag says, else stick to profile
-    const env: ServiceEnv = (profile === 'dev'
-      ? (override as ServiceEnv) || 'dev'
-      : profile) || 'dev'
+// console.log(`The profile is* ${profile}`)
+// console.log(`The storageKey is* ${storageKey}`)
+// console.log(`The envKey is* ${envKey}`)
+
+//     const override = getStorage(storageKey) || config[envKey]
+
+// console.log(`The override is* ${override}`)
+
+//     // If dev, respect whatever the service flag says, else stick to profile
+//     const env: ServiceEnv = (profile === 'dev'
+//       ? (override as ServiceEnv) || 'dev'
+//       : profile) || 'dev'
 
     let baseUrl: string
-
-    if (env === 'staging') {
+console.log(`The environment is* ${profile}`)
+console.log(`The SERVICE_URLS.dev is* ${SERVICE_URLS.dev}`)
+console.log(`The config.VITE_API_BASE_URL is* ${config.VITE_API_BASE_URL}`)
+    if (profile === 'staging') {
       baseUrl = await resolveStagingUrl()
-    } else if (env === 'prod') {
+    } else if (profile === 'prod') {
       baseUrl = SERVICE_URLS.prod
     } else {
       baseUrl = config.VITE_API_BASE_URL || SERVICE_URLS.dev
     }
+console.log(`The baseUrl is* ${baseUrl}`)
+
+
 
 
     return baseUrl.replace(/\/$/, '') + '/'

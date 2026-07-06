@@ -30,7 +30,7 @@ export function useVMEvents(sessionId: string) {
   const errorPayload = ref<unknown>(null)
   const isConnected = ref(false)
 
-  let abortController: AbortController | null = null
+  let sse: EventSource | null = null
   let closed = false
 
   async function connect() {
@@ -40,113 +40,57 @@ export function useVMEvents(sessionId: string) {
     }
 
     try {
-      let baseUrl = (await featureFlags.getServiceUrl('llm'))
+      const baseUrl = (await featureFlags.getServiceUrl('llm')).replace(/\/$/, '')
       const token = localStorage.getItem('auth_token') ?? ''
-      
-      // Force relative path in dev to leverage Vite proxy and avoid CORS
-      if (baseUrl.includes('localhost:8080')) {
-        baseUrl = baseUrl.replace('http://localhost:8080', '')
-      }
-      baseUrl = baseUrl.replace(/\/$/, '')
       
       const url = `${baseUrl}/llm/vm/events/${sessionId}?token=${encodeURIComponent(token)}`
       
       console.log('[useVMEvents] Connecting to URL:', url)
 
-      abortController = new AbortController()
+      sse = new EventSource(url)
 
-      const response = await fetch(url, {
-        method: 'GET',
-        headers: {
-          'Authorization': token ? `Bearer ${token}` : '',
-          'Accept': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-        },
-        signal: abortController.signal,
+      sse.onopen = () => {
+        console.log('[useVMEvents] Stream connection established.')
+        isConnected.value = true
+      }
+
+      sse.onerror = (err) => {
+        console.error('[useVMEvents] EventSource error:', err)
+        if (!closed) {
+          isError.value = true
+          status.value = 'disconnected'
+          errorPayload.value = { message: 'SSE Connection failed or closed unexpectedly' }
+          disconnect()
+        }
+      }
+
+      sse.addEventListener('connected', (event: MessageEvent) => {
+         console.log('[useVMEvents] Initial "connected" event received.', event.data)
       })
 
-      console.log('[useVMEvents] Fetch response received. Status:', response.status, response.statusText)
+      sse.addEventListener('closed', (event: MessageEvent) => {
+         console.log('[useVMEvents] "closed" event received.', event.data)
+         disconnect()
+      })
 
-      if (!response.ok || !response.body) {
-        console.error('[useVMEvents] Response not OK or body missing')
-        isError.value = true
-        status.value = 'disconnected'
-        errorPayload.value = { message: `Connection failed: HTTP ${response.status}` }
-        return
+      sse.onmessage = (event: MessageEvent) => {
+        console.log('[useVMEvents] SSE frame received:', event.data)
+        try {
+          const data: VMEvent = JSON.parse(event.data)
+          handleEvent(data)
+        } catch (e) {
+          console.error('[useVMEvents] JSON Parse Error:', e, 'Raw data:', event.data)
+        }
       }
 
-      console.log('[useVMEvents] Stream connection established.')
-      isConnected.value = true
-
-      const reader = response.body.getReader()
-      const decoder = new TextDecoder()
-      let buffer = ''
-
-      // SSE frame parser
-      while (!closed) {
-        console.log('[useVMEvents] Waiting for stream chunk...')
-        const { done, value } = await reader.read()
-        
-        if (done) {
-          console.log('[useVMEvents] Stream reader done.')
-          break
-        }
-
-        buffer += decoder.decode(value, { stream: true })
-        console.log('[useVMEvents] Received chunk. Current buffer size:', buffer.length)
-        
-        const lines = buffer.split('\n')
-        buffer = lines.pop() ?? '' // keep incomplete last line
-
-        let eventType: string | null = null
-        let dataLine: string | null = null
-
-        for (const line of lines) {
-          const trimmed = line.trim()
-          if (!trimmed) {
-            // Empty line = end of SSE frame — dispatch
-            if (dataLine !== null) {
-              console.log('[useVMEvents] Dispatching SSE frame. event:', eventType, 'data:', dataLine)
-              if (eventType === 'connected') {
-                 console.log('[useVMEvents] Initial "connected" event skipped.')
-              } else {
-                try {
-                  const event: VMEvent = JSON.parse(dataLine)
-                  handleEvent(event)
-                } catch (e) {
-                  console.error('[useVMEvents] JSON Parse Error:', e, 'Raw data:', dataLine)
-                }
-              }
-              if (isProvisioned.value || isError.value) {
-                console.log('[useVMEvents] Terminal state reached, canceling reader.')
-                reader.cancel()
-                break
-              }
-            }
-            eventType = null
-            dataLine = null
-          } else if (trimmed.startsWith('event:')) {
-            eventType = trimmed.slice(6).trim()
-          } else if (trimmed.startsWith('data:')) {
-            dataLine = trimmed.slice(5).trim()
-          }
-        }
-
-        if (isProvisioned.value || isError.value) break
-      }
     } catch (err: unknown) {
       if (!closed) {
         const errMsg = err instanceof Error ? err.stack || err.message : String(err)
         console.error('[useVMEvents] Catch block error:', errMsg)
-        if (errMsg.includes('aborted') || errMsg.includes('AbortError')) return
         isError.value = true
         status.value = 'disconnected'
         errorPayload.value = { message: errMsg }
       }
-    } finally {
-      console.log('[useVMEvents] Finally block: cleaning up.')
-      isConnected.value = false
-      if (!closed) status.value = 'disconnected'
     }
   }
 
@@ -171,7 +115,10 @@ export function useVMEvents(sessionId: string) {
     if (closed) return
     console.log('[useVMEvents] Disconnecting...')
     closed = true
-    abortController?.abort()
+    if (sse) {
+      sse.close()
+      sse = null
+    }
     isConnected.value = false
   }
 

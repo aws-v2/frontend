@@ -337,6 +337,8 @@ const executeNode = async (nodeId: string) => {
   log('warn', `Executing node [${nodeId}] independently...`)
   try {
     const res = await apiClient.post(`/llm/training/jobs/${project.value.id}/nodes/${nodeId}/execute`)
+    console.log(`==>${Object.keys(res)}`)
+
     console.log('[Execute] Node Response:', res.data)
     const sessionId: string | undefined = res.data?.session_id || res.data?.SessionID
     if (sessionId) {

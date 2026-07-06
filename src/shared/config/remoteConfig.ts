@@ -62,7 +62,7 @@ export async function loadRemoteConfig(): Promise<RemoteConfig> {
       import.meta.env.VITE_APP_PROFILE ?? 'dev',
 
     VITE_API_BASE_URL:
-      import.meta.env.VITE_API_BASE_URL ?? '',
+      import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080',
 
     VITE_STAGING_TAILSCALE_IP:
       import.meta.env.VITE_STAGING_TAILSCALE_IP ?? '',

@@ -6,7 +6,7 @@ import { useComputeStore } from '../store/computeStore'
 const router = useRouter()
 const computeStore = useComputeStore()
 
-const instanceName = ref('')
+const instanceName = ref('xxx')
 const selectedInstanceType = ref('t2.micro')
 const selectedKeyPair = ref('None')
 const selectedDistro = ref('ubuntu')
@@ -55,7 +55,8 @@ const launchInstance = async () => {
             image: selectedVersion.value,
             cpu: 2,
             ram: 2048,
-            ssh_key: sshKey
+            ssh_key: sshKey,
+            name:instanceName.value
         })
         router.push({ name: 'instances-list' })
     } catch (error) {

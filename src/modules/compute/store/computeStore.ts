@@ -56,6 +56,7 @@ export interface FleetEvent {
 
 export interface CreateInstancePayload {
     image: string
+    name: string
     cpu: number
     ram: number
     ssh_key: string

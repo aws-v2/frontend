@@ -57,7 +57,7 @@ async function resolveStagingUrl(): Promise<string> {
     console.info('[staging] Reachable via Tailscale:', tailscaleUrl)
     resolvedStagingUrl = tailscaleUrl
   } else if (stagingLocalIp && await probe(localUrl)) {
-    console.info('[staging] Tailscale failed, using local IP:', tailscaleUrl)
+    console.info('[staging] Tailscale failed, using local IP:', localUrl)
     resolvedStagingUrl = localUrl
   } else {
     console.warn('[staging] Both Tailscale and local unreachable or not configured. Defaulting to Tailscale.')
@@ -75,31 +75,21 @@ export const featureFlags = {
     const storageKey = `ff_service_${service.toLowerCase()}`
 
     const profile = config.VITE_APP_PROFILE as ServiceEnv
-// console.log(`The profile is* ${profile}`)
-// console.log(`The storageKey is* ${storageKey}`)
-// console.log(`The envKey is* ${envKey}`)
+    const override = getStorage(storageKey) || config[envKey]
 
-//     const override = getStorage(storageKey) || config[envKey]
-
-// console.log(`The override is* ${override}`)
-
-//     // If dev, respect whatever the service flag says, else stick to profile
-//     const env: ServiceEnv = (profile === 'dev'
-//       ? (override as ServiceEnv) || 'dev'
-//       : profile) || 'dev'
+    // If dev, respect whatever the service flag says, else stick to profile
+    const env: ServiceEnv = (profile === 'dev'
+      ? (override as ServiceEnv) || 'dev'
+      : profile) || 'dev'
 
     let baseUrl: string
-console.log(`The environment is* ${profile}`)
-console.log(`The SERVICE_URLS.dev is* ${SERVICE_URLS.dev}`)
-console.log(`The config.VITE_API_BASE_URL is* ${config.VITE_API_BASE_URL}`)
-    if (profile === 'staging') {
+    if (env === 'staging') {
       baseUrl = await resolveStagingUrl()
-    } else if (profile === 'prod') {
+    } else if (env === 'prod') {
       baseUrl = SERVICE_URLS.prod
     } else {
       baseUrl = config.VITE_API_BASE_URL || SERVICE_URLS.dev
     }
-console.log(`The baseUrl is* ${baseUrl}`)
 
 
 

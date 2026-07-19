@@ -16,7 +16,12 @@ const toastStore = useToastStore()
 const bucketName = computed(() => route.params.bucketName as string)
 const objectKey = computed(() => {
     const key = route.params.objectKey
+    const fileId = route.query.fileId
     return Array.isArray(key) ? key.join('/') : key as string
+})
+const objectFileId = computed(() => {
+    const fileId = route.query.fileId
+    return fileId as string
 })
 
 const activeTab = ref('properties')
@@ -24,7 +29,8 @@ const tabs = ['Properties', 'Permissions', 'Versions']
 
 const fetchData = async () => {
     if (bucketName.value && objectKey.value) {
-        await s3Store.fetchFileDetails(bucketName.value, objectKey.value)
+        
+        await s3Store.fetchFileDetails(bucketName.value, objectKey.value,objectFileId.value)
     }
 }
 
@@ -413,7 +419,9 @@ const navigateBack = () => {
                                         d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
                                 </svg>
                                 <p class="text-[14px] text-[#232f3e] font-black uppercase tracking-tight italic">
-                                    OMt2K9lhp4g=</p>
+                                    {{ s3Store.currentFile?.sha256 }}
+                                    
+                                    </p>
                             </div>
                         </div>
                     </div>
@@ -470,15 +478,22 @@ const navigateBack = () => {
                                         <th class="px-6 py-4">Value</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    <tr
+                                <tbody class="border-b-2">
+
+
+                                    <span v-for="meta in s3Store.currentFile?.metadata">
+
+                                    <tr v-for="meta in s3Store.currentFile?.metadata"
                                         class="text-[12px] text-[#232f3e] font-black border-b-2 border-[#eaeded] last:border-0 hover:bg-[#fafafa] transition-colors uppercase tracking-tight">
                                         <td class="px-6 py-4 border-r-2 border-[#eaeded] text-[#545b64]">System defined
                                         </td>
-                                        <td class="px-6 py-4 border-r-2 border-[#eaeded]">Content-Type</td>
-                                        <td class="px-6 py-4">{{ s3Store.currentFile?.mime_type ||
+                                        <td class="px-6 py-4 border-r-2 border-[#eaeded]">{{ Object.keys(meta) }}</td>
+                                        <td class="px-6 py-4">{{ meta ||
                                             'application/octet-stream' }}</td>
                                     </tr>
+
+                                    </span>
+
                                 </tbody>
                             </table>
                         </div>

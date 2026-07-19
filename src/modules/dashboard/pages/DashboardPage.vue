@@ -92,7 +92,7 @@ const navigateTo = (path: string) => {
 
 
 const showUpdateModal = ref(false)
-const updateForm = ref({  sha256: '', file_name: '' })
+const updateForm = ref({  sha256: '', file_name: '',host_type:'', host_change:false })
 const updating = ref(false)
 
 const updateAgent = async () => {
@@ -101,10 +101,13 @@ const updateAgent = async () => {
         const response = await apiClient.post('/compute/host/update-agent', {
             sha256:    updateForm.value.sha256,
             file_name: updateForm.value.file_name,
+            host_change: updateForm.value.host_change,
+            host_type: updateForm.value.host_type,
+
         })
         console.log(response.data)
         showUpdateModal.value = false
-        updateForm.value = {  sha256: '', file_name: '' }
+        updateForm.value = {  sha256: '', file_name: '',host_type:'', host_change:false }
     } catch (error) {
         console.error(error)
     } finally {
@@ -185,12 +188,30 @@ const updateAgent = async () => {
                                 <input v-model="updateForm.file_name" type="text" placeholder="e.g. agent-v1.0.3"
                                     class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-medium focus:outline-none focus:border-[#ff9900] transition-colors" />
                             </div>
+                            
                             <div>
                                 <label class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
                                     SHA256
                                 </label>
                                 <input v-model="updateForm.sha256" type="text" placeholder="64-char hex hash"
                                     class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-mono focus:outline-none focus:border-[#ff9900] transition-colors" />
+                            </div>
+
+<div>
+                                <label class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
+                                    Host Type
+                                </label>
+                                <input v-model="updateForm.host_type" type="text" placeholder="eg. rds,s3"
+                                    class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-medium focus:outline-none focus:border-[#ff9900] transition-colors" />
+                            </div>
+
+
+                              <div>
+                                <label class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
+                                    Host change
+                                </label>
+                                <input type="checkbox" v-model="updateForm.host_change"  placeholder="eg. rds,s3"
+                                    class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-medium focus:outline-none focus:border-[#ff9900] transition-colors" />
                             </div>
                         </div>
 

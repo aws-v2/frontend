@@ -17,14 +17,19 @@ const showActionsDropdown = ref(false)
 const showDeleteObjectModal = ref(false)
 
 const selectedObjectsForDelete = computed(() => {
-    return s3Store.files.filter(f => selectedFileIds.value.includes(f.key))
+    return (s3Store.files || []).filter(f => selectedFileIds.value.includes(f.key))
 })
 
 const bucketName = computed(() => route.params.bucketName as string)
 const prefix = computed(() => {
     const p = route.params.prefix
-    if (Array.isArray(p)) return p.join('/') + '/'
-    return (p as string) || ''
+    const rawPrefix = Array.isArray(p) ? p.join('/') : (p as string) || ''
+    if (!rawPrefix) return ''
+    try {
+        return decodeURIComponent(rawPrefix)
+    } catch {
+        return rawPrefix
+    }
 })
 
 const folderName = computed(() => {
@@ -92,9 +97,10 @@ const handleClose = () => {
 
 const handleObjectClick = (item: any) => {
     if (item.isFolder || item.mime_type === 'folder' || item.key.endsWith('/')) {
-        router.push(`/s3/buckets/${bucketName.value}/folder/${item.key}`)
+        router.push(encodeURI(`/s3/buckets/${bucketName.value}/folder/${item.key}`))
     } else {
-        router.push(`/s3/buckets/${bucketName.value}/objects/${encodeURIComponent(item.key)}`)
+        router.push(encodeURI(`/s3/buckets/${bucketName.value}/objects/${item.key}?fileId=${item.file_id}`))
+        
     }
 }
 
@@ -128,7 +134,7 @@ const handleDownload = async () => {
     if (selectedFileIds.value.length > 0) {
         try {
             for (const id of selectedFileIds.value) {
-                const file = s3Store.files.find(f => f.key === id)
+                const file = (s3Store.files || []).find(f => f.key === id)
                 if (file && file.mime_type !== 'folder' && !id.endsWith('/')) {
                     await s3Store.downloadFile(bucketName.value, file.file_id, id.split('/').pop() || id)
                 }
@@ -152,7 +158,7 @@ const handleDeleteSuccess = () => {
 }
 
 const contextualMetrics = computed(() => {
-    const rawFiles = s3Store.files
+    const rawFiles = s3Store.files || []
     const p = prefix.value
 
     const folderFiles = rawFiles.filter(f => f.key.startsWith(p) && f.key !== p)
@@ -222,7 +228,7 @@ watch(() => prefix.value, () => {
             </span>
             <template v-for="(part, index) in breadcrumbs" :key="index">
                 <span class="text-[#eaeded] font-normal not-italic mx-1">/</span>
-                <span @click="router.push(`/s3/buckets/${bucketName}/folder/${part.path}`)"
+                <span @click="router.push(encodeURI(`/s3/buckets/${bucketName}/folder/${part.path}`))"
                     class="hover:text-[#ff9900] cursor-pointer transition-colors">
                     {{ part.name }}
                 </span>
@@ -244,7 +250,7 @@ watch(() => prefix.value, () => {
                     </h1>
                 </div>
                 <div class="flex gap-4">
-                    <button @click="router.push(`/s3/buckets/${bucketName}/upload?prefix=${prefix}`)"
+                    <button @click="router.push(`/s3/buckets/${bucketName}/upload?prefix=${encodeURIComponent(prefix)}`)"
                         class="px-8 py-3 bg-white border-2 border-[#eaeded] text-[#232f3e] text-xs font-black uppercase tracking-widest hover:border-[#ff9900] transition-all active:scale-95 italic">
                         Upload Objects
                     </button>
@@ -394,7 +400,8 @@ watch(() => prefix.value, () => {
                                 <td class="p-6 border-r border-white/5">
                                     <span
                                         class="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-400">
-                                        {{ (item as any).isFolder ? 'Folder' : ((item as any).mime_type || '-') }}
+                                        {{ (item as any).isFolder ? 'Foldeer' : ((item as any).mime_type || '-') }}
+                                        
                                     </span>
                                 </td>
                                 <td
@@ -405,10 +412,11 @@ watch(() => prefix.value, () => {
                                     class="p-6 border-r border-white/5 text-[11px] text-slate-500 font-bold tabular-nums group-hover:text-slate-400">
                                     {{ (item as any).isFolder ? '-' : formatSize((item as any).size || 0) }}
                                 </td>
+                                
                                 <td
                                     class="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/70 group-hover:text-indigo-400 transition-colors">
                                     {{ (item as any).storage_class || 'Standard' }}
-                                </td>
+                                </td>torage Clas
                             </tr>
                             <tr v-if="displayItems.length === 0">
                                 <td colspan="6" class="p-32 text-center bg-[#fafafa]/50 italic group">

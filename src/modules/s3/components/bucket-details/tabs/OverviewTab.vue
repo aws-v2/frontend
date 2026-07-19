@@ -24,95 +24,39 @@ const showCreateFolderModal = ref(false)
 const showDeleteObjectModal = ref(false)
 const selectedFileIds = ref<string[]>([])
 
+export interface FileNode {
+  file_id: string
+  name: string
+  key: string
+  size: number
+  mime_type: string
+  sha256: string
+  created_at: string
+  metadata?: Record<string, string>
+}
+ 
+export interface FolderNode {
+  name: string        // just this folder's own segment, e.g. "vacation"
+  path: string         // full path from bucket root, e.g. "images/vacation/"
+  files: FileNode[]
+  folders: FolderNode[] // nested subfolders, recursive
+}
+ 
+export interface TheBucketObject {
+  bucket_id: string
+  bucket_name: string
+  total_files: number
+  total_folders: number
+  root_files: FileNode[]
+  folders: FolderNode[]
+}
+ 
+
+
 const selectedObjectsForDelete = computed(() => {
-    return s3Store.files.filter(f => selectedFileIds.value.includes(f.key))
+    return (s3Store.files.value || []).filter(f => selectedFileIds.value.includes(f.key))
 })
 
-const toggleSelectAll = () => {
-    if (selectedFileIds.value.length === s3Store.files.length) {
-        selectedFileIds.value = []
-    } else {
-        selectedFileIds.value = s3Store.files.map(f => f.key)
-    }
-}
-
-const toggleSelectOne = (id: string) => {
-    const index = selectedFileIds.value.indexOf(id)
-    if (index === -1) {
-        selectedFileIds.value.push(id)
-    } else {
-        selectedFileIds.value.splice(index, 1)
-    }
-}
-
-const isAllSelected = computed(() => {
-    return s3Store.files.length > 0 && selectedFileIds.value.length === s3Store.files.length
-})
-
-const isAnySelected = computed(() => selectedFileIds.value.length > 0)
-const isSingleSelected = computed(() => selectedFileIds.value.length === 1)
-
-const formatSize = (bytes: number) => {
-    if (bytes === 0) return '0 B'
-    const k = 1024
-    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-    const i = Math.floor(Math.log(bytes) / Math.log(k))
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
-}
-
-const formatDate = (dateString: string) => {
-    if (!dateString) return '-'
-    const date = new Date(dateString)
-    return date.toLocaleString('en-US', {
-        month: 'short',
-        day: 'numeric',
-        year: 'numeric',
-        hour: 'numeric',
-        minute: 'numeric',
-        second: 'numeric',
-        hour12: true
-    })
-}
-
-const filteredFiles = computed(() => {
-    if (!searchQuery.value) return s3Store.files
-    return s3Store.files.filter((f: S3Object) =>
-        f.key.toLowerCase().includes(searchQuery.value.toLowerCase())
-    )
-})
-
-const navigateToObject = (file: S3Object) => {
-    if (file.mime_type === 'folder' || file.key.endsWith('/')) {
-        router.push({
-            name: 's3-folder-contents',
-            params: {
-                bucketName: props.bucketName,
-                prefix: file.key
-            }
-        })
-    } else {
-        router.push({
-            name: 's3-object-details',
-            params: {
-                bucketName: props.bucketName,
-                objectKey: file.key
-            }
-        })
-    }
-}
-
-const handleOpenObject = () => {
-    if (selectedFileIds.value.length === 1) {
-        const file = s3Store.files.find(f => f.key === selectedFileIds.value[0])
-        if (file) {
-            navigateToObject(file)
-        }
-    }
-}
-
-const handleObjectClick = (file: S3Object) => {
-    navigateToObject(file)
-}
 
 const handleCopyS3URI = async () => {
     if (selectedFileIds.value.length === 1) {
@@ -144,7 +88,7 @@ const handleDownload = async () => {
     if (selectedFileIds.value.length > 0) {
         try {
             for (const id of selectedFileIds.value) {
-                const file = s3Store.files.find(f => f.key === id)
+                const file = (s3Store.files.value || []).find(f => f.key === id)
                 if (file && file.mime_type !== 'folder' && !id.endsWith('/')) {
                     await s3Store.downloadFile(props.bucketName, file.file_id, id.split('/').pop() || id)
                 }
@@ -171,13 +115,7 @@ const navigateToBreadcrumb = (p: string) => {
     if (p === '') {
         router.push(`/s3/buckets/${props.bucketName}?tab=overview`)
     } else {
-        router.push({
-            name: 's3-folder-contents',
-            params: {
-                bucketName: props.bucketName,
-                prefix: p
-            }
-        })
+        router.push(encodeURI(`/s3/buckets/${props.bucketName}/folder/${p}`))
     }
 }
 
@@ -192,10 +130,9 @@ const breadcrumbs = computed(() => {
 })
 
 const contextualMetrics = computed(() => {
-    const rawFiles = s3Store.files
+    const rawFiles = s3Store.files.value || []
     const prefix = props.prefix || ''
-
-    // If we are at root and have bucket stats, use them as base
+    // // If we are at root and have bucket stats, use them as base
     if (!prefix && s3Store.currentBucketStats) {
         // We still need to count folders if not provided by backend
         const folders = new Set<string>()
@@ -247,7 +184,179 @@ watch(() => props.prefix, () => {
 
 onMounted(() => {
     s3Store.fetchFiles(props.bucketName, props.prefix)
+    s3Store.fetchFilesv2(props.bucketName)
 })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// A single shape the table can render regardless of whether the row is a
+// folder or a file — this replaces the old flat S3Object list.
+type DisplayItem = {
+    key: string
+    name: string
+    isFolder: boolean
+    mime_type: string
+    size: number
+    last_modified: string
+    storage_class: string
+    file_id?: string
+}
+ 
+// Fetch the WHOLE bucket's recursive tree once when this tab mounts.
+// Navigating into subfolders after this is pure client-side tree
+// traversal via s3Store.getItemsAtPrefix — no extra network calls.
+onMounted(() => {
+    s3Store.fetchFilesv2(props.bucketName)
+})
+ 
+const currentLevelItems = computed(() => {
+    const { folders, files } = s3Store.getItemsAtPrefix(props.prefix || '')
+ 
+    const folderItems: DisplayItem[] = folders.map((f: FolderNode) => ({
+        key: f.path,
+        name: f.name,
+        isFolder: true,
+        mime_type: 'folder',
+        size: 0,
+        last_modified: '',
+        storage_class: '',
+    }))
+ 
+    const fileItems: DisplayItem[] = files.map((f:  FileNode) => ({
+        key: f.key,
+        name: f.name,
+        isFolder: false,
+        mime_type: f.mime_type,
+        size: f.size,
+        last_modified: f.created_at,
+        storage_class: 'Standard',
+        file_id: f.file_id,
+    }))
+ 
+    // folders first, then files — standard file-explorer ordering
+    return [...folderItems, ...fileItems]
+})
+ 
+const filteredFiles = computed(() => {
+    if (!searchQuery.value) return currentLevelItems.value
+    return currentLevelItems.value.filter((f: DisplayItem) =>
+        f.name.toLowerCase().includes(searchQuery.value.toLowerCase())
+    )
+})
+ 
+const toggleSelectAll = () => {
+    if (selectedFileIds.value.length === filteredFiles.value.length) {
+        selectedFileIds.value = []
+    } else {
+        selectedFileIds.value = filteredFiles.value.map((f) => f.key)
+    }
+}
+ 
+const toggleSelectOne = (id: string) => {
+    const index = selectedFileIds.value.indexOf(id)
+    if (index === -1) {
+        selectedFileIds.value.push(id)
+    } else {
+        selectedFileIds.value.splice(index, 1)
+    }
+}
+ 
+const isAllSelected = computed(() => {
+    return filteredFiles.value.length > 0 && selectedFileIds.value.length === filteredFiles.value.length
+})
+ 
+const isAnySelected = computed(() => selectedFileIds.value.length > 0)
+const isSingleSelected = computed(() => selectedFileIds.value.length === 1)
+ 
+const formatSize = (bytes: number) => {
+    if (bytes === 0) return '0 B'
+    const k = 1024
+    const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
+}
+ 
+const formatDate = (dateString: string) => {
+    if (!dateString) return '-'
+    const date = new Date(dateString)
+    return date.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: 'numeric',
+        second: 'numeric',
+        hour12: true
+    })
+}
+ 
+const navigateToObject = (item: DisplayItem) => {
+    if (item.isFolder) {
+        router.push(encodeURI(`/s3/buckets/${props.bucketName}/folder/${item.key}`))
+    } else {
+        router.push(encodeURI(`/s3/buckets/${props.bucketName}/objects/${item.key}?fileId=${item.file_id}`))
+    }
+}
+ 
+const handleOpenObject = () => {
+    if (selectedFileIds.value.length === 1) {
+        const item = filteredFiles.value.find((f) => f.key === selectedFileIds.value[0])
+        if (item) navigateToObject(item)
+    }
+}
+ 
+const handleObjectClick = (item: DisplayItem) => {
+    navigateToObject(item)
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 </script>
 
 <template>
@@ -258,7 +367,8 @@ onMounted(() => {
                 :region="s3Store.currentBucket?.region || region" :createdAt="s3Store.currentBucket?.created_at"
                 :arn="s3Store.currentBucket?.arn" />
 
-            <StorageMetricsWidget class="w-full" :totalSize="contextualMetrics.totalSize"
+            <StorageMetricsWidget class="w-full" 
+            :totalSize="contextualMetrics.totalSize"
                 :totalFiles="contextualMetrics.totalFiles" :totalFolders="contextualMetrics.totalFolders"
                 :changePercent="0" :usagePercent="0" />
         </div>
@@ -437,8 +547,7 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
-
-            <!-- Table Header -->
+<!-- Table Header -->
             <div
                 class="bg-[#fafafa] border-b-2 border-[#eaeded] flex text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] italic">
                 <div class="w-16 p-6 border-r-2 border-[#eaeded] flex justify-center items-center">
@@ -514,58 +623,49 @@ onMounted(() => {
                 </p>
             </div>
 
-            <div v-else-if="s3Store.getDirectoryItems(prefix || '').length > 0">
-                <div v-for="file in s3Store.getDirectoryItems(prefix || '')" :key="(file as S3Object).key"
+            <div v-else-if="filteredFiles.length > 0">
+                <div v-for="item in filteredFiles" :key="item.key"
                     class="hover:bg-[#fafafa] group border-b-2 border-[#eaeded] last:border-0 flex text-[13px] text-[#232f3e] transition-all cursor-pointer italic"
-                    :class="{ 'bg-[#ff9900]/[0.02]': selectedFileIds.includes((file as S3Object).key) }"
-                    @click="toggleSelectOne((file as S3Object).key)">
+                    :class="{ 'bg-[#ff9900]/[0.02]': selectedFileIds.includes(item.key) }"
+                    @click="toggleSelectOne(item.key)">
                     <div class="w-16 p-4 border-r-2 border-[#eaeded] flex justify-center items-center shrink-0">
                         <div class="w-5 h-5 border-2 border-[#eaeded] bg-white flex items-center justify-center transition-all"
-                            :class="selectedFileIds.includes((file as S3Object).key) ? 'border-[#ff9900] bg-[#ff9900]/10' : 'group-hover:border-[#ff9900]'">
-                            <div v-if="selectedFileIds.includes((file as S3Object).key)" class="w-2 h-2 bg-[#ff9900]">
-                            </div>
+                            :class="selectedFileIds.includes(item.key) ? 'border-[#ff9900] bg-[#ff9900]/10' : 'group-hover:border-[#ff9900]'">
+                            <div v-if="selectedFileIds.includes(item.key)" class="w-2 h-2 bg-[#ff9900]"></div>
                         </div>
                     </div>
                     <div class="flex-1 p-6 border-r-2 border-[#eaeded] flex items-center gap-6 overflow-hidden">
                         <!-- Folder Icon -->
-                        <div v-if="(file as any).mime_type === 'folder' || (file as any).key?.endsWith('/')"
-                            class="w-6 h-6 text-[#ff9900] shrink-0">
+                        <div v-if="item.isFolder" class="w-6 h-6 text-[#ff9900] shrink-0">
                             <svg fill="currentColor" viewBox="0 0 20 20">
                                 <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z"></path>
                             </svg>
                         </div>
                         <!-- File Icon -->
-                        <div v-else
-                            class="w-6 h-6 text-[#545b64] shrink-0 group-hover:text-[#ff9900] transition-colors">
+                        <div v-else class="w-6 h-6 text-[#545b64] shrink-0 group-hover:text-[#ff9900] transition-colors">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                     d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z">
                                 </path>
                             </svg>
                         </div>
-                        <span
-                            class="font-black text-[#232f3e] hover:text-[#ff9900] transition-colors truncate uppercase tracking-tight"
-                            @click.stop="navigateToObject(file as S3Object)">
-                            {{ (prefix && (file as any).key?.startsWith(prefix)) ? (file as
-                                any).key.slice(prefix.length) : (file as
-                                    any).key }}
+                        <span class="font-black text-[#232f3e] hover:text-[#ff9900] transition-colors truncate uppercase tracking-tight"
+                            @click.stop="navigateToObject(item)">
+                            {{ item.name }}
                         </span>
                     </div>
-                    <div
-                        class="w-40 p-6 border-r-2 border-[#eaeded] flex items-center text-[#545b64] font-bold uppercase tracking-widest text-[10px] shrink-0">
-                        {{ (file as any).mime_type === 'folder' ? 'Folder' : (file as any).mime_type || 'Object' }}
+                    <div class="w-40 p-6 border-r-2 border-[#eaeded] flex items-center text-[#545b64] font-bold uppercase tracking-widest text-[10px] shrink-0">
+                        {{ item.isFolder ? 'Folder' : (item.mime_type || 'Object') }}
                     </div>
-                    <div
-                        class="w-64 p-6 border-r-2 border-[#eaeded] flex items-center text-[#545b64] font-bold uppercase tracking-widest text-[10px] shrink-0">
-                        {{ formatDate((file as any).last_modified) }}
+                    <div class="w-64 p-6 border-r-2 border-[#eaeded] flex items-center text-[#545b64] font-bold uppercase tracking-widest text-[10px] shrink-0">
+                        {{ item.isFolder ? '-' : formatDate(item.last_modified) }}
                     </div>
-                    <div
-                        class="w-40 p-6 border-r-2 border-[#eaeded] flex items-center text-[#232f3e] font-black uppercase tracking-tight shrink-0">
-                        {{ (file as any).mime_type === 'folder' ? '-' : formatSize((file as any).size || 0) }}
+                    <div class="w-40 p-6 border-r-2 border-[#eaeded] flex items-center text-[#232f3e] font-black uppercase tracking-tight shrink-0">
+                        {{ item.isFolder ? '-' : formatSize(item.size || 0) }}
                     </div>
                     <div class="w-48 p-6 flex items-center shrink-0">
                         <span class="text-[#ff9900] font-black text-[10px] uppercase tracking-[0.2em] italic">
-                            {{ (file as any).storage_class || 'Standard' }}
+                            {{ item.isFolder ? '-' : (item.storage_class || 'Standard') }}
                         </span>
                     </div>
                 </div>

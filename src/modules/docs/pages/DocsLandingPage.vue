@@ -193,7 +193,6 @@ const getIcon = (service: string) => {
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800;900&display=swap');
 
 .font-urbanist {
     font-family: 'Urbanist', sans-serif;

@@ -68,7 +68,7 @@ const loadProject = async () => {
     const res = await apiClient.get(`/llm/training/jobs/${route.params.id}`)
     if (!res.data) { notFound.value = true; return }
 
-    const found: SageMakerProject = res.data
+    const found: SageMakerProject = res.data.data
     if (!found.nodes) found.nodes = buildDefaultNodes(found)
     if (!found.edges) found.edges = buildDefaultEdges(found.nodes)
     project.value = found
@@ -305,13 +305,16 @@ const saveScript = async () => {
 
   log('info', `Initializing upload for [${scriptForm.value.file.name}]...`)
   try {
+      console.log("**8*****8*8*88888*88888888")
+
     const res = await apiClient.post(`/llm/training/jobs/${project.value.id}/scripts/upload`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' }
     })
+      console.log("*1*8*****8*8*88888*88888888")
 
-    if (res.data.upload_url) {
+    if (res.data.data.upload_url) {
       log('info', `Uploading [${scriptForm.value.file.name}] to storage...`)
-      await apiClient.put(res.data.upload_url.replace("/api/v1", ""), scriptForm.value.file, {
+      await apiClient.put(res.data.data.upload_url.replace("/api/v1", ""), scriptForm.value.file, {
         headers: { 'Content-Type': scriptForm.value.file.type || 'application/octet-stream' }
       })
     }

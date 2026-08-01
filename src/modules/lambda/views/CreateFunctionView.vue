@@ -5,6 +5,7 @@ import AuthorFromScratch from '../components/AuthorFromScratch.vue'
 import UseBlueprint from '../components/UseBlueprint.vue'
 import ContainerImage from '../components/ContainerImage.vue'
 import { useLambdaStore } from '../store/lambdaStore'
+import Objects from '@/modules/docs/content/storage/Objects.vue'
 
 const router = useRouter()
 const lambdaStore = useLambdaStore()
@@ -26,7 +27,9 @@ const createFunction = async () => {
     const data = scratchRef.value.getFormData()
 
     if (!data.name) {
-      alert('Function name is required.')
+      alert(`Function name is required.: ${data.env}`)
+
+      alert(`Function name is required.: ${typeof(data.file)}`)
       return
     }
 
@@ -43,7 +46,9 @@ const createFunction = async () => {
     })
 
     try {
-      await lambdaStore.registerFunction(formData)
+      alert(`calling lambda store to register function.: ${typeof(data.file)}`)
+
+      await lambdaStore.registerFunction(formData, data)
       router.push({ name: 'lambda-landing' })
     } catch (error) {
       alert('Failed to initialize forge. Check console for details.')

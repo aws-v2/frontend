@@ -4,28 +4,7 @@ import apiClient from '@/shared/api/apiClient'
 import type { Vpc } from '@/shared/types/vpc'
 
 
-export interface RdsDatabase {
-    id: string
-    name: string
-    user?: string
-    status?: string
-    engine?: string
-    endpoint?: string
-    port?: number
-    createdAt?: string
-    region?: string
-    // New fields from backend update
-    arn?: string
-    connectionString?: string
-    host?: string
-    physicalDbName?: string
-    roleName?: string
-    password?: string
-    vpcId?: string
-    privateIp?: string
-    publicConnectionString?: string
-    publicPort?: number
-}
+
 
 export interface RdsSnapshot {
     id: string
@@ -101,10 +80,65 @@ export interface RdsAggregateMetrics {
         memory: number
     }>
 }
+export interface RdsDatabase {
+    id: string
+    name: string
+    user?: string
+    status?: string
+    engine?: string
+    endpoint?: string
+    port?: number
+    createdAt?: string
+    region?: string
+    // New fields from backend update
+    arn?: string
+    connectionString?: string
+    host?: string
+    physicalDbName?: string
+    roleName?: string
+    password?: string
+    vpcId?: string
+    privateIp?: string
+    publicConnectionString?: string
+    publicPort?: number
+}
+// type CurrentDB struct {
+// 	ID               string `json:"id"`
+// 	DBUser           string `json:"db_user"`
+// 	DBPassword       string `json:"db_password"`
+// 	PublicConnectionString string `json:"public_connection_string"`
+// 	VPCConnectionString string `json:"vpc_connection_string"`
+// 	DBPort           int    `json:"db_port"`
+// 	PublicPort       int    `json:"public_port"`
+// 	Engine           string `json:"engine"`
+// 	CreatedAt        string `json:"created_at"`
+// 	VPCID            string `json:"vpc_id"` // the port in the vm where the db runs, default is 5432
+// 	Status           string `json:"status"`
+// 	VpcIP           string `json:"vpc_ip"`
 
+// 	DBName string `json:"name"` // name of the database
+// 	Region string `json:"region"`
+// }
+export interface CurrentDB {
+    id: string //
+    db_user: string //
+    db_password: string //
+    public_connection_string: string //
+    vpc_connection_string: string // 
+    db_port: number //
+    public_port: number //
+    engine: string //
+    created_at: string //
+    vpc_id: string   // the port in the vm where the db runs, default is 5432
+    status: string
+    name: string   // name of the database
+    region: string
+    vpc_ip: string
+}
 export const useRdsStore = defineStore('rds', () => {
     const databases = ref<RdsDatabase[]>([])
-    const currentDatabase = ref<RdsDatabase | null>(null)
+    // const currentDatabase = ref<RdsDatabase | null>(null)
+    const currentDatabase = ref<CurrentDB | null>(null)
     const snapshots = ref<RdsSnapshot[]>([])
     const volumes = ref<RdsVolume[]>([])
     const aggregateMetrics = ref<RdsAggregateMetrics | null>(null)
@@ -113,26 +147,25 @@ export const useRdsStore = defineStore('rds', () => {
     const isLoading = ref(false)
     const error = ref<string | null>(null)
 
-    const mapDb = (d: any): RdsDatabase => ({
-        id: d.id || d.DatabaseID || d.Id || '',
-        name: d.name || d.Name || d.DatabaseName || '',
-        user: d.user || d.User || d.roleName || d.username,
-        status: d.status || d.Status || 'available',
-        engine: d.engine || d.Engine || 'PostgreSQL',
-        endpoint: d.endpoint || d.Endpoint || d.host,
-        port: d.port || d.Port || 5432,
-        createdAt: d.createdAt || d.CreatedAt || d.created_at,
+    const mapDb = (d: any): CurrentDB => ({
+        id: d.id || 'unknown db id',
+        name: d.name || 'unknown db name',
+        db_user: d.db_user || "unknown db user",
+        status: d.status || 'SUSPENDED',
+        engine: d.engine || 'PostgreSQL',
+        public_port: d.public_port || "Unknown public port",
+        db_port: d.db_port || d.Port || 5432,
+        created_at: d.created_at || "unknown creation time",
         region: d.region || 'eu-north-1',
-        arn: d.arn || d.Arn,
-        connectionString: d.connectionString || d.ConnectionString,
-        host: d.host || d.Host,
-        physicalDbName: d.physicalDbName || d.PhysicalDbName,
-        roleName: d.roleName || d.RoleName,
-        password: d.password || d.Password,
-        vpcId: d.vpcId || d.vpc_id || d.VpcId,
-        privateIp: d.privateIp || d.private_ip || d.host,
-        publicConnectionString: d.publicConnectionString || d.PublicConnectionString,
-        publicPort: d.publicPort || d.public_port || d.PublicPort,
+        public_connection_string: d.public_connection_string || "Unknown public connection string",
+        vpc_connection_string: d.vpc_connection_string || "unknown vpc connection strign",
+        db_password: d.db_password || "Unknown password",
+        vpc_id: d.vpc_id || "Unknown vpc id",
+        vpc_ip:d.vpc_ip || "Unknown vpc for this user"
+        
+
+
+
     })
 
     const mapSnapshot = (s: any): RdsSnapshot => ({
@@ -171,7 +204,7 @@ export const useRdsStore = defineStore('rds', () => {
     const fetchDatabaseById = async (id: string) => {
         isLoading.value = true
         try {
-            const response = await apiClient.get<any>(`/rds/databases/${id}`)
+            const response = await apiClient.get<{ code: number; message: string; data: CurrentDB }>(`/rds/databases/${id}`)
             const d = response.data?.data || response.data
 
 

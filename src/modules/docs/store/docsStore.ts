@@ -11,16 +11,31 @@ export interface DocCategory {
     items: DocItem[];
 }
 
+
+
+export interface CategoriesMapped {
+    categories_mapped: DocCategory[];
+    scope: 'public' | 'internal';
+}
+
+// "service":    chooseString(publicData, internalData),
+// "apiVersion": chooseVersion(publicData, internalData),
+// "scope":      "internal",
+// "internal":   safeCategories(internalData),
+// "public":     safeCategories(publicData),
 export interface DocManifest {
     service: string;
     version?: string;
-    categories: DocCategory[];
+    apiVersion?: string;
+    scope?: string;
+    internal?: DocCategory[];
+    public?: DocCategory;
 }
 
-// The backend now returns a map of manifests based on authorization
-export interface UnifiedManifestResponse {
-    public: DocManifest;
-    internal?: DocManifest;
+export interface ScopedCategories {
+    scope: string;
+    publicCategories: DocCategory[];
+    internalCategories: DocCategory[];
 }
 
 export interface DocResponse {
@@ -37,16 +52,16 @@ export interface DocResponse {
 type UserRole = 'ADMIN' | 'ENGINEER' | 'USER' | null;
 
 const SERVICE_REGISTRY: Record<string, string> = {
-    s3: '/s3',
+    // s3: '/s3',
     rds: '/rds',
-    metrics: '/metrics',
-    lambda: '/lambda',
-    gamelift: '/gamelift',
-    compute: '/ec2',
-    gateway: '/gateway',
-    identity: '/identity',
-    config: '/config',
-    auth: '/auth',
+    // metrics: '/metrics',
+    // lambda: '/lambda',
+    // gamelift: '/gamelift',
+    // ec2: '/compute',
+    // gateway: '/gateway',
+    // identity: '/identity',
+    // config: '/config',
+    // auth: '/auth',
     sagemaker: '/llm',
 };
 
@@ -74,13 +89,57 @@ function getRoleFromToken(): UserRole {
 function getToken(): string | null {
     return localStorage.getItem('auth_token') ?? sessionStorage.getItem('auth_token');
 }
+// export interface DocManifest {
+//     service: string;
+//     version?: string;
+//     apiVersion?:string;
+//     scope?:string;
+//     internal?:string[];
+//     public?:string;
+//     categories: DocCategory[];
+//     categories_mapped: CategoriesMapped;
+// }
+
+// export interface ScopedCategories {
+//     scope: 'public' | 'internal';
+//     publicCategories: DocCategory[];
+//     internalCategories: DocCategory[];
+// }
+
+
+// ── categories_mapped splitting helper ────────────────────────────────────────
+// Shared by the store getter below and safe to unit test in isolation.
+function splitScopedCategories(manifest: DocManifest | undefined): ScopedCategories {
+    const mapped = manifest?.apiVersion;
+
+
+
+    if (!manifest || !Array.isArray(manifest.public)) {
+        return { scope: manifest?.scope, publicCategories: [], internalCategories: [] };
+    }
+
+    if (manifest.scope === 'internal') {
+        return {
+            scope: 'internal',
+            publicCategories: manifest.public,
+            internalCategories: manifest.internal,
+        };
+    }
+
+    // scope === 'public' (or an unexpected/degraded shape) -> everything is public.
+    return {
+        scope: 'public',
+        publicCategories: manifest.public,
+        internalCategories: [],
+    };
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 
 export const useDocsStore = defineStore('docs', {
     state: () => ({
-        // Stores nested manifests per service: { gamelift: { public: ..., internal: ... } }
-        manifests: {} as Record<string, UnifiedManifestResponse>,
+        // Stores one manifest per service: { s3: { service, categories, categories_mapped, ... } }
+        manifests: {} as Record<string, DocManifest>,
         manifestErrors: {} as Record<string, string>,
 
         currentDoc: null as DocResponse | null,
@@ -101,6 +160,13 @@ export const useDocsStore = defineStore('docs', {
     },
 
     actions: {
+        // Splits a service's categories_mapped into { publicCategories, internalCategories, scope }.
+        // Use this everywhere instead of reading `categories_mapped` directly so the
+        // positional assumption above only lives in one place.
+        scopedCategories(serviceId: string): ScopedCategories {
+
+            return splitScopedCategories(this.manifests[serviceId]);
+        },
         openHelp(service: string, slug: string) {
             this.drawer.service = service;
             this.drawer.slug = slug;
@@ -118,9 +184,10 @@ export const useDocsStore = defineStore('docs', {
 
             const fetches = Object.entries(SERVICE_REGISTRY).map(async ([service, basePath]) => {
                 try {
-                    // One call to get all authorized manifest scopes for this service
-                    // The backend returns { data: { public: {...}, internal: {...} } }
+                    // One call to get the role-filtered manifest for this service.
+                    // The backend returns { data: { service, internal,public, scope, service //categories, categories_mapped, ... } }
                     // apiClient interceptor handles Authorization header
+                    console.log(`loging the base path forthe docs url ${basePath}`)
                     const response = await apiClient.get(`${basePath}/docs`);
                     if (response.data?.data) {
                         this.manifests[service] = response.data.data;
@@ -148,6 +215,8 @@ export const useDocsStore = defineStore('docs', {
                 this.loading = false;
                 return;
             }
+
+            console.log(`thisis thec the slig ${service}`)
 
             try {
                 // The backend checks both public and internal folders based on your JWT role

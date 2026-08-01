@@ -91,13 +91,19 @@ const goToFullDoc = () => {
 };
 
 watch(() => props.isOpen, (newVal) => {
+            console.log(`95 the the slig ${props.slug}`)
+
     if (newVal && props.service && props.slug) {
+
         docsStore.fetchDocContent(props.service, props.slug);
     }
 });
 
 watch(() => props.slug, (newSlug) => {
+            console.log(`103 the the slig ${props.slug}`)
+
     if (props.isOpen && props.service && newSlug) {
+
         docsStore.fetchDocContent(props.service, newSlug);
     }
 });

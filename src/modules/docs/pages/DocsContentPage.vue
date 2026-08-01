@@ -9,7 +9,7 @@
 
             <!-- Main Content -->
             <main class="flex-1 flex flex-col overflow-hidden relative">
-
+<!-- TODO: -->
                 <!-- Global Navigation Overlay (Fixed Top) -->
                 <header
                     class="h-16 border-b border-gray-100 flex items-center justify-between px-10 bg-white/90 backdrop-blur-md z-20">
@@ -81,6 +81,7 @@
                         <!-- Active Content -->
                         <div v-else-if="docsStore.currentDoc" class="fade-in">
                             <div class="mb-16 pb-12 border-b border-gray-50">
+                                <p>=============================</p>
                                 <p
                                     class="text-2xl text-[#879196] leading-relaxed font-medium tracking-tight italic max-w-3xl">
                                     {{ docsStore.currentDoc.metadata.description }}
@@ -129,16 +130,19 @@ const fetchInitialData = async () => {
     const { service, slug } = route.params;
 
     if (service && slug) {
+            console.log(`133 the the slig ${slug}`)
+
         await docsStore.fetchDocContent(service as string, slug as string);
     } else if (service) {
-        const unified = docsStore.manifests[service as string];
-        // For Admins, prioritize internal. For others (or if no internal), fallback to public.
-        const manifest = (docsStore.isPrivilegedUser && unified?.internal) ? unified.internal : unified?.public;
-        
-        if (manifest?.categories[0]?.items[0]) {
+        // categories_mapped already prioritizes internal docs when scope === 'internal',
+        // so we just take whichever group is non-empty first.
+        const { internalCategories, publicCategories } = docsStore.scopedCategories(service as string);
+        const firstItem = internalCategories[0]?.items[0] ?? publicCategories[0]?.items[0];
+
+        if (firstItem) {
             router.replace({
                 name: 'docs-content',
-                params: { service, slug: manifest.categories[0].items[0].slug }
+                params: { service, slug: firstItem.slug }
             });
         } else {
             redirectToFirstAvailableDoc();
@@ -151,23 +155,21 @@ const fetchInitialData = async () => {
 const redirectToFirstAvailableDoc = () => {
     const manifests = docsStore.manifests;
 
-    // First attempt: Look for Internal docs if user is privileged
-    if (docsStore.isPrivilegedUser) {
-        for (const serviceId of Object.keys(manifests)) {
-            const firstInternalItem = manifests[serviceId]?.internal?.categories?.[0]?.items?.[0];
-            if (firstInternalItem) {
-                router.replace({
-                    name: 'docs-content',
-                    params: { service: serviceId, slug: firstInternalItem.slug }
-                });
-                return;
-            }
+    // First attempt: internal docs (only ever present when scope === 'internal', i.e. privileged users)
+    for (const serviceId of Object.keys(manifests)) {
+        const firstInternalItem = docsStore.scopedCategories(serviceId).internalCategories[0]?.items?.[0];
+        if (firstInternalItem) {
+            router.replace({
+                name: 'docs-content',
+                params: { service: serviceId, slug: firstInternalItem.slug }
+            });
+            return;
         }
     }
 
     // Second attempt: Fallback to Public docs for everyone
     for (const serviceId of Object.keys(manifests)) {
-        const firstPublicItem = manifests[serviceId]?.public?.categories?.[0]?.items?.[0];
+        const firstPublicItem = docsStore.scopedCategories(serviceId).publicCategories[0]?.items?.[0];
         if (firstPublicItem) {
             router.replace({
                 name: 'docs-content',
@@ -184,6 +186,8 @@ onMounted(fetchInitialData);
 
 watch(() => [route.params.service, route.params.slug], ([service, slug]) => {
     if (service && slug) {
+            console.log(`thisis the -**-the slig ${slug}`)
+
         docsStore.fetchDocContent(service as string, slug as string);
     }
 });

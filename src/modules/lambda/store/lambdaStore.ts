@@ -20,6 +20,7 @@ export interface LambdaMetrics {
     errors: number
     timeline: { timestamp: string; value: number }[]
 }
+const selectedFile = ref<File | null>(null)
 
 export const useLambdaStore = defineStore('lambda', () => {
     const functions = ref<LambdaFunction[]>([])
@@ -88,8 +89,28 @@ export const useLambdaStore = defineStore('lambda', () => {
             isLoading.value = false
         }
     }
+    async function uploadToS3(url: string, file: File) {
 
-    const registerFunction = async (formData: FormData) => {
+
+        try {
+            const res = await apiClient.put(url, file, {
+                headers: {
+                    'Content-Type': file.type || 'application/octet-stream',
+                },
+                transformRequest: [(data) => data],
+            })
+
+
+            return res
+        } catch (err: any) {
+
+            throw err
+        }
+    }
+
+    const registerFunction = async (formData: FormData, data:any) => {
+    selectedFile.value = data.file as File  
+
         isLoading.value = true
         try {
             const response = await apiClient.post('/lambda/functions', formData, {
@@ -97,7 +118,40 @@ export const useLambdaStore = defineStore('lambda', () => {
                     'Content-Type': 'multipart/form-data'
                 }
             })
-            return response.data
+            // return response.data
+            // this returns 
+            // {
+            //     "artifact_path": "/api/v1/s3/files/upload?t=eyJhIjoiOTlkOTA2ODAtZDJhZC00ODU4LThmMjItZjFkZTEyYWZhY2VkIiwiYiI6ImdhbWVsaWZ0Z2FtZXMtZGVmYXVsdCIsImUiOjE3ODQ3ODUzNDgsImsiOiJ1cGxvYWRzL2dhbWVzLzk5ZDkwNjgwLWQyYWQtNDg1OC04ZjIyLWYxZGUxMmFmYWNlZC9nYW1lIiwibSI6IlBVVCIsInNoYSI6ImZkOTE0ZWRkYTVjZTQxNDc4NGNiMGRmYjBkNDAzNmUyMjNlNTIyMjdlZmU5MDFlMTE3MzQwNjM4MTlhYWRlYTgiLCJ1IjoiMWU3NTAwMzItNjk5OC00NjE5LTg2NzQtMWNmZTU1NTlhODdmIiwidWlkIjoiMTg0ZTkyY2YtMTRhOC00NmJhLWFhYjAtZGQ2YTU3NDUyNGE0In0.7b2c3017b1330066ce2f259ea9b287e8fdf048068a8fcadbde4b96aee33df0c1\u0026token=eyJhbGciOiJIUzM4NCJ9.eyJhIjoiOTlkOTA2ODAtZDJhZC00ODU4LThmMjItZjFkZTEyYWZhY2VkIiwidWlkIjoiMTg0ZTkyY2YtMTRhOC00NmJhLWFhYjAtZGQ2YTU3NDUyNGE0IiwiYiI6ImdhbWVsaWZ0Z2FtZXMtZGVmYXVsdCIsImUiOjE3ODQ3ODUzNDgsInUiOiIxZTc1MDAzMi02OTk4LTQ2MTktODY3NC0xY2ZlNTU1OWE4N2YiLCJjb3JyZWxhdGlvbklkIjoiZmVlZjU3MGEtZTRjMS00YTU2LTg1MGEtOTZjYjdjMDQxNDg4IiwiayI6InVwbG9hZHMvZ2FtZXMvOTlkOTA2ODAtZDJhZC00ODU4LThmMjItZjFkZTEyYWZhY2VkL2dhbWUiLCJtIjoiUFVUIiwic2hhIjoiZmQ5MTRlZGRhNWNlNDE0Nzg0Y2IwZGZiMGQ0MDM2ZTIyM2U1MjIyN2VmZTkwMWUxMTczNDA2MzgxOWFhZGVhOCIsInVzZXJJZCI6IjE4NGU5MmNmLTE0YTgtNDZiYS1hYWIwLWRkNmE1NzQ1MjRhNCIsInN1YiI6IjE4NGU5MmNmLTE0YTgtNDZiYS1hYWIwLWRkNmE1NzQ1MjRhNCIsImlhdCI6MTc4NDc4NDQ0OCwiZXhwIjoxNzg0ODcwODQ4fQ.u62UHPfR6OTNrtfd6wtgjMCWcBeCfAiqm3ifs0jLi06DudsbBtWtF93andgeVj5N",
+            //     "message": "function registered successfully",
+            //     "name": "yet"
+            // }
+
+
+
+            const result = response.data as {
+                message: string
+                name: string
+                artifact_path: string
+            }
+
+            console.log('Received upload data:', result)
+
+            if (!result?.artifact_path) {
+                throw new Error('Server did not return a valid upload URL.')
+            }
+
+
+
+
+  await uploadToS3(
+            result?.artifact_path.replace('/api/v1', ''),
+            selectedFile.value
+        )
+
+
+
+
+
         } catch (error) {
             console.error('Failed to register lambda function:', error)
             throw error

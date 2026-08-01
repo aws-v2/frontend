@@ -50,7 +50,7 @@ export async function loadRemoteConfig(): Promise<RemoteConfig> {
         VITE_FF_SERVICE_BILLING: 'staging',
         VITE_FF_SERVICE_AUTH: 'staging',
         VITE_FF_SERVICE_LLM: 'staging',
-        VITE_FF_SERVICE_GATEWAY: 'staging',
+        VITE_FF_SERVICE_GATEWAY: 'dev',
       }
 
       return cachedConfig

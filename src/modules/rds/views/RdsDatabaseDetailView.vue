@@ -49,8 +49,8 @@ const isCopied = (fieldName: string) => copiedField.value === fieldName
 
 const showPassword = ref(false)
 const maskedPassword = computed(() => {
-    if (!db.value?.password) return '••••••••••••'
-    return '•'.repeat(db.value.password.length)
+    if (!db.value?.db_password) return '••••••••••••'
+    return '•'.repeat(db.value.db_password.length)
 })
 
 onMounted(async () => {
@@ -197,7 +197,7 @@ const handleDelete = async () => {
                                 </div>
 
                                 <!-- ARN Display -->
-                                <div v-if="db.arn" @click="copyToClipboard(db.arn, 'arn')"
+                                <!-- <div v-if="db.arn" @click="copyToClipboard(db.arn, 'arn')"
                                     class="group flex items-center gap-2 mb-4 cursor-pointer max-w-fit">
                                     <span
                                         class="text-[9px] font-black text-[#879196] uppercase tracking-widest bg-gray-50 px-2 py-0.5 border border-gray-200 group-hover:border-amber-500 group-hover:text-amber-600 transition-all truncate">ARN:
@@ -213,7 +213,7 @@ const handleDelete = async () => {
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M5 13l4 4L19 7" />
                                     </svg>
-                                </div>
+                                </div> -->
 
                                 <div class="flex items-center gap-4">
                                     <span
@@ -270,11 +270,11 @@ const handleDelete = async () => {
 
                                 <div>
                                     <span
-                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Private
+                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Gateway
                                         IP / Host</span>
                                     <div class="flex items-center gap-2 group cursor-pointer"
-                                        @click="copyToClipboard(db.host || db.privateIp || db.endpoint || '', 'host')">
-                                        <span class="text-sm font-mono text-[#232f3e]">{{ db.host || db.privateIp ||
+                                        @click="copyToClipboard(db.vpc_ip || db.privateIp || db.endpoint || '', 'host')">
+                                        <span class="text-sm font-mono text-[#232f3e]">{{ db.host || db.vpc_ip ||
                                             db.endpoint || '—' }}</span>
                                         <svg v-if="!isCopied('host')"
                                             class="w-3 h-3 text-[#ccc] group-hover:text-amber-600 flex-shrink-0 transition-colors"
@@ -292,35 +292,35 @@ const handleDelete = async () => {
                                 <div class="grid grid-cols-2 gap-4">
                                     <div>
                                         <span
-                                            class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Port</span>
-                                        <span class="text-sm font-black text-[#232f3e]">{{ db.port || '5432' }}</span>
+                                            class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">VM Port</span>
+                                        <span class="text-sm font-black text-[#232f3e]">{{ db.db_port || '5432' }}</span>
                                     </div>
                                     <div>
                                         <span
                                             class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Public
                                             Port</span>
-                                        <span class="text-sm font-black text-[#232f3e]">{{ db.publicPort || '—'
+                                        <span class="text-sm font-black text-[#232f3e]">{{ db.public_port || '—'
                                         }}</span>
                                     </div>
                                 </div>
                                 <div>
                                     <span
-                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Master
+                                        class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">DB 
                                         User (Role)</span>
-                                    <span class="text-sm font-mono text-[#232f3e]">{{ db.roleName || db.user || '—'
+                                    <span class="text-sm font-mono text-[#232f3e]">{{ db.db_user||"db_user" || "db.user" || '—'
                                     }}</span>
                                 </div>
                                 <div>
                                     <span
                                         class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Password</span>
                                     <div class="flex items-center gap-3">
-                                        <span class="text-sm font-mono text-[#232f3e]">{{ showPassword ? db.password :
+                                        <span class="text-sm font-mono text-[#232f3e]">{{ showPassword ? db.db_password :
                                             maskedPassword }}</span>
                                         <button @click="showPassword = !showPassword"
                                             class="text-[8px] font-black text-[#879196] uppercase tracking-widest hover:text-amber-600 transition-colors border border-[#eaeded] hover:border-amber-500 px-2 py-0.5">
                                             {{ showPassword ? 'Hide' : 'Show' }}
                                         </button>
-                                        <button @click="copyToClipboard(db.password || '', 'password')"
+                                        <button @click="copyToClipboard(db.db_password || '', 'password')"
                                             class="text-[8px] font-black text-[#879196] uppercase tracking-widest hover:text-amber-600 transition-colors border border-[#eaeded] hover:border-amber-500 px-2 py-0.5">
                                             {{ isCopied('password') ? '✓ Copied' : 'Copy' }}
                                         </button>
@@ -345,10 +345,8 @@ const handleDelete = async () => {
                                         class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Physical
                                         DB Name</span>
                                     <div class="flex items-center gap-2 group cursor-pointer"
-                                        @click="copyToClipboard(db.physicalDbName || db.name, 'physicalDb')">
-                                        <span class="text-sm font-black text-[#232f3e] uppercase">{{ db.physicalDbName
-                                            ||
-                                            db.name }}</span>
+                                        @click="copyToClipboard(db.name || db.name, 'physicalDb')">
+                                        <span class="text-sm font-black text-[#232f3e] uppercase">{{ db.name }}</span>
                                         <svg v-if="!isCopied('physicalDb')"
                                             class="w-3 h-3 text-[#ccc] group-hover:text-amber-600 flex-shrink-0 transition-colors"
                                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -371,8 +369,8 @@ const handleDelete = async () => {
                                 <div>
                                     <span
                                         class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Created</span>
-                                    <span class="text-sm font-mono text-[#232f3e]">{{ db.createdAt ? new
-                                        Date(db.createdAt).toLocaleDateString('en-US', {
+                                    <span class="text-sm font-mono text-[#232f3e]">{{ db.created_at ? new
+                                        Date(db.created_at).toLocaleDateString('en-US', {
                                             year: 'numeric', month:
                                                 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
                                         }) : '—' }}</span>
@@ -393,16 +391,16 @@ const handleDelete = async () => {
                                         </button>
                                     </div>
                                     <div class="flex items-center gap-2 group cursor-pointer"
-                                        @click="copyToClipboard(db.publicConnectionString || 'default vpc', 'vpcId')">
-                                        <span class="text-sm font-mono text-[#232f3e] break-all">{{ db.vpcId || '—'
+                                        @click="copyToClipboard(db.public_connection_string || 'default vpc', 'vpc_id')">
+                                        <span class="text-sm font-mono text-[#232f3e] break-all">{{ db.vpc_id || '—'
                                         }}</span>
-                                        <svg v-if="db.vpcId && !isCopied('vpcId')"
+                                        <svg v-if="db.vpc_id && !isCopied('vpc_id')"
                                             class="w-3 h-3 text-[#ccc] group-hover:text-amber-600 flex-shrink-0 transition-colors"
                                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m-5-5l5 5-5 5" />
                                         </svg>
-                                        <svg v-else-if="isCopied('vpcId')"
+                                        <svg v-else-if="isCopied('vpc_id')"
                                             class="w-3 h-3 text-emerald-500 flex-shrink-0" fill="none"
                                             stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
@@ -415,8 +413,8 @@ const handleDelete = async () => {
                                         class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">Private
                                         IP</span>
                                     <div class="flex items-center gap-2 group cursor-pointer"
-                                        @click="copyToClipboard(db.privateIp || db.host || '', 'privateIp')">
-                                        <span class="text-sm font-mono text-[#232f3e]">{{ db.privateIp || db.host ||
+                                        @click="copyToClipboard(db.vpc_ip || '', 'privateIp')">
+                                        <span class="text-sm font-mono text-[#232f3e]">{{ db.vpc_ip || db.host ||
                                             '—' }}</span>
                                         <svg v-if="!isCopied('privateIp')"
                                             class="w-3 h-3 text-[#ccc] group-hover:text-amber-600 flex-shrink-0 transition-colors"
@@ -466,13 +464,13 @@ const handleDelete = async () => {
                             </div>
                             <div class="p-8 bg-[#fafafa]">
                                 <code class="block font-mono text-sm text-[#232f3e] bg-white border-2 border-[#eaeded] p-5 break-all leading-relaxed relative group cursor-pointer hover:border-amber-500 transition-colors"
-                                    @click="copyToClipboard(db.connectionString || '', 'vpcConn')">
+                                    @click="copyToClipboard(db.vpc_connection_string || '', 'vpcConn')">
                                     <div
                                         class="absolute right-3 top-3 text-[8px] font-black uppercase tracking-widest transition-all"
                                         :class="isCopied('vpcConn') ? 'text-emerald-500 opacity-100' : 'text-[#879196] opacity-0 group-hover:opacity-100'">
                                         {{ isCopied('vpcConn') ? '✓ Copied!' : 'Click to copy' }}
                                     </div>
-                                    {{ db.connectionString || '—' }}
+                                    {{ db.vpc_connection_string || '—' }}
                                 </code>
                                 <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest mt-3 italic">
                                     Use this within your VPC network.</p>
@@ -493,15 +491,15 @@ const handleDelete = async () => {
                                     class="ml-auto text-[8px] font-black text-emerald-400/50 uppercase tracking-widest">External</span>
                             </div>
                             <div class="p-8 bg-[#fafafa]">
-                                <code v-if="db.publicConnectionString"
+                                <code v-if="db.public_connection_string"
                                     class="block font-mono text-sm text-[#232f3e] bg-white border-2 border-[#eaeded] p-5 break-all leading-relaxed relative group cursor-pointer hover:border-emerald-500 transition-colors"
-                                    @click="copyToClipboard(db.publicConnectionString, 'pubConn')">
+                                    @click="copyToClipboard(db.public_connection_string, 'pubConn')">
                                     <div
                                         class="absolute right-3 top-3 text-[8px] font-black uppercase tracking-widest transition-all"
                                         :class="isCopied('pubConn') ? 'text-emerald-500 opacity-100' : 'text-[#879196] opacity-0 group-hover:opacity-100'">
                                         {{ isCopied('pubConn') ? '✓ Copied!' : 'Click to copy' }}
                                     </div>
-                                    {{ db.publicConnectionString }}
+                                    {{ db.public_connection_string }}
                                 </code>
                                 <div v-else
                                     class="flex items-center gap-3 bg-white border-2 border-dashed border-[#eaeded] p-5 text-[#879196]">

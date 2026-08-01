@@ -31,7 +31,7 @@ onMounted(() => {
     if (route.query.tab === 'objects') {
         router.replace({ query: { ...route.query, tab: 'overview' } })
     }
-    fetchData()
+    // fetchData()
 })
 
 watch(() => route.query.tab, (newTab) => {
@@ -40,7 +40,7 @@ watch(() => route.query.tab, (newTab) => {
     }
 })
 
-watch(bucketName, fetchData)
+// watch(bucketName, fetchData)
 watch(currentPrefix, () => {
     if (bucketName.value && activeTab.value === 'overview') {
         s3Store.fetchFiles(bucketName.value, currentPrefix.value)

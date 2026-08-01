@@ -49,6 +49,12 @@ export function useVMEvents(sessionId: string) {
 
       sse = new EventSource(url)
 
+
+ 
+
+
+
+
       sse.onopen = () => {
         console.log('[useVMEvents] Stream connection established.')
         isConnected.value = true

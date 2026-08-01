@@ -48,6 +48,8 @@ const handleDrop = (e: DragEvent) => {
   isDragging.value = false
   const files = e.dataTransfer?.files
   if (files && files.length > 0) {
+      alert('Function name* is required.')
+
     selectedFile.value = files[0]
   }
 }

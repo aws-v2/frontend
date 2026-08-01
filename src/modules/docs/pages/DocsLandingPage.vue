@@ -14,29 +14,31 @@ const isPrivileged = computed(() => docsStore.isPrivilegedUser)
 // Flatten manifests into a format suitable for the landing page
 const allDocs = computed(() => {
     const items: any[] = []
-    
-    Object.entries(docsStore.manifests).forEach(([serviceId, unified]) => {
-        // Handle Internal
-        if (unified.internal) {
+
+    Object.entries(docsStore.manifests).forEach(([serviceId, manifest]) => {
+        const { internalCategories, publicCategories } = docsStore.scopedCategories(serviceId)
+
+        // Handle Internal (only present when categories_mapped.scope === 'internal')
+        if (internalCategories.length > 0) {
             items.push({
                 id: `${serviceId}-internal`,
                 service: serviceId,
-                title: `${unified.internal.service} (Internal)`,
-                description: `Deep-dive technical specifications, internal architecture, and security protocols for ${unified.internal.service}.`,
+                title: `${manifest.service} (Internal)`,
+                description: `Deep-dive technical specifications, internal architecture, and security protocols for ${manifest.service}.`,
                 tag: 'TECHNICAL SPEC',
                 status: 'active',
                 isInternal: true,
                 route: { name: 'docs-content', params: { service: serviceId } }
             })
         }
-        
+
         // Handle Public
-        if (unified.public) {
+        if (publicCategories.length > 0) {
             items.push({
                 id: `${serviceId}-public`,
                 service: serviceId,
-                title: unified.public.service,
-                description: `General guides, API documentation, and quickstart tutorials for ${unified.public.service}.`,
+                title: manifest.service,
+                description: `General guides, API documentation, and quickstart tutorials for ${manifest.service}.`,
                 tag: 'DOCUMENTATION',
                 status: 'active',
                 isInternal: false,
@@ -44,7 +46,7 @@ const allDocs = computed(() => {
             })
         }
     })
-    
+
     return items
 })
 

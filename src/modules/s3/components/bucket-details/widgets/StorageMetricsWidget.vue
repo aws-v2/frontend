@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
-    totalSize: number
+    totalSize: any
     totalFiles?: number
     totalFolders?: number
     changePercent?: number
@@ -15,6 +15,8 @@ const formatSize = (bytes: number) => {
     if (i < 0 || isNaN(i)) return '0 B'
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
+
+const changePercent = 0
 </script>
 
 <template>

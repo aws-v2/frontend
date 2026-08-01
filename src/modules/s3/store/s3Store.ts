@@ -1,7 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import apiClient from '@/shared/api/apiClient'
-import { any } from 'three/tsl'
+import { any, string } from 'three/tsl'
 
 export interface Bucket {
   bucket_id: string
@@ -47,50 +47,52 @@ export interface Bucket {
 }
 
 export interface S3Object {
-  file_id: string
+  code: number
+  message: string
+  data: TheBucketObject
+}
+export interface BucketInfo {
   bucket_id: string
-  key: string
-  name: string
-  sha256: string
-  size: number
-  mime_type: string
-  storage_class?: string
-  last_modified?: string
+  bucket_name: string
+  arn: string
+  region: string
+  bucket_type: string
   created_at: string
-  metadata?: any
-  tags?: any[]
+  total_size: number
+  total_file_count: number
+  total_folder_count: number
+  current_utilization: number
+
 }
 
-// {
-//     "bucketId": "990n",
-//     "count": [],
-//     "files": {
-//         "bucket_id": "b40fb905-d097-47b7-8951-e3300de8cbdc",
-//         "bucket_name": "990n",
-//         "total_files": 1,
-//         "total_folders": 1,
-//         "root_files": [],
-//         "folders": [
-//             {
-//                 "name": "bnm",
-//                 "path": "bnm/",
-//                 "files": [
-//                     {
-//                         "file_id": "5f88d1c8-ba62-4090-8d80-75650c1055e0",
-//                         "name": "Untitled-2026-07-19-1140.excalidraw",
-//                         "key": "bnm/Untitled-2026-07-19-1140.excalidraw",
-//                         "size": 31909,
-//                         "mime_type": "application/octet-stream",
-//                         "sha256": "6d8deb68c1f952c075591efca2d9207c03cee6aaa8303cdca64c4d671c591800",
-//                         "created_at": "2026-07-19T12:49:56.741978Z"
-//                     }
-//                 ],
-//                 "sub_folders": [],
-//                 "file_count": 1
-//             }
-//         ]
-//     }
-// }
+export interface File {
+  id: string
+  bucket_id: string
+  key: string
+  size: number
+  mime_type: string
+  content_type: string
+  last_modified:string
+  storage_class:string
+}
+
+export interface Folder {
+  name: string
+  size: number
+  files: File[]
+  folders: Folder[]
+}
+
+export interface BucketRoot {
+  folders: Folder[]
+  files: File[]
+
+}
+export interface TheBucketObject {
+  bucket_info: BucketInfo
+  root: BucketRoot
+}
+
 export interface FileNode {
   file_id: string
   name: string
@@ -109,14 +111,7 @@ export interface FolderNode {
   folders: FolderNode[] // nested subfolders, recursive
 }
 
-export interface TheBucketObject {
-  bucket_id: string
-  bucket_name: string
-  total_files: number
-  total_folders: number
-  root_files: FileNode[]
-  folders: FolderNode[]
-}
+
 
 export interface BucketStats {
   bucket_id: string
@@ -169,7 +164,7 @@ export interface SecuritySummary {
 
 export const useS3Store = defineStore('s3', () => {
   const buckets = ref<Bucket[]>([])
-  const files = ref<S3Object[]>([])
+  const files = ref<S3Object>()
 
   const currentBucket = ref<Bucket | null>(null)
   const currentBucketStats = ref<BucketStats | null>(null)
@@ -195,10 +190,10 @@ export const useS3Store = defineStore('s3', () => {
     }
   }
 
-  const filesf = ()=>{
-      // files.value.push(<S3Object>{
+  const filesf = () => {
+    // files.value.push(<S3Object>{
 
-      // })
+    // })
     return files.value
   }
   const fetchBucket = async (bucketId: string) => {
@@ -207,6 +202,8 @@ export const useS3Store = defineStore('s3', () => {
     try {
       const response = await apiClient.get<{ code: number; message: string; data: Bucket }>(`/s3/buckets/${bucketId}`)
       const rawData = (response.data?.data || response.data) as any
+
+      console.log(`========d===> ${Object.keys(rawData)}`)
       if (rawData) {
         currentBucket.value = {
           ...rawData,
@@ -270,7 +267,6 @@ export const useS3Store = defineStore('s3', () => {
 
     const addFileNode = (file: FileNode) => {
       results.push({
-        file_id: file.file_id,
         bucket_id: bucketId,
         key: file.key,
         size: file.size,
@@ -279,7 +275,7 @@ export const useS3Store = defineStore('s3', () => {
         last_modified: file.created_at,
         created_at: file.created_at,
         metadata: file.metadata,
-        name:file.name
+        name: file.name
       })
     }
 
@@ -291,18 +287,12 @@ export const useS3Store = defineStore('s3', () => {
         folder.folders.forEach(traverseFolder)
       }
     }
-
-    if (bucketData.root_files) {
-      bucketData.root_files.forEach(addFileNode)
-    }
-    if (bucketData.folders) {
-      bucketData.folders.forEach(traverseFolder)
-    }
+ 
 
     return results
   }
 
-// Fetches th files 
+  // Fetches th files 
 
   const fetchFiles = async (bucketId: string, prefix: string = '') => {
     isLoading.value = true
@@ -313,22 +303,15 @@ export const useS3Store = defineStore('s3', () => {
       }
 
       const response = await apiClient.get<{ code: number; message: string; data: { count: number; files: S3Object[] } }>(
-        `/s3/files/${bucketId}`,
+        `/s3/buckets/${bucketId}`,
         { params },
       )
-
-      const rawFiles = response.data?.data?.files ?? (response.data as any)?.files ?? (response.data as any)?.data?.files ?? []
-
-      if (Array.isArray(rawFiles)) {
-        files.value = rawFiles
-      } else if (rawFiles && typeof rawFiles === 'object') {
-        files.value = normalizeBucketFileTree(rawFiles, bucketId)
-      } else {
-        files.value = []
+      if (response.data.code < 300) {
+        files.value = response.data
       }
+
     } catch (error) {
       console.error(`Failed to fetch files for bucket ${bucketId}:`, error)
-      files.value = []
     } finally {
       isLoading.value = false
     }
@@ -337,7 +320,6 @@ export const useS3Store = defineStore('s3', () => {
 
 
 
-  
 
 
 
@@ -361,65 +343,62 @@ export const useS3Store = defineStore('s3', () => {
 
 
 
+  // --- Types matching the backend's dto.BucketStructureOutput ---
+  // NOTE: field names here assume the Go DTO has matching json tags
+  // (e.g. `json:"root_files"`, `json:"name"`, `json:"path"`). If your
+  // FolderNode/FileNode structs use different tag names, adjust the
+  // interfaces below to match exactly.
 
 
+  const filesv2 = ref<TheBucketObject>()
 
-// --- Types matching the backend's dto.BucketStructureOutput ---
-// NOTE: field names here assume the Go DTO has matching json tags
-// (e.g. `json:"root_files"`, `json:"name"`, `json:"path"`). If your
-// FolderNode/FileNode structs use different tag names, adjust the
-// interfaces below to match exactly.
-
-
-const filesv2 = ref<TheBucketObject>()
-
-const fetchFilesv2 = async (bucketId: string) => {
-  isLoading.value = true
-  try {
-    const response = await apiClient.get<{ bucketId: string; count: number; files: TheBucketObject }>(
-      `/s3/files/${bucketId}`
-    )
-    filesv2.value = response.data.files
-  } catch (error) {
-    console.error(`Failed to fetch files for bucket ${bucketId}:`, error)
-    filesv2.value = undefined
-  } finally {
-    isLoading.value = false
-  }
-}
-
-// Walks the already-fetched tree down to whatever prefix the user is
-// currently viewing, and returns the folders + files that live at
-// exactly that level (not deeper, not shallower).
-//
-// Since fetchFilesv2 fetches the WHOLE bucket's tree once, navigating
-// into a subfolder never needs another network request — it's pure
-// client-side tree traversal.
-const getItemsAtPrefix = (prefix: string): { folders: FolderNode[]; files: FileNode[] } => {
-  if (!filesv2.value) return { folders: [], files: [] }
-
-  if (!prefix) {
-    return {
-      folders: filesv2.value.folders || [],
-      files: filesv2.value.root_files || [],
-    }
+  const fetchFilesv2 = async (bucketId: string) => {
+    // isLoading.value = true
+    // try {
+    //   const response = await apiClient.get<{ bucketId: string; count: number; files: TheBucketObject }>(
+    //     `/s3/files/${bucketId}`
+    //   )
+    //   filesv2.value = response.data.files
+    // } catch (error) {
+    //   console.error(`Failed to fetch files for bucket ${bucketId}:`, error)
+    //   filesv2.value = undefined
+    // } finally {
+    //   isLoading.value = false
+    // }
   }
 
-  const parts = prefix.split('/').filter(Boolean)
-  let currentFolders = filesv2.value.folders || []
-  let node: FolderNode | undefined
+  // Walks the already-fetched tree down to whatever prefix the user is
+  // currently viewing, and returns the folders + files that live at
+  // exactly that level (not deeper, not shallower).
+  //
+  // Since fetchFilesv2 fetches the WHOLE bucket's tree once, navigating
+  // into a subfolder never needs another network request — it's pure
+  // client-side tree traversal.
+  const getItemsAtPrefix = (prefix: string): { folders: FolderNode[]; files: FileNode[] } => {
+    if (!filesv2.value) return { folders: [], files: [] }
 
-  for (const part of parts) {
-    node = currentFolders.find((f) => f.name === part)
-    if (!node) return { folders: [], files: [] } // prefix doesn't exist in the tree
-    currentFolders = node.folders || []
-  }
+    // if (!prefix) {
+    //   return {
+    //     folders: filesv2.value.folders || [],
+    //     files: filesv2.value.root_files || [],
+    //   }
+    // }
 
-  return {
-    folders: node?.folders || [],
-    files: node?.files || [],
+    // const parts = prefix.split('/').filter(Boolean)
+    // let currentFolders = filesv2.value.folders || []
+    // let node: FolderNode | undefined
+
+    // for (const part of parts) {
+    //   node = currentFolders.find((f) => f.name === part)
+    //   if (!node) return { folders: [], files: [] } // prefix doesn't exist in the tree
+    //   currentFolders = node.folders || []
+    // }
+
+    // return {
+    //   folders: node?.folders || [],
+    //   files: node?.files || [],
+    // }
   }
-}
 
 
 
@@ -507,16 +486,16 @@ const getItemsAtPrefix = (prefix: string): { folders: FolderNode[]; files: FileN
     >()
 
 
-// ---key: bnm/Untitled-2026-07-19-1140.excalidraw
-// s3Store.ts:528 ---relativeKey: /Untitled-2026-07-19-1140.excalidraw
-// s3Store.ts:529 ---itemKey: /Untitled-2026-07-19-1140.excalidraw
-// s3Store.ts:530 ---part: ,Untitled-2026-07-19-1140.excalidraw
-// s3Store.ts:541 mime_type::2: application/octet-stream
-// s3Store.ts:554 mime_type::3: folder
-// s3Store.ts:555 mime_type::4: bnm/
+    // ---key: bnm/Untitled-2026-07-19-1140.excalidraw
+    // s3Store.ts:528 ---relativeKey: /Untitled-2026-07-19-1140.excalidraw
+    // s3Store.ts:529 ---itemKey: /Untitled-2026-07-19-1140.excalidraw
+    // s3Store.ts:530 ---part: ,Untitled-2026-07-19-1140.excalidraw
+    // s3Store.ts:541 mime_type::2: application/octet-stream
+    // s3Store.ts:554 mime_type::3: folder
+    // s3Store.ts:555 mime_type::4: bnm/
 
     rawFiles.forEach((file) => {
-    console.log(`---key: ${file.key}`)
+      console.log(`---key: ${file.key}`)
 
       // If file.key starts with prefix
       if (file.key.startsWith(prefix)) {
@@ -528,57 +507,57 @@ const getItemsAtPrefix = (prefix: string): { folders: FolderNode[]; files: FileN
         if (itemKey === undefined) return
 
 
-    console.log(`---relativeKey:-${relativeKey}`)
-    console.log(`---itemKey:-${itemKey}`)
-    console.log(`---part:-${parts}`)
-    console.log(`---part length:-${parts.length}`)
+        console.log(`---relativeKey:-${relativeKey}`)
+        console.log(`---itemKey:-${itemKey}`)
+        console.log(`---part:-${parts}`)
+        console.log(`---part length:-${parts.length}`)
 
 
 
         if (parts.length === 2) {
           // It's a file or folder marker in this directory
-          items.set(itemKey.replace("/",""), file)
+          items.set(itemKey.replace("/", ""), file)
         } else {
           // It's something deeper, so it should be represented by a folder
           const folderName = parts[0] + '/'
           if (!items.has(folderName)) {
-    console.log(`mime_type::2: ${file.mime_type}`)
+            console.log(`mime_type::2: ${file.mime_type}`)
 
             items.set(folderName, {
               key: prefix + folderName,
               mime_type: 'folder',
-              isFolder: file.mime_type=="application/octet-stream"?false: true,
+              isFolder: file.mime_type == "application/octet-stream" ? false : true,
             })
           }
         }
       }
     })
 
-items.forEach(it=>{
-    console.log(`mime_type::3: ${it.mime_type}`)
-    console.log(`mime_type::4: ${it.key}`)
+    items.forEach(it => {
+      console.log(`mime_type::3: ${it.mime_type}`)
+      console.log(`mime_type::4: ${it.key}`)
 
-})    
+    })
 
     return Array.from(items.values())
   }
 
   const currentFile = ref<S3Object | null>(null)
 
-  const fetchFileDetails = async (bucketId: string, objectKey: string,fileId:string) => {
+  const fetchFileDetails = async (bucketId: string, objectKey: string, fileId: string) => {
     isLoading.value = true
     try {
 
-  
-      if(objectKey.split("/").length>1){
-      var fileName =objectKey.split("/")[1]
-      var folderName =objectKey.split("/")[0]
-      const response = await apiClient.get<{ code: number; message: string; data: S3Object }>(`/s3/files/${bucketId}/files/${fileName}?folder=${folderName}`)
-      currentFile.value = response.data?.data || (response.data as any) || null
 
-      }else{
-      const response = await apiClient.get<{ code: number; message: string; data: S3Object }>(`/s3/files/${bucketId}/files/${fileId}}`)
-      currentFile.value = response.data?.data || (response.data as any) || null
+      if (objectKey.split("/").length > 1) {
+        var fileName = objectKey.split("/")[1]
+        var folderName = objectKey.split("/")[0]
+        const response = await apiClient.get<{ code: number; message: string; data: S3Object }>(`/s3/files/${bucketId}/files/${fileName}?folder=${folderName}`)
+        currentFile.value = response.data?.data || (response.data as any) || null
+
+      } else {
+        const response = await apiClient.get<{ code: number; message: string; data: S3Object }>(`/s3/files/${bucketId}/files/${fileId}}`)
+        currentFile.value = response.data?.data || (response.data as any) || null
 
       }
 
@@ -841,7 +820,7 @@ items.forEach(it=>{
     createFolder,
     uploadFiles,
     filesf,
-    
+
     downloadFile,
     getDirectoryItems,
     addBucket,

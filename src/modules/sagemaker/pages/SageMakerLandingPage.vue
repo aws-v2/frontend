@@ -82,7 +82,7 @@ const seedProjects: SageMakerProject[] = [
 const loadProjects = async () => {
   try {
     const res = await apiClient.get('/llm/training/jobs')
-    projects.value = res.data || []
+    projects.value = res.data.data || []
   } catch (e) {
     console.error('Failed to load projects', e)
     projects.value = []

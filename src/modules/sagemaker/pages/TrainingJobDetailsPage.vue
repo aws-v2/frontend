@@ -20,7 +20,7 @@ const fetchJob = async () => {
 
   try {
     const res = await apiClient.get(`/llm/training/jobs/${jobId}`)
-    job.value = res.data
+    job.value = res.data.data
   } catch (err) {
     console.error('Failed to load job', err)
   } finally {
@@ -40,7 +40,7 @@ const deployModel = async () => {
     )
 
     // backend returns created model
-    deployedModel.value = res.data
+    deployedModel.value = res.data.data
 
     // refresh job state
     await fetchJob()

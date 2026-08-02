@@ -53,12 +53,12 @@ type UserRole = 'ADMIN' | 'ENGINEER' | 'USER' | null;
 
 const SERVICE_REGISTRY: Record<string, string> = {
     // s3: '/s3',
-    rds: '/rds',
+    // rds: '/rds',
     // metrics: '/metrics',
     // lambda: '/lambda',
     // gamelift: '/gamelift',
     // ec2: '/compute',
-    // gateway: '/gateway',
+    gateway: '/gateway',
     // identity: '/identity',
     // config: '/config',
     // auth: '/auth',

@@ -87,11 +87,10 @@ export const featureFlags = {
     // If dev, respect whatever the service flag says, else stick to profile
     const env: ServiceEnv = (profile === 'dev'? (override as ServiceEnv) || 'dev': profile) || 'dev'
 
-    let baseUrl: string
+    let baseUrl=config.VITE_API_BASE_URL ?? "rnder"
 
     console.log(`this is what we decided the env to be ${env}`)
 
-    baseUrl=config.VITE_API_BASE_URL
 
 
 

@@ -29,7 +29,7 @@ describe('featureFlags service routing', () => {
     await loadRemoteConfig()
 
     const url = await featureFlags.getServiceUrl('ec2')
-    expect(url).toBe('http://10.86.142.136:8080/api/v1/')
+    expect(url).toBe('http://localhost:8080/api/v1/')
   })
 
   it('routes to local dev when service flag is dev', async () => {

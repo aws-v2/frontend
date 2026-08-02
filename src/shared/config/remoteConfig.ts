@@ -13,14 +13,29 @@ let cachedConfig: RemoteConfig | null = null
 let pollingInterval: ReturnType<typeof setInterval> | null = null
 
 export async function loadRemoteConfig(): Promise<RemoteConfig> {
-  const CONFIG_FILE = '/config.json'
+  var CONFIG_FILE = '/config.json'
 
   try {
+    const profile = import.meta.env.VITE_APP_PROFILE ?? 'dev'
+
+    if(profile =="staging"){
+      CONFIG_FILE='/config-staging.json'
+    }
+
+
+    if(profile =="prod"){
+      CONFIG_FILE='/config-prod.json'
+    }
+
+
+
+
+
+
     const res = await fetch(CONFIG_FILE, { cache: 'no-store' })
     if (!res.ok) throw new Error('config.json not found')
     cachedConfig = await res.json()
     console.info('[config] Loaded remote config:', cachedConfig)
-    const profile = import.meta.env.VITE_APP_PROFILE ?? 'dev'
 console.log(profile)
   } catch {
     console.warn(

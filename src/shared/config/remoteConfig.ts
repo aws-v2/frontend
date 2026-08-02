@@ -20,15 +20,17 @@ export async function loadRemoteConfig(): Promise<RemoteConfig> {
     if (!res.ok) throw new Error('config.json not found')
     cachedConfig = await res.json()
     console.info('[config] Loaded remote config:', cachedConfig)
+    const profile = import.meta.env.VITE_APP_PROFILE ?? 'dev'
+console.log(profile)
   } catch {
     console.warn(
       `[config] Remote config unavailable at ${CONFIG_FILE}, falling back to environment defaults`
     )
 
-    const profile = import.meta.env.VITE_APP_PROFILE ?? 'dev'
+    const profile = import.meta.env.VITE_APP_PROFILE ?? 'devvie'
 
     // Built-in staging fallback
-    if (profile === 'staging') {
+    if (profile == 'staging') {
       cachedConfig = {
         VITE_API_BASE_URL: 'http://api-gateway-staging:8080/api/v1',
         VITE_APP_PROFILE: 'staging',

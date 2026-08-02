@@ -78,11 +78,11 @@ export const featureFlags = {
     const override = getStorage(storageKey) || config[envKey]
 
     // If dev, respect whatever the service flag says, else stick to profile
-    const env: ServiceEnv = (profile === 'dev'
-      ? (override as ServiceEnv) || 'dev'
-      : profile) || 'dev'
+    const env: ServiceEnv = (profile === 'dev'? (override as ServiceEnv) || 'dev': profile) || 'dev'
 
     let baseUrl: string
+
+    
     if (env === 'staging') {
       baseUrl = await resolveStagingUrl()
     } else if (env === 'prod') {

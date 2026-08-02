@@ -31,6 +31,11 @@ export async function loadRemoteConfig(): Promise<RemoteConfig> {
     cachedConfig = await res.json()
     console.info('[config] Loaded remote config:', cachedConfig)
     console.log(profile)
+
+
+
+
+    
   } catch {
     console.warn(
       `[config] Remote config unavailable at ${CONFIG_FILE}, falling back to environment defaults`,
@@ -41,7 +46,7 @@ export async function loadRemoteConfig(): Promise<RemoteConfig> {
     // Built-in staging fallback
     if (profile == 'staging') {
       cachedConfig = {
-        
+
         VITE_API_BASE_URL: 'http://api-gateway-staging:8080/api/v1',
         VITE_APP_PROFILE: 'staging',
         VITE_SHOW_GAMING_COMING_SOON: 'true',

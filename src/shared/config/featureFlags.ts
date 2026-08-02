@@ -71,18 +71,25 @@ export const featureFlags = {
   
   async getServiceUrl(service: string): Promise<string> {
     const config = getRemoteConfig()
+
+
+    console.log(`this si the service that called for get serviceUrl ${service} and this was the returned config ${config}`)
     const envKey = `VITE_FF_SERVICE_${service.toUpperCase()}`
     const storageKey = `ff_service_${service.toLowerCase()}`
 
     const profile = config.VITE_APP_PROFILE as ServiceEnv
     const override = getStorage(storageKey) || config[envKey]
 
+
+
     // If dev, respect whatever the service flag says, else stick to profile
     const env: ServiceEnv = (profile === 'dev'? (override as ServiceEnv) || 'dev': profile) || 'dev'
 
     let baseUrl: string
 
-    
+    console.log(`this is what we decided the env to be ${env}`)
+
+
     if (env === 'staging') {
       baseUrl = await resolveStagingUrl()
     } else if (env === 'prod') {

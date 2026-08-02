@@ -17,7 +17,7 @@ const showActionsDropdown = ref(false)
 const showDeleteObjectModal = ref(false)
 
 const selectedObjectsForDelete = computed(() => {
-    return (s3Store.files || []).filter(f => selectedFileIds.value.includes(f.key))
+    return (s3Store.files?.data.root.files || []).filter(f => selectedFileIds.value.includes(f.key))
 })
 
 const bucketName = computed(() => route.params.bucketName as string)
@@ -134,9 +134,9 @@ const handleDownload = async () => {
     if (selectedFileIds.value.length > 0) {
         try {
             for (const id of selectedFileIds.value) {
-                const file = (s3Store.files || []).find(f => f.key === id)
+                const file = (s3Store.files?.data?.root?.files || []).find(f => f.key === id)
                 if (file && file.mime_type !== 'folder' && !id.endsWith('/')) {
-                    await s3Store.downloadFile(bucketName.value, file.file_id, id.split('/').pop() || id)
+                    await s3Store.downloadFile(bucketName.value, file.id, id.split('/').pop() || id)
                 }
             }
             toastStore.addToast(`Started downloading ${selectedFileIds.value.length} item(s)`, 'info')
@@ -161,22 +161,22 @@ const contextualMetrics = computed(() => {
     const rawFiles = s3Store.files || []
     const p = prefix.value
 
-    const folderFiles = rawFiles.filter(f => f.key.startsWith(p) && f.key !== p)
-    const totalSize = folderFiles.reduce((acc, f) => acc + (f.size || 0), 0)
-    const totalFiles = folderFiles.length
+    const folderFiles = 10 //rawFiles.filter(f => f.key.startsWith(p) && f.key !== p)
+    const totalSize = 10 //folderFiles.reduce((acc, f) => acc + (f.size || 0), 0)
+    const totalFiles = 10 //folderFiles.length
 
     const subfolders = new Set<string>()
-    folderFiles.forEach(f => {
-        const relative = f.key.slice(p.length)
-        const parts = relative.split('/')
-        if (parts.length > 1) {
-            let curr = ''
-            for (let i = 0; i < parts.length - 1; i++) {
-                curr += parts[i] + '/'
-                subfolders.add(p + curr)
-            }
-        }
-    })
+    // folderFiles.forEach(f => {
+    //     const relative = f.key.slice(p.length)
+    //     const parts = relative.split('/')
+    //     if (parts.length > 1) {
+    //         let curr = ''
+    //         for (let i = 0; i < parts.length - 1; i++) {
+    //             curr += parts[i] + '/'
+    //             subfolders.add(p + curr)
+    //         }
+    //     }
+    // })
 
     return {
         totalSize,
@@ -315,7 +315,7 @@ watch(() => prefix.value, () => {
                                 class="px-6 py-2.5 text-xs font-black transition-all uppercase tracking-widest italic active:scale-95">
                                 Download
                             </button>
-                            <button @click="handleObjectClick(s3Store.files.find(f => f.key === selectedFileIds[0]))"
+                            <button @click="handleObjectClick(s3Store.files?.data?.root?.files.find(f => f.key === selectedFileIds[0]))"
                                 :disabled="!isSingleSelected"
                                 :class="isSingleSelected ? 'bg-white border-2 border-[#ff9900] text-[#ff9900]' : 'bg-[#fafafa] border-2 border-[#eaeded] text-[#545b64] cursor-not-allowed opacity-50'"
                                 class="px-6 py-2.5 text-xs font-black transition-all uppercase tracking-widest italic active:scale-95">

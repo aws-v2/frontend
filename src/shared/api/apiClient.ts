@@ -33,7 +33,7 @@ apiClient.interceptors.request.use(
       config.headers.Authorization = `Bearer ${authStore.token}`
     }
 
-    console.log(`--------v------->${config.baseURL}`)
+    console.log(`--------*v------->${config.baseURL}`)
 
 
     return config

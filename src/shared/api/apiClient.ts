@@ -17,6 +17,9 @@ apiClient.interceptors.request.use(
       const serviceName = config.url.split('/')[1] || 'default'
       const base = await featureFlags.getServiceUrl(serviceName)
       config.baseURL = base.replace(/\/$/, '')
+    console.log(`-------thisis thebase -v------->${base}`)
+    console.log(`-------thisis servicename -v------->${serviceName}`)
+    console.log(`-------thisis config.url -v------->${config.url}`)
       
       // Axios quirk: leading slash on url strips prefix (like /api/v1) from baseURL.
       // We manually ensure it's treated as relative to the concatenated result.

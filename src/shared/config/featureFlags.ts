@@ -70,10 +70,12 @@ async function resolveStagingUrl(): Promise<string> {
 export const featureFlags = {
   
   async getServiceUrl(service: string): Promise<string> {
-    const config = getRemoteConfig()
+    const config = getRemoteConfig() ??{ }
 
 
-    console.log(`this si the service that called for get serviceUrl ${service} and this was the returned config ${config}`)
+    console.log(`this si the service that called for get serviceUrl ${service} and this was the returned config ${config.VITE_API_BASE_URL}`)
+
+
     const envKey = `VITE_FF_SERVICE_${service.toUpperCase()}`
     const storageKey = `ff_service_${service.toLowerCase()}`
 
@@ -89,15 +91,7 @@ export const featureFlags = {
 
     console.log(`this is what we decided the env to be ${env}`)
 
-
-    if (env === 'staging') {
-      baseUrl = await resolveStagingUrl()
-    } else if (env === 'prod') {
-      baseUrl = SERVICE_URLS.prod
-    } else {
-      baseUrl = config.VITE_API_BASE_URL || SERVICE_URLS.dev
-    }
-
+    baseUrl=config.VITE_API_BASE_URL
 
 
 

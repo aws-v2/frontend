@@ -52,12 +52,12 @@ export interface DocResponse {
 type UserRole = 'ADMIN' | 'ENGINEER' | 'USER' | null;
 
 const SERVICE_REGISTRY: Record<string, string> = {
-    // s3: '/s3',
+    s3: '/s3',
     // rds: '/rds',
     // metrics: '/metrics',
     // lambda: '/lambda',
     // gamelift: '/gamelift',
-    // ec2: '/compute',
+    ec2: '/compute',
     gateway: '/gateway',
     // identity: '/identity',
     // config: '/config',

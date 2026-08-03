@@ -61,8 +61,8 @@ const SERVICE_REGISTRY: Record<string, string> = {
     gateway: '/gateway',
     // identity: '/identity',
     // config: '/config',
-    // auth: '/auth',
-    sagemaker: '/llm',
+    auth: '/auth',
+    // sagemaker: '/llm',
 };
 
 // ── JWT helpers ───────────────────────────────────────────────────────────────
@@ -187,10 +187,11 @@ export const useDocsStore = defineStore('docs', {
                     // One call to get the role-filtered manifest for this service.
                     // The backend returns { data: { service, internal,public, scope, service //categories, categories_mapped, ... } }
                     // apiClient interceptor handles Authorization header
-                    console.log(`loging the base path forthe docs url ${basePath}`)
                     const response = await apiClient.get(`${basePath}/docs`);
                     if (response.data?.data) {
                         this.manifests[service] = response.data.data;
+                        console.log(`loging the base path forthe docs## url ${this.manifests[service]?.service}`)
+
                     }
                 } catch (err: any) {
                     const status = err?.response?.status;
@@ -216,7 +217,6 @@ export const useDocsStore = defineStore('docs', {
                 return;
             }
 
-            console.log(`thisis thec the slig ${service}`)
 
             try {
                 // The backend checks both public and internal folders based on your JWT role

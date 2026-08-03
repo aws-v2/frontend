@@ -179,7 +179,6 @@ const redirectToFirstAvailableDoc = () => {
         }
     }
 
-    console.warn('No docs available across any service');
 };
 
 onMounted(fetchInitialData);

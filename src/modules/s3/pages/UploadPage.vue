@@ -170,7 +170,7 @@ const handleUpload = async () => {
 
     try {
         toastStore.addToast('Uploading ' + files.value.length + ' files...', 'info')
-        await s3Store.uploadFiles(bucketName.value, formData)
+        await s3Store.uploadFiles(bucketName.value, formData, route.query.prefix)
         toastStore.addToast('Upload successful', 'success')
         // Redirect back to bucket details with a query param to trigger the success modal
         router.push({

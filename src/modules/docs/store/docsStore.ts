@@ -53,16 +53,16 @@ type UserRole = 'ADMIN' | 'ENGINEER' | 'USER' | null;
 
 const SERVICE_REGISTRY: Record<string, string> = {
     s3: '/s3',
-    // rds: '/rds',
-    // metrics: '/metrics',
-    // lambda: '/lambda',
-    // gamelift: '/gamelift',
-    ec2: '/compute',
+    rds: '/rds',
+    lambda: '/lambda',
+    gamelift: '/gamelift',
+    ec2: '/ec2',
     gateway: '/gateway',
-    // identity: '/identity',
-    // config: '/config',
     auth: '/auth',
-    // sagemaker: '/llm',
+    sagemaker: '/llm',
+
+    // config: '/config',
+    // metrics: '/metrics',
 };
 
 // ── JWT helpers ───────────────────────────────────────────────────────────────

@@ -60,30 +60,38 @@ const handleLogin = async (e: Event) => {
                         <h2 class="text-3xl font-black text-[#232f3e] mb-4 tracking-tighter uppercase">Sign In</h2>
                         <div class="w-12 h-2 bg-[#ff9900]"></div>
                     </div>
-
-                    <form @submit="handleLogin" class="space-y-8">
+                    <form @submit.prevent="handleLogin" id="login_form" class="space-y-8">
                         <div class="space-y-3">
-                            <label class="text-[10px] font-black text-[#545b64] uppercase tracking-widest">Email
-                                Address</label>
-                            <input v-model="email" type="email"
+                            <label class="text-[10px] font-black text-[#545b64] uppercase tracking-widest">
+                                Email Address
+                            </label>
+                            <input id="email" v-model="email" type="email"
                                 class="w-full bg-white border-2 border-[#eaeded] px-4 py-4 text-[#16191f] font-bold placeholder-[#879196] focus:outline-none focus:border-[#ff9900] transition-all rounded-none"
                                 placeholder="name@company.com" required>
                         </div>
 
                         <div class="space-y-3">
                             <div class="flex justify-between items-center">
-                                <label
-                                    class="text-[10px] font-black text-[#545b64] uppercase tracking-widest mb-0">Password</label>
+                                <label class="text-[10px] font-black text-[#545b64] uppercase tracking-widest mb-0">
+                                    Password
+                                </label>
                             </div>
-                            <input v-model="password" type="password"
+                            <input id="password" v-model="password" type="password"
                                 class="w-full bg-white border-2 border-[#eaeded] px-4 py-4 text-[#16191f] font-bold placeholder-[#879196] focus:outline-none focus:border-[#ff9900] transition-all rounded-none"
                                 placeholder="••••••••" required>
                             <div class="text-right mt-2">
                                 <router-link to="/forgot-password"
-                                    class="text-xs font-bold text-[#0073bb] hover:text-[#ff9900] transition-colors">Forgot
-                                    password?</router-link>
+                                    class="text-xs font-bold text-[#0073bb] hover:text-[#ff9900] transition-colors">
+                                    Forgot password?
+                                </router-link>
                             </div>
                         </div>
+
+                        <button id="submit_login_btn" type="submit"
+                            class="w-full bg-[#ff9900] text-white py-4 text-sm font-bold hover:bg-[#ec7211] transition-all rounded-none ring-1 ring-[#ff9900]">
+                            Log in
+                        </button>
+                        <!-- </form> -->
 
                         <button type="submit" :disabled="isLoading"
                             class="w-full bg-[#ff9900] hover:bg-[#ec7211] text-white font-black py-4 transition-all rounded-none uppercase tracking-widest disabled:opacity-50 disabled:cursor-not-allowed">

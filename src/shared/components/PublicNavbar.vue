@@ -92,20 +92,22 @@ const handleRDSClick = () => {
                 </router-link>
             </div>
 
-            <div class="flex gap-4 items-center">
+            <div class="flex gap-4 items-center" id="login_button">
                 <template v-if="!authStore.isAuthenticated">
-                    <router-link :to="buttonLink || '/login'"
+                    <router-link id="nav_login_btn" :to="buttonLink || '/login'"
                         class="px-5 py-2.5 bg-[#ff9900] text-white text-sm font-bold hover:bg-[#ec7211] transition-all rounded-none ring-1 ring-[#ff9900]">
                         {{ buttonText || 'Log in' }}
                     </router-link>
                 </template>
                 <template v-else>
-                    <button @click="router.push('/dashboard')"
+                    <button id="nav_console_btn" @click="router.push('/dashboard')"
                         class="px-5 py-2.5 bg-[#ff9900] text-white text-sm font-bold hover:bg-[#ec7211] transition-all rounded-none ring-1 ring-[#ff9900]">
                         Console
                     </button>
                 </template>
             </div>
+
+
         </div>
     </nav>
 </template>

@@ -95,7 +95,7 @@ const isDarkMode = computed(() => !!route.meta.isDarkNavbar)
                     <div v-if="authStore.isAuthenticated" class="flex items-center gap-6">
 
                         <!-- Console Button -->
-                        <router-link to="/dashboard"
+                        <router-link to="/dashboard" id="consle_btn"
                             class="hidden md:flex items-center px-4 py-2 bg-[#ff9900] text-[#232f3e] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#232f3e] hover:text-[#ff9900] transition-all border-b-2 border-transparent">
                             Console
                         </router-link>
@@ -141,6 +141,7 @@ const isDarkMode = computed(() => !!route.meta.isDarkNavbar)
                                 <div
                                     class="bg-white border-2 border-[#232f3e] mt-2 overflow-hidden flex flex-col p-1 shadow-2xl">
                                     <router-link to="/account"
+                                    id="go_to_account"
                                         class="flex items-center gap-3 px-4 py-3 hover:bg-[#fafafa] text-xs font-black uppercase tracking-widest text-[#545b64] hover:text-[#232f3e] transition-colors">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
@@ -149,6 +150,7 @@ const isDarkMode = computed(() => !!route.meta.isDarkNavbar)
                                         Account
                                     </router-link>
                                     <router-link to="/settings"
+                                    id="go_to_setting"
                                         class="flex items-center gap-3 px-4 py-3 hover:bg-[#fafafa] text-xs font-black uppercase tracking-widest text-[#545b64] hover:text-[#232f3e] transition-colors">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
@@ -157,7 +159,7 @@ const isDarkMode = computed(() => !!route.meta.isDarkNavbar)
                                         Settings
                                     </router-link>
                                     <div class="h-[2px] bg-[#eaeded] my-1"></div>
-                                    <button @click="handleLogout"
+                                    <button @click="handleLogout" id="logout_user"
                                         class="flex items-center gap-3 px-4 py-3 hover:bg-red-50 text-xs font-black uppercase tracking-widest text-red-600 transition-colors w-full text-left">
                                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"

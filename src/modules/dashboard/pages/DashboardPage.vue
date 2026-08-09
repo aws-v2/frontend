@@ -92,14 +92,14 @@ const navigateTo = (path: string) => {
 
 
 const showUpdateModal = ref(false)
-const updateForm = ref({  sha256: '', file_name: '',host_type:'', host_change:false })
+const updateForm = ref({ sha256: '', file_name: '', host_type: '', host_change: false })
 const updating = ref(false)
 
 const updateAgent = async () => {
     updating.value = true
     try {
         const response = await apiClient.post('/compute/host/update-agent', {
-            sha256:    updateForm.value.sha256,
+            sha256: updateForm.value.sha256,
             file_name: updateForm.value.file_name,
             host_change: updateForm.value.host_change,
             host_type: updateForm.value.host_type,
@@ -107,7 +107,7 @@ const updateAgent = async () => {
         })
         console.log(response.data)
         showUpdateModal.value = false
-        updateForm.value = {  sha256: '', file_name: '',host_type:'', host_change:false }
+        updateForm.value = { sha256: '', file_name: '', host_type: '', host_change: false }
     } catch (error) {
         console.error(error)
     } finally {
@@ -140,107 +140,133 @@ const updateAgent = async () => {
                 </div>
 
                 <div class="flex gap-4">
-                    <button @click="router.push('/docs')"
+                    <button id="doc_button" @click="router.push('/docs')"
                         class="px-6 py-3 bg-white border-2 border-[#232f3e] text-[#232f3e] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#232f3e] hover:text-white transition-all transform active:scale-95">
                         Documentation
                     </button>
-                   <button @click="showUpdateModal = true"
-            class="px-6 py-3 bg-[#232f3e] text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#1a2530] transition-all transform active:scale-95 flex items-center gap-2">
-            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
-                    d="M4 4v6h6M20 20v-6h-6M5.64 18.36A9 9 0 1018.36 5.64" />
-            </svg>
-            Update Agent
-        </button>
-                    
+                    <button @click="showUpdateModal = true" id="update_agent_btn"
+                        class="px-6 py-3 bg-[#232f3e] text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#1a2530] transition-all transform active:scale-95 flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                d="M4 4v6h6M20 20v-6h-6M5.64 18.36A9 9 0 1018.36 5.64" />
+                        </svg>
+                        Update Agent
+                    </button>
 
 
 
- <!-- Modal -->
-        <Teleport to="body">
-            <Transition name="fade">
-                <div v-if="showUpdateModal"
-                    class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
-                    @click.self="showUpdateModal = false">
 
-                    <div class="bg-white w-full max-w-md mx-4 shadow-2xl border border-[#232f3e]/10">
-                        <!-- Header -->
-                        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-                            <div>
-                                <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#ff9900]">System</p>
-                                <h2 class="text-[#232f3e] font-black text-lg uppercase tracking-wide">Update Agent</h2>
+                    <!-- Modal -->
+                    <Teleport to="body">
+                        <Transition name="fade">
+                            <div v-if="showUpdateModal"
+                                class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm"
+                                @click.self="showUpdateModal = false">
+
+                                <div class="bg-white w-full max-w-md mx-4 shadow-2xl border border-[#232f3e]/10">
+                                    <!-- Header -->
+                                    <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+                                        <div>
+                                            <p class="text-[9px] font-black uppercase tracking-[0.2em] text-[#ff9900]">
+                                                System</p>
+                                            <h2 class="text-[#232f3e] font-black text-lg uppercase tracking-wide">Update
+                                                Agent</h2>
+                                        </div>
+                                        <button @click="showUpdateModal = false"
+                                            class="text-[#545b64] hover:text-[#232f3e] transition-colors">
+                                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                    d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+
+                                    <!-- Fields -->
+                                    <div class="px-6 py-5 space-y-4">
+
+                                        <div>
+                                            <label
+                                                class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
+                                                File Name
+                                            </label>
+                                            <input v-model="updateForm.file_name" type="text"
+                                            id="update_agent_file_name"
+
+                                                placeholder="e.g. agent-v1.0.3"
+                                                class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-medium focus:outline-none focus:border-[#ff9900] transition-colors" />
+                                        </div>
+
+                                        <div>
+                                            <label
+                                                class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
+                                                SHA256
+                                            </label>
+                                            <input v-model="updateForm.sha256" type="text"
+                                            id="update_agent_sha256_field"
+                                                placeholder="64-char hex hash"
+                                                class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-mono focus:outline-none focus:border-[#ff9900] transition-colors" />
+                                        </div>
+
+                                        <div>
+                                            <label
+                                                class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
+                                                Host Type
+                                            </label>
+                                            <input v-model="updateForm.host_type" type="text" placeholder="eg. rds,s3"
+                                            id="update_agent_host_type"
+
+                                                class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-medium focus:outline-none focus:border-[#ff9900] transition-colors" />
+                                        </div>
+
+
+                                        <div>
+                                            <label
+                                                class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
+                                                Host change
+                                            </label>
+                                            <input 
+                                            
+                                            id="update_agent_host_change_check_box"
+                                            
+                                            type="checkbox" v-model="updateForm.host_change"
+                                                placeholder="eg. rds,s3"
+                                                class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-medium focus:outline-none focus:border-[#ff9900] transition-colors" />
+                                        </div>
+                                    </div>
+
+                                    <!-- Actions -->
+                                    <div class="flex gap-3 px-6 pb-6">
+                                        <button @click="showUpdateModal = false"
+                                            id="update_agent_cancel"
+                                            class="flex-1 px-4 py-3 border-2 border-[#232f3e] text-[#232f3e] text-[9px] font-black uppercase tracking-[0.18em] hover:bg-gray-50 transition-all">
+                                            Cancel
+                                        </button>
+                                        <button @click="updateAgent" 
+                                            id="update_agent_submit"
+                                        
+                                        :disabled="!updateForm.file_name || updating"
+                                            class="flex-1 px-4 py-3 bg-[#232f3e] text-white text-[9px] font-black uppercase tracking-[0.18em] hover:bg-[#1a2530] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                            <svg v-if="updating" class="w-3.5 h-3.5 animate-spin" fill="none"
+                                                viewBox="0 0 24 24">
+                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                                    stroke-width="4" />
+                                                <path class="opacity-75" fill="currentColor"
+                                                    d="M4 12a8 8 0 018-8v8H4z" />
+                                            </svg>
+                                            {{ updating ? 'Pushing...' : 'Push Update' }}
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            <button @click="showUpdateModal = false"
-                                class="text-[#545b64] hover:text-[#232f3e] transition-colors">
-                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <!-- Fields -->
-                        <div class="px-6 py-5 space-y-4">
-                             
-                            <div>
-                                <label class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
-                                    File Name
-                                </label>
-                                <input v-model="updateForm.file_name" type="text" placeholder="e.g. agent-v1.0.3"
-                                    class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-medium focus:outline-none focus:border-[#ff9900] transition-colors" />
-                            </div>
-                            
-                            <div>
-                                <label class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
-                                    SHA256
-                                </label>
-                                <input v-model="updateForm.sha256" type="text" placeholder="64-char hex hash"
-                                    class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-mono focus:outline-none focus:border-[#ff9900] transition-colors" />
-                            </div>
-
-<div>
-                                <label class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
-                                    Host Type
-                                </label>
-                                <input v-model="updateForm.host_type" type="text" placeholder="eg. rds,s3"
-                                    class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-medium focus:outline-none focus:border-[#ff9900] transition-colors" />
-                            </div>
-
-
-                              <div>
-                                <label class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
-                                    Host change
-                                </label>
-                                <input type="checkbox" v-model="updateForm.host_change"  placeholder="eg. rds,s3"
-                                    class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-medium focus:outline-none focus:border-[#ff9900] transition-colors" />
-                            </div>
-                        </div>
-
-                        <!-- Actions -->
-                        <div class="flex gap-3 px-6 pb-6">
-                            <button @click="showUpdateModal = false"
-                                class="flex-1 px-4 py-3 border-2 border-[#232f3e] text-[#232f3e] text-[9px] font-black uppercase tracking-[0.18em] hover:bg-gray-50 transition-all">
-                                Cancel
-                            </button>
-                            <button @click="updateAgent"
-                                :disabled=" !updateForm.file_name || updating"
-                                class="flex-1 px-4 py-3 bg-[#232f3e] text-white text-[9px] font-black uppercase tracking-[0.18em] hover:bg-[#1a2530] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
-                                <svg v-if="updating" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
-                                </svg>
-                                {{ updating ? 'Pushing...' : 'Push Update' }}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </Transition>
-        </Teleport>
+                        </Transition>
+                    </Teleport>
 
 
 
 
 
                     <button @click="isResourceModalOpen = true"
+                    id="new_resource_button"
                         class="px-7 py-3 bg-[#ff9900] text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#ec7211] transition-all transform active:scale-95 flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
@@ -285,19 +311,18 @@ const updateAgent = async () => {
                 </div>
 
                 <!-- Active Services Grid -->
-                <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12">
-                    <div v-for="service in activeServices" :key="service.id" @click="router.push(service.path)"
-                        class="bg-white border-2 border-[#eaeded] p-6 group cursor-pointer hover:border-[#ff9900] transition-all relative overflow-hidden shadow-sm hover:shadow-xl">
-                        <div
-                            class="absolute top-0 right-0 w-24 h-24 bg-[#ff9900]/5 -rotate-45 translate-x-12 -translate-y-12 transition-transform group-hover:scale-150">
+                <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12" id="active_service_grid">
+                    <div v-for="service in activeServices" :key="service.id" @click="router.push(service.path)" 
+                        class="active_service bg-white border-2 border-[#eaeded] p-6 group cursor-pointer hover:border-[#ff9900] transition-all relative overflow-hidden shadow-sm hover:shadow-xl">
+                        <div class="absolute top-0 right-0 w-24 h-24 bg-[#ff9900]/5 -rotate-45 translate-x-12 -translate-y-12 transition-transform group-hover:scale-150">
                         </div>
                         <!-- Unpin / Remove button (hover only) -->
-                        <button
-                            @click="removeService(service, $event)"
+                        <button @click="removeService(service, $event)"
                             class="absolute top-3 right-3 z-20 w-7 h-7 flex items-center justify-center bg-white border border-[#eaeded] text-[#879196] hover:border-red-300 hover:text-red-500 hover:bg-red-50 transition-all opacity-0 group-hover:opacity-100"
                             title="Remove from dashboard">
                             <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
+                                    d="M6 18L18 6M6 6l12 12" />
                             </svg>
                         </button>
                         <div class="relative z-10 flex items-start justify-between">
@@ -323,14 +348,18 @@ const updateAgent = async () => {
                                         <line stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             x1="17.5" y1="17" x2="22.5" y2="17" />
                                     </svg>
-                                    <svg v-if="service.icon === 'brain'" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                    <svg v-if="service.icon === 'brain'" class="w-7 h-7" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                     </svg>
-                                    <svg v-if="service.icon === 'gamepad'" class="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a1 1 0 11-2 0 1 1 0 012 0zm-4-4a1 1 0 11-2 0 1 1 0 012 0zm4 8a1 1 0 11-2 0 1 1 0 012 0zm-8-4a1 1 0 11-2 0 1 1 0 012 0zm11 0a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    <svg v-if="service.icon === 'gamepad'" class="w-7 h-7" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M15 11a1 1 0 11-2 0 1 1 0 012 0zm-4-4a1 1 0 11-2 0 1 1 0 012 0zm4 8a1 1 0 11-2 0 1 1 0 012 0zm-8-4a1 1 0 11-2 0 1 1 0 012 0zm11 0a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
                                 </div>
-                                <h3 class="text-3xl font-black text-[#232f3e] mb-3 uppercase tracking-tighter">{{
+                                <h3 class="grid_service_name text-3xl font-black text-[#232f3e] mb-3 uppercase tracking-tighter">{{
                                     service.name }}</h3>
                                 <p class="text-[#545b64] font-medium leading-relaxed max-w-sm">{{ service.description }}
                                 </p>
@@ -429,7 +458,7 @@ const updateAgent = async () => {
                             <template v-else>
                                 <div v-for="n in 14" :key="n" class="flex-1 h-32 bg-[#eaeded]/50 animate-pulse"></div>
                             </template>
-                        </div>                        <!-- Billing dash line overlay + Storage Throughput -->
+                        </div> <!-- Billing dash line overlay + Storage Throughput -->
                         <svg viewBox="0 0 100 240" preserveAspectRatio="none"
                             class="absolute left-16 right-0 top-0 bottom-10 w-full h-full pointer-events-none overflow-visible">
                             <!-- Serwin Orange Trend Line (Object Storage) -->
@@ -444,7 +473,7 @@ const updateAgent = async () => {
                                 :cx="50"
                                 :cy="240 - ((storageLensData.timeSeries[0]?.storage || 0) / (storageLensData.summary.totalStorage || 1) * 180 + 20)"
                                 r="3" fill="#ff9900" />
- 
+
                             <!-- YELLOW STORAGE THROUGHPUT LINE -->
                             <path
                                 v-if="storageLensData && storageLensData.timeSeries && storageLensData.timeSeries.length > 1"
@@ -459,7 +488,7 @@ const updateAgent = async () => {
                                 r="3" fill="#FFFB00" />
                         </svg>
                     </div>
- 
+
                     <div
                         class="flex justify-between mt-6 ml-16 text-[10px] font-black uppercase tracking-[0.3em] text-[#879196] font-urbanist">
                         <span>T-MINUS 24H</span>
@@ -572,11 +601,15 @@ const updateAgent = async () => {
                         </button>
                     </div>
 
-                    <div class="p-12 grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div v-if="unactivatedServices.length === 0" class="col-span-full py-12 text-center text-[#879196] font-black uppercase tracking-widest">
+                    <div class="p-12 grid grid-cols-1 md:grid-cols-2 gap-8" 
+                            id="resources_modal_grid"
+                    
+                    >
+                        <div v-if="unactivatedServices.length === 0"
+                            class="col-span-full py-12 text-center text-[#879196] font-black uppercase tracking-widest">
                             No more resources available to provision.
                         </div>
-                        <div v-else v-for="service in unactivatedServices" :key="service.id"
+                        <div v-else v-for="service in unactivatedServices"  :key="service.id"
                             @click="service.enabled && activateService(service)"
                             class="relative p-8 border-2 transition-all group overflow-hidden" :class="[
                                 service.enabled
@@ -609,11 +642,15 @@ const updateAgent = async () => {
                                         <line stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             x1="17.5" y1="17" x2="22.5" y2="17" />
                                     </svg>
-                                    <svg v-if="service.icon === 'brain'" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                    <svg v-if="service.icon === 'brain'" class="w-8 h-8" fill="none" viewBox="0 0 24 24"
+                                        stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                     </svg>
-                                    <svg v-if="service.icon === 'gamepad'" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 11a1 1 0 11-2 0 1 1 0 012 0zm-4-4a1 1 0 11-2 0 1 1 0 012 0zm4 8a1 1 0 11-2 0 1 1 0 012 0zm-8-4a1 1 0 11-2 0 1 1 0 012 0zm11 0a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                    <svg v-if="service.icon === 'gamepad'" class="w-8 h-8" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M15 11a1 1 0 11-2 0 1 1 0 012 0zm-4-4a1 1 0 11-2 0 1 1 0 012 0zm4 8a1 1 0 11-2 0 1 1 0 012 0zm-8-4a1 1 0 11-2 0 1 1 0 012 0zm11 0a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
                                 </div>
                                 <div>

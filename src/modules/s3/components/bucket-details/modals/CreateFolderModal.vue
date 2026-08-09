@@ -1,12 +1,14 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useToastStore } from '@/shared/store/toastStore'
 import { useS3Store } from '@/modules/s3/store/s3Store'
 
 const props = defineProps<{
     isOpen: boolean
     bucketName: string
-    currentPrefix?: string
+    parentId: string
+    currentPrefix: string
+    prefix: string
 }>()
 
 const emit = defineEmits(['close', 'success'])
@@ -30,7 +32,7 @@ const handleCreateFolder = async () => {
     const fullFolderName = (props.currentPrefix || '') + folderName.value
 
     try {
-        await s3Store.createFolder(props.bucketName, fullFolderName)
+        await s3Store.createFolder(props.bucketName, fullFolderName,props.prefix)
         toastStore.addToast(`Folder "${folderName.value}" created successfully`, 'success')
         emit('success', fullFolderName)
         emit('close')
@@ -39,6 +41,13 @@ const handleCreateFolder = async () => {
         toastStore.addToast('Failed to create folder', 'error')
     }
 }
+
+
+onMounted(async () => {
+
+    await s3Store.fetchFiles(props.currentPrefix)
+})
+
 </script>
 
 <template>

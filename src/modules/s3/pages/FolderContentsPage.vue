@@ -6,13 +6,14 @@ import { useToastStore } from '@/shared/store/toastStore'
 import StorageMetricsWidget from '../components/bucket-details/widgets/StorageMetricsWidget.vue'
 import BucketPropertiesWidget from '../components/bucket-details/widgets/BucketPropertiesWidget.vue'
 import DeleteObjectModal from '../components/bucket-details/modals/DeleteObjectModal.vue'
-
+import CreateFolderModal from '../components/bucket-details/modals/CreateFolderModal.vue'
 const router = useRouter()
 const route = useRoute()
 const s3Store = useS3Store()
 const toastStore = useToastStore()
 const selectedFileIds = ref<string[]>([])
 const searchQuery = ref('')
+ 
 const showActionsDropdown = ref(false)
 const showDeleteObjectModal = ref(false)
 
@@ -21,10 +22,11 @@ const selectedObjectsForDelete = computed(() => {
 })
 
 const bucketName = computed(() => route.params.bucketName as string)
+const currentFolder = computed(() => route.params.prefix as string)
 const prefix = computed(() => {
     const p = route.params.prefix
-    const rawPrefix = Array.isArray(p) ? p.join('/') : (p as string) || ''
-    if (!rawPrefix) return ''
+    const rawPrefix = Array.isArray(p) ? p.join('/') : (p as string) || 'root'
+    if (!rawPrefix) return 'root'
     try {
         return decodeURIComponent(rawPrefix)
     } catch {
@@ -184,6 +186,7 @@ const contextualMetrics = computed(() => {
         totalFolders: subfolders.size
     }
 })
+const showCreateFolderModal = ref(false)
 
 const breadcrumbs = computed(() => {
     if (!prefix.value) return []
@@ -250,13 +253,17 @@ watch(() => prefix.value, () => {
                     </h1>
                 </div>
                 <div class="flex gap-4">
+                   <button @click="showCreateFolderModal = true"
+                            class="px-8 py-2.5 bg-white border-2 border-[#eaeded] text-[#232f3e] text-xs font-black uppercase tracking-widest hover:border-[#ff9900] transition-all active:scale-95 italic text-center">
+                            Create folder
+                        </button>
                     <button @click="router.push(`/s3/buckets/${bucketName}/upload?prefix=${encodeURIComponent(prefix)}`)"
                         class="px-8 py-3 bg-white border-2 border-[#eaeded] text-[#232f3e] text-xs font-black uppercase tracking-widest hover:border-[#ff9900] transition-all active:scale-95 italic">
                         Upload Objects
                     </button>
                     <button @click="handleClose"
                         class="px-10 py-3 bg-[#ff9900] text-[#232f3e] text-xs font-black uppercase tracking-widest hover:bg-[#ff9900]/90 transition-all shadow-xl shadow-[#ff9900]/20 active:scale-95">
-                        Close View
+                        Close View {{ route.params.prefix }}
                     </button>
                 </div>
             </div>
@@ -443,6 +450,12 @@ watch(() => prefix.value, () => {
     <!-- Delete Object Modal -->
     <DeleteObjectModal v-if="showDeleteObjectModal" :isOpen="showDeleteObjectModal" :bucketName="bucketName"
         :objects="selectedObjectsForDelete" @close="showDeleteObjectModal = false" @success="handleDeleteSuccess" />
+
+
+    <!-- Create Folder Modal -->prefix
+    <CreateFolderModal v-if="showCreateFolderModal" :isOpen="showCreateFolderModal" :bucketName="bucketName" :parentId?="currentFolder"
+        :prefix="currentFolder"  @close="showCreateFolderModal = false"   />
+
 </template>
 
 <style scoped>

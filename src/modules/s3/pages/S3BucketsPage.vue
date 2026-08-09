@@ -318,7 +318,7 @@ const viewBucket = (bucket: any) => {
                 </div>
 
                 <!-- Right Side Panels -->
-                <div class="w-full lg:w-96 flex-shrink-0 space-y-8">
+                <div class="w-full lg:w-96 flex-shrink-0 space-y-8" id="right_side_panels">
                     <!-- Account Snapshot -->
                     <div class="bg-white border-2 border-[#eaeded] p-8 shadow-sm relative overflow-hidden group">
                         <h3
@@ -336,7 +336,8 @@ const viewBucket = (bucket: any) => {
                             Storage Lens provides deep visibility into storage usage and activity trends across your
                             entire account.
                         </p>
-                        <button @click="router.push('/s3/storage-lens')"
+                        <button @click="router.push('/s3/storage-lens')" 
+                        id="go_to_snapshot_dashboard"
                             class="bg-white border-2 border-[#eaeded] hover:border-[#ff9900] text-[#232f3e] hover:text-[#ff9900] p-3 text-xs font-black uppercase tracking-widest transition-all w-full shadow-sm">
                             View dashboard
                         </button>
@@ -344,6 +345,8 @@ const viewBucket = (bucket: any) => {
 
                     <!-- External Access Summary -->
                     <div @click="router.push('/s3/access-summary')"
+                        id="go_to_access_summary"
+
                         class="bg-white border-2 border-[#eaeded] p-8 shadow-sm relative overflow-hidden group cursor-pointer hover:border-[#ff9900] transition-colors">
                         <h3
                             class="text-sm font-black text-[#232f3e] mb-6 flex items-center gap-3 uppercase tracking-widest italic">

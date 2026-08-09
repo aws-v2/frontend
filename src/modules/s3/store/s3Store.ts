@@ -430,10 +430,10 @@ export const useS3Store = defineStore('s3', () => {
 
 
 
-  const createFolder = async (bucketId: string, name: string) => {
+  const createFolder = async (bucketId: string, name: string,parentID:string) => {
     isLoading.value = true
     try {
-      await apiClient.post(`/s3/files/folders/${bucketId}`, { name })
+      await apiClient.post(`/s3/buckets/folders/${bucketId}/${parentID}`, { name })
       await fetchFiles(bucketId) // Refresh list
     } catch (error) {
       console.error(`Failed to create folder ${name} in bucket ${bucketId}:`, error)
@@ -443,10 +443,10 @@ export const useS3Store = defineStore('s3', () => {
     }
   }
 
-  const uploadFiles = async (bucketId: string, formData: FormData) => {
-    isLoading.value = true
+  const uploadFiles = async (bucketId: string, formData: FormData, prefixx:string) => {
+ 
     try {
-      await apiClient.post(`/s3/files/upload/${bucketId}`, formData, {
+      await apiClient.post(`/s3/files/upload/${bucketId}?prefix=${prefixx}`, formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },

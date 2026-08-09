@@ -12,7 +12,7 @@ import DeleteObjectModal from '../modals/DeleteObjectModal.vue'
 const props = defineProps<{
     bucketName: string
     region?: string
-    prefix?: string
+    prefix: string
 }>()
 
 const route = useRoute()
@@ -25,7 +25,7 @@ const showCreateFolderModal = ref(false)
 const showDeleteObjectModal = ref(false)
 const selectedFileIds = ref<string[]>([])
 
-
+const rootPreefix = "root"
  
 
 const selectedObjectsForDelete = computed(() => {
@@ -361,7 +361,7 @@ const handleOpenObject = (type:string) => {
                             Create folder
                         </button>
                         <button
-                            @click="router.push({ path: `/s3/buckets/${bucketName}/upload`, query: { prefix: props.prefix } })"
+                            @click="router.push({ path: `/s3/buckets/${bucketName}/upload`, query: { prefix:  'root' } })"
                             class="px-8 py-2.5 bg-[#ff9900] text-[#232f3e] text-xs font-black uppercase tracking-widest hover:bg-[#ff9900]/90 transition-all flex items-center justify-center gap-3 shadow-lg shadow-[#ff9900]/20 active:scale-95">
                             <svg class="w-4 h-4 text-[#232f3e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
@@ -588,7 +588,8 @@ const handleOpenObject = (type:string) => {
                             class="px-10 py-3 text-xs font-black border-2 border-[#eaeded] text-[#232f3e] hover:border-[#ff9900] transition-all uppercase tracking-widest italic">
                             Create folder
                         </button>
-                        <button @click="router.push(`/s3/buckets/${bucketName}/upload`)"
+
+                        <button @click="router.push({ path: `/s3/buckets/${bucketName}/upload`, query: { prefix: props.prefix?? 'root' } })"
                             class="px-10 py-3 text-xs font-black bg-[#ff9900] text-[#232f3e] hover:bg-[#ff9900]/90 transition-all shadow-xl shadow-[#ff9900]/20 uppercase tracking-widest flex items-center justify-center gap-3">
                             <svg class="w-4 h-4 text-[#232f3e]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
@@ -603,8 +604,8 @@ const handleOpenObject = (type:string) => {
     </div>
 
     <!-- Create Folder Modal -->
-    <CreateFolderModal v-if="showCreateFolderModal" :isOpen="showCreateFolderModal" :bucketName="bucketName"
-        :prefix="prefix" @close="showCreateFolderModal = false" />
+    <CreateFolderModal v-if="showCreateFolderModal" :isOpen="showCreateFolderModal" :bucketName="bucketName" :parentId="rootPreefix"
+        :prefix="rootPreefix"  @close="showCreateFolderModal = false"   />
 
     <!-- Delete Object Modal -->
     <DeleteObjectModal v-if="showDeleteObjectModal" :isOpen="showDeleteObjectModal" :bucketName="bucketName"

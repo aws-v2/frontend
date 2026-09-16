@@ -55,7 +55,7 @@ const SERVICE_REGISTRY: Record<string, string> = {
     s3: '/s3',
     rds: '/rds',
     lambda: '/lambda',
-    gamelift: '/gamelift',
+    // gamelift: '/gamelift',
     ec2: '/ec2',
     gateway: '/gateway',
     auth: '/auth',

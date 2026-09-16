@@ -7,13 +7,16 @@ import StorageMetricsWidget from '../components/bucket-details/widgets/StorageMe
 import BucketPropertiesWidget from '../components/bucket-details/widgets/BucketPropertiesWidget.vue'
 import DeleteObjectModal from '../components/bucket-details/modals/DeleteObjectModal.vue'
 import CreateFolderModal from '../components/bucket-details/modals/CreateFolderModal.vue'
+import type { any } from 'three/tsl'
+import apiClient from '@/shared/api/apiClient'
+
 const router = useRouter()
 const route = useRoute()
 const s3Store = useS3Store()
 const toastStore = useToastStore()
 const selectedFileIds = ref<string[]>([])
 const searchQuery = ref('')
- 
+
 const showActionsDropdown = ref(false)
 const showDeleteObjectModal = ref(false)
 
@@ -21,10 +24,14 @@ const selectedObjectsForDelete = computed(() => {
     return (s3Store.files?.data.root.files || []).filter(f => selectedFileIds.value.includes(f.key))
 })
 
+
+
 const bucketName = computed(() => route.params.bucketName as string)
-const currentFolder = computed(() => route.params.prefix as string)
+const currentFolder = computed(() => route.query.folder_id as string)
 const prefix = computed(() => {
-    const p = route.params.prefix
+    // const p = route.params.prefix
+    const p = route.query.folder_id
+
     const rawPrefix = Array.isArray(p) ? p.join('/') : (p as string) || 'root'
     if (!rawPrefix) return 'root'
     try {
@@ -40,7 +47,7 @@ const folderName = computed(() => {
 })
 
 const displayItems = computed(() => {
-    const items = s3Store.getDirectoryItems(prefix.value)
+    const items = s3Store.getDirectoryItems(route.query.folder_id)
     if (!searchQuery.value) return items
     return items.filter((f: any) =>
         f.key.toLowerCase().includes(searchQuery.value.toLowerCase())
@@ -53,6 +60,7 @@ const isAllSelected = computed(() => {
 
 const isAnySelected = computed(() => selectedFileIds.value.length > 0)
 const isSingleSelected = computed(() => selectedFileIds.value.length === 1)
+// log.Printf("the bucket_id :: %v", input.BucketId)
 
 const toggleSelectAll = () => {
     if (selectedFileIds.value.length === displayItems.value.length) {
@@ -97,14 +105,37 @@ const handleClose = () => {
     router.push(`/s3/buckets/${bucketName.value}?tab=overview`)
 }
 
-const handleObjectClick = (item: any) => {
-    if (item.isFolder || item.mime_type === 'folder' || item.key.endsWith('/')) {
-        router.push(encodeURI(`/s3/buckets/${bucketName.value}/folder/${item.key}`))
-    } else {
-        router.push(encodeURI(`/s3/buckets/${bucketName.value}/objects/${item.key}?fileId=${item.file_id}`))
-        
-    }
+// const handleObjectClick = (item: any) => {
+//     if (item.isFolder || item.mime_type === 'folder' || item.key.endsWith('/')) {
+//         router.push(encodeURI(`/s3/buckets/${bucketName.value}/folder/${item.key}`))
+//     } else {
+//         router.push(encodeURI(`/s3/buckets/${bucketName.value}/objects/${item.key}?fileId=${item.file_id}`))
+
+//     }
+// }
+// const handleFolderClick = (item: any) => {
+//         router.push(encodeURI(`/s3/buckets/${bucketName.value}/folder/${item.key}`))
+// }
+
+
+
+
+
+
+const navigateToObject = (item: any) => {
+        const key = item.Key || item.key || item.ID
+        router.push(encodeURI(`/s3/buckets/${bucketName.value}/objects/${key}?fileId=${item.ID || item.file_id || key}`))
 }
+const navigateToFolder = (item: any) => {
+        // router.push(encodeURI(`/s3/buckets/${bucketName.value}/folder/${item.name}?fbucketNameolder_id=${item.id}`))
+        router.push(encodeURI(`/s3/buckets/${bucketName.value}/folder/${item.name}?folder_id=${item.id}`))
+
+    
+}
+
+
+
+
 
 const handleCopyS3URI = async () => {
     if (selectedFileIds.value.length === 1) {
@@ -198,12 +229,61 @@ const breadcrumbs = computed(() => {
     })
 })
 
+const displayItemsFiles = computed(() => {
+    const items = s3Store.files?.data.files
+
+    if (!searchQuery.value) return items
+    return items.filter((f: any) =>
+        f.key.toLowerCase().includes(searchQuery.value.toLowerCase())
+    )
+})
+
+const theseFiles = ref([])
+const theseFolders = ref([])
+const theseBucketId = ref('')
+
+// const setDisplayItemsFiles=(files :any)=>{
+//     filss.value= files
+// }
+
+const setDisplayItemsFiles = async (bucketId: string, prefix: string = '') => {
+    try {
+        const params: any = {}
+        if (prefix && prefix !== '/') {
+            params.prefix = prefix
+        }
+
+        const response = await apiClient.get<{ code: number; message: string; data: { count: number; files: S3Object[] } }>(
+            `/s3/buckets/${bucketId}`,
+            { params },
+        )
+        if (response.data.code < 300) {
+            theseFiles.value = response.data?.data.files
+            theseFolders.value = response.data?.data.folders
+            theseBucketId.value = response.data?.data.bucket_id
+        }
+
+    } catch (error) {
+        console.error(`Failed to fetch files for bucket ${bucketId}:`, error)
+    } finally {
+    }
+}
+
+
+
+
 onMounted(async () => {
-    await s3Store.fetchFiles(bucketName.value, prefix.value)
+    // await s3Store.fetchFiles(bucketName.value, prefix.value)
+    await setDisplayItemsFiles(bucketName.value, prefix.value)
+
+
+    console.log(`***--**${Object.keys(theseBucketId.value)}`)
+    console.log(`***--**${theseFolders.value}`)
 })
 
 watch(() => prefix.value, () => {
     selectedFileIds.value = []
+
 })
 </script>
 
@@ -253,11 +333,12 @@ watch(() => prefix.value, () => {
                     </h1>
                 </div>
                 <div class="flex gap-4">
-                   <button @click="showCreateFolderModal = true"
-                            class="px-8 py-2.5 bg-white border-2 border-[#eaeded] text-[#232f3e] text-xs font-black uppercase tracking-widest hover:border-[#ff9900] transition-all active:scale-95 italic text-center">
-                            Create folder
-                        </button>
-                    <button @click="router.push(`/s3/buckets/${bucketName}/upload?prefix=${encodeURIComponent(prefix)}`)"
+                    <button @click="showCreateFolderModal = true"
+                        class="px-8 py-2.5 bg-white border-2 border-[#eaeded] text-[#232f3e] text-xs font-black uppercase tracking-widest hover:border-[#ff9900] transition-all active:scale-95 italic text-center">
+                        Create folder
+                    </button>
+                    <button
+                        @click="router.push(`/s3/buckets/${bucketName}/upload?prefix=${encodeURIComponent(route.query.folder_id)}`)"
                         class="px-8 py-3 bg-white border-2 border-[#eaeded] text-[#232f3e] text-xs font-black uppercase tracking-widest hover:border-[#ff9900] transition-all active:scale-95 italic">
                         Upload Objects
                     </button>
@@ -281,7 +362,7 @@ watch(() => prefix.value, () => {
                         </h2>
                         <code
                             class="text-sm font-black text-[#232f3e] bg-[#fafafa] px-4 py-2 border-2 border-[#eaeded] break-all block">
-                    {{ prefix }}
+                    /{{ route.params.prefix }}/
                 </code>
                     </div>
                 </div>
@@ -322,7 +403,8 @@ watch(() => prefix.value, () => {
                                 class="px-6 py-2.5 text-xs font-black transition-all uppercase tracking-widest italic active:scale-95">
                                 Download
                             </button>
-                            <button @click="handleObjectClick(s3Store.files?.data?.root?.files.find(f => f.key === selectedFileIds[0]))"
+                            <button
+                                @click="handleObjectClick(s3Store.files?.data?.root?.files.find(f => f.key === selectedFileIds[0]))"
                                 :disabled="!isSingleSelected"
                                 :class="isSingleSelected ? 'bg-white border-2 border-[#ff9900] text-[#ff9900]' : 'bg-[#fafafa] border-2 border-[#eaeded] text-[#545b64] cursor-not-allowed opacity-50'"
                                 class="px-6 py-2.5 text-xs font-black transition-all uppercase tracking-widest italic active:scale-95">
@@ -371,7 +453,7 @@ watch(() => prefix.value, () => {
                             </tr>
                         </thead>
                         <tbody class="divide-y-2 divide-[#eaeded]">
-                            <tr v-for="item in displayItems" :key="(item as any).key"
+                            <tr v-for="item in theseFiles" :key="(item as any).key"
                                 :class="{ 'bg-emerald-500/[0.05]': selectedFileIds.includes((item as any).key) }"
                                 class="group hover:bg-white/[0.02] transition-colors">
                                 <td class="p-6 text-center" @click.stop="toggleSelectOne((item as any).key)">
@@ -383,11 +465,11 @@ watch(() => prefix.value, () => {
                                         </div>
                                     </div>
                                 </td>
-                                <td class="p-6 border-r border-white/5" @click="handleObjectClick(item)">
+                                <td class="p-6 border-r border-white/5" @click="navigateToObject(item)">
                                     <div class="flex items-center gap-4">
                                         <div
                                             class="w-8 h-8 rounded-lg bg-white/[0.03] flex items-center justify-center transition-all group-hover:bg-emerald-500/10 group-hover:text-emerald-400">
-                                            <svg v-if="(item as any).isFolder || (item as any).mime_type === 'folder' || (item as any).key.endsWith('/')"
+                                            <svg v-if="(item as any).isFolder || (item as any).mime_type === 'folder' || (item as any).Key.endsWith('/')"
                                                 class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                                                 <path
                                                     d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
@@ -400,32 +482,119 @@ watch(() => prefix.value, () => {
                                         </div>
                                         <span
                                             class="text-sm font-bold text-slate-300 group-hover:text-emerald-400 transition-colors truncate max-w-xs">
-                                            {{ (item as any).key.slice(prefix.length) }}
+                                            {{ (item as any).FileName }}
                                         </span>
                                     </div>
                                 </td>
                                 <td class="p-6 border-r border-white/5">
                                     <span
                                         class="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-400">
-                                        {{ (item as any).isFolder ? 'Foldeer' : ((item as any).mime_type || '-') }}
-                                        
+                                        {{ (item as any).isFolder ? 'Foldeer' : ((item as any).MimeType || '-') }}
+
                                     </span>
                                 </td>
                                 <td
                                     class="p-6 border-r border-white/5 text-[11px] text-slate-500 font-medium tabular-nums group-hover:text-slate-400">
-                                    {{ formatDate((item as any).last_modified) || '-' }}
+                                    {{ formatDate((item as any).UpdatedAt) || '-' }}
                                 </td>
                                 <td
                                     class="p-6 border-r border-white/5 text-[11px] text-slate-500 font-bold tabular-nums group-hover:text-slate-400">
-                                    {{ (item as any).isFolder ? '-' : formatSize((item as any).size || 0) }}
+                                    {{ (item as any).isFolder ? '-' : formatSize((item as any).Size || 0) }}
                                 </td>
-                                
+
                                 <td
                                     class="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/70 group-hover:text-indigo-400 transition-colors">
-                                    {{ (item as any).storage_class || 'Standard' }}
-                                </td>torage Clas
+                                    {{ (item as any).storage_class || "Stardarnd" }}
+                                </td>
                             </tr>
-                            <tr v-if="displayItems.length === 0">
+
+
+
+
+
+
+                            <tr v-for="item in theseFolders" :key="(item as any).key"
+                                :class="{ 'bg-emerald-500/[0.05]': selectedFileIds.includes((item as any).key) }"
+                                class="group hover:bg-white/[0.02] transition-colors">
+                                <td class="p-6 text-center" @click.stop="toggleSelectOne((item as any).key)">
+                                    <div class="flex justify-center">
+                                        <div class="w-4 h-4 rounded-md border border-white/20 group-hover:border-emerald-500/50 transition-colors cursor-pointer flex items-center justify-center"
+                                            :class="selectedFileIds.includes((item as any).key) ? 'border-emerald-500 bg-emerald-500/20' : ''">
+                                            <div v-if="selectedFileIds.includes((item as any).key)"
+                                                class="w-2.5 h-2.5 bg-emerald-500 rounded-sm"></div>
+                                        </div>
+                                    </div>
+                                </td>
+
+
+
+
+
+
+                                <td class="p-6 border-r border-white/5" @click="navigateToFolder(item)">
+                                    <div class="flex items-center gap-4">
+                                        <div
+                                            class="w-8 h-8 rounded-lg bg-white/[0.03] flex items-center justify-center transition-all group-hover:bg-emerald-500/10 group-hover:text-emerald-400">
+                                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                                                <path
+                                                    d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                                            </svg>
+
+                                        </div>
+                                        <span
+                                            class="text-sm font-bold text-slate-300 group-hover:text-emerald-400 transition-colors truncate max-w-xs">
+                                            {{ (item as any).name || "Stardarnd" }}
+
+                                        </span>
+                                    </div>
+                                </td>
+
+
+                                <td class="p-6 border-r border-white/5">
+                                    <span
+                                        class="text-[10px] font-black uppercase tracking-widest text-slate-500 group-hover:text-slate-400">
+                                        {{ 'Folder' }}
+
+                                    </span>
+                                </td>
+                                <td
+                                    class="p-6 border-r border-white/5 text-[11px] text-slate-500 font-medium tabular-nums group-hover:text-slate-400">
+                                    {{ formatDate((item as any).UpdatedAt) || '-' }}
+                                </td>
+                                <td
+                                    class="p-6 border-r border-white/5 text-[11px] text-slate-500 font-bold tabular-nums group-hover:text-slate-400">
+                                    {{ '-' }}
+                                </td>
+
+                                <td
+                                    class="p-6 text-[10px] font-black uppercase tracking-[0.2em] text-indigo-400/70 group-hover:text-indigo-400 transition-colors">
+                                    {{ (item as any).storage_class || "Stardarnd" }}
+                                </td>
+
+
+
+
+
+
+
+
+
+
+                            </tr>
+
+
+
+
+
+
+
+
+
+
+
+
+
+                            <tr v-if="theseFiles && theseFiles.length === 0">
                                 <td colspan="6" class="p-32 text-center bg-[#fafafa]/50 italic group">
                                     <div
                                         class="flex flex-col items-center gap-6 opacity-30 group-hover:opacity-50 transition-all">
@@ -452,9 +621,9 @@ watch(() => prefix.value, () => {
         :objects="selectedObjectsForDelete" @close="showDeleteObjectModal = false" @success="handleDeleteSuccess" />
 
 
-    <!-- Create Folder Modal -->prefix
-    <CreateFolderModal v-if="showCreateFolderModal" :isOpen="showCreateFolderModal" :bucketName="bucketName" :parentId?="currentFolder"
-        :prefix="currentFolder"  @close="showCreateFolderModal = false"   />
+    <!-- Create Folder Modal -->
+    <CreateFolderModal v-if="showCreateFolderModal" :isOpen="showCreateFolderModal" :bucketName="theseBucketId || bucketName"
+        :parentId="currentFolder || 'root'" :prefix="currentFolder || 'root'" :currentPrefix="currentFolder || ''" @close="showCreateFolderModal = false" />
 
 </template>
 

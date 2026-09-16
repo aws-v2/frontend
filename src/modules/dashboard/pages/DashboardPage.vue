@@ -20,7 +20,7 @@ const serviceCatalog = [
     { id: 'storage', name: 'Object Storage', icon: 'database', description: 'Buckets, policies & replication', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/s3/buckets', enabled: true },
     { id: 'rds', name: 'Managed Database', icon: 'rds', description: 'Relational DB instances, snapshots & scaling', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/rds/databases', enabled: true },
     { id: 'sagemaker', name: 'SageMaker', icon: 'brain', description: 'Train & deploy ML models', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/sagemaker', enabled: true },
-    { id: 'gaming', name: 'GameLift Edge', icon: 'gamepad', description: 'Multiplayer fleet scaling', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/gaming', enabled: true }
+    // { id: 'gaming', name: 'GameLift Edge', icon: 'gamepad', description: 'Multiplayer fleet scaling', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/gaming', enabled: true }
 ]
 
 import { computed } from 'vue'

@@ -6,9 +6,9 @@ import { useS3Store } from '@/modules/s3/store/s3Store'
 const props = defineProps<{
     isOpen: boolean
     bucketName: string
-    parentId: string
-    currentPrefix: string
-    prefix: string
+    parentId?: string
+    currentPrefix?: string
+    prefix?: string
 }>()
 
 const emit = defineEmits(['close', 'success'])
@@ -29,10 +29,17 @@ const handleCreateFolder = async () => {
         return
     }
 
+    const bName = props.bucketName
+    if (!bName) {
+        toastStore.addToast('Bucket name is missing', 'error')
+        return
+    }
+
+    const parentId = props.parentId || props.prefix || 'root'
     const fullFolderName = (props.currentPrefix || '') + folderName.value
 
     try {
-        await s3Store.createFolder(props.bucketName, fullFolderName,props.prefix)
+        await s3Store.createFolder(bName, folderName.value, parentId)
         toastStore.addToast(`Folder "${folderName.value}" created successfully`, 'success')
         emit('success', fullFolderName)
         emit('close')
@@ -42,10 +49,10 @@ const handleCreateFolder = async () => {
     }
 }
 
-
 onMounted(async () => {
-
-    await s3Store.fetchFiles(props.currentPrefix)
+    if (props.bucketName) {
+        await s3Store.fetchFiles(props.bucketName, props.currentPrefix || '')
+    }
 })
 
 </script>

@@ -96,7 +96,7 @@ const submitPolicy = async () => {
 const deletePolicyAction = async (policy: any) => {
   if (!confirm('Are you sure you want to delete this policy?')) return
   try {
-    const policyId =  policy.id || policy.PolicyId || policy.Id || currentFunction.value?.name
+    const policyId = policy.id || policy.PolicyId || policy.Id || currentFunction.value?.name
     // const policyId =  policy.principalId
     if (!policyId) return
     await lambdaStore.deletePolicy(policyId)
@@ -160,58 +160,55 @@ const runTestBench = async () => {
   isExecuting.value = true
   executionOutput.value = ''
 
+  let payload: any
   try {
-    JSON.parse(testPayload.value) // validate JSON
+    payload = JSON.parse(testPayload.value) // validate JSON
+  } catch (e: any) {
+    executionOutput.value = `[ERROR] Invalid JSON payload: ${e.message}\n`
+    isExecuting.value = false
+    return
+  }
 
-    const reader = await apiClient.stream(
-      `/lambda/functions/${currentFunction.value?.name}/test`,
-      JSON.parse(testPayload.value)
+  try {
+    // normal request/response — no streaming
+    const response = await apiClient.post(
+      `/lambda/functions/${currentFunction.value?.id}/test`,
+      {"events_payload":payload}
     )
 
-    const decoder = new TextDecoder()
-    let partialData = ''
+    // response.data = { code, message, data: { code, message, data: { ...execution result } } }
+    const outer = response.data
+    const runtimeResponse = outer?.data // Python FastAPI's {code, message, data}
+    const execResult = runtimeResponse?.data // actual {status, results, stdout, stderr, error}
 
-    while (true) {
-      const { done, value } = await reader.read()
-      if (done) break
-
-      const chunk = decoder.decode(value, { stream: true })
-      partialData += chunk
-
-      const lines = partialData.split('\n')
-      partialData = lines.pop() || ''
-
-      for (const line of lines) {
-        const trimmedLine = line.trim()
-        if (!trimmedLine.startsWith('data:')) continue
-
-        const rawData = trimmedLine.slice(5).trim()
-        if (!rawData) continue
-
-        try {
-          const data = JSON.parse(rawData)  // now correctly an object
-
-if (data.message)  executionOutput.value += `[SYSTEM] ${data.message}\n`
-if (data.stdout)   executionOutput.value += data.stdout
-if (data.stderr)   executionOutput.value += `[ERROR] ${data.stderr}\n`
-if (data.status === 'error') {
-    executionOutput.value += `[ERROR] ${data.message || data.error || 'execution failed'}\n`
-}
-if (data.status === 'success' && data.execution_result) {
-    executionOutput.value += `\n[DONE] ${data.execution_result} (Exit: ${data.exit_code || 0})\n`
-}
-
-          nextTick(() => {
-            const terminal = document.querySelector('.terminal-container')
-            if (terminal) terminal.scrollTop = terminal.scrollHeight
-          })
-        } catch {
-          if (rawData) executionOutput.value += rawData + '\n'
-        }
-      }
+    if (!execResult) {
+      executionOutput.value += `[ERROR] Unexpected response shape: ${JSON.stringify(outer)}\n`
+      return
     }
+
+    if (execResult.stdout) {
+      executionOutput.value += execResult.stdout
+    }
+    if (execResult.stderr) {
+      executionOutput.value += `[ERROR] ${execResult.stderr}\n`
+    }
+
+    if (execResult.status === 'error') {
+      const errType = execResult.error?.type || 'Error'
+      const errMsg = execResult.error?.message || 'execution failed'
+      executionOutput.value += `\n[ERROR] ${errType}: ${errMsg}\n`
+    } else {
+      executionOutput.value += `\n[DONE] ${JSON.stringify(execResult.results)}\n`
+    }
+
+    nextTick(() => {
+      const terminal = document.querySelector('.terminal-container')
+      if (terminal) terminal.scrollTop = terminal.scrollHeight
+    })
   } catch (e: any) {
-    executionOutput.value += `\n[ERROR] ${e.message}\n`
+    // network error or non-2xx response
+    const serverMsg = e?.response?.data?.error || e?.message || 'request failed'
+    executionOutput.value += `\n[ERROR] ${serverMsg}\n`
     console.error('Test Bench Error:', e)
   } finally {
     isExecuting.value = false
@@ -352,7 +349,7 @@ const copyArn = async () => {
                   v-for="info in [{ l: 'Runtime', v: currentFunction?.runtime }, { l: 'Memory', v: `${configForm.memory} MB` }, { l: 'Timeout', v: `${configForm.timeout}s` }]"
                   :key="info.l">
                   <span class="block text-[9px] font-black text-[#879196] uppercase tracking-widest mb-1">{{ info.l
-                  }}</span>
+                    }}</span>
                   <span class="text-sm font-black text-[#232f3e] uppercase">{{ info.v }}</span>
                 </div>
               </div>
@@ -402,7 +399,7 @@ const copyArn = async () => {
               <!-- Interactive Test Bench -->
               <div class="grid lg:grid-cols-2 gap-10">
                 <div class="space-y-6">
-                  <h3 class="text-xl font-black text-[#232f3e] uppercase tracking-tighter">Test_Payload</h3>
+                  <h3 class="text-xl font-black text-[#232f3e] uppercase tracking-tighter">Test_Events_Payload</h3>
                   <textarea v-model="testPayload"
                     class="w-full h-48 bg-white border-4 border-[#232f3e] p-6 font-mono text-xs focus:ring-0 focus:border-amber-500 transition-all uppercase"
                     placeholder='{"key": "value"}'></textarea>
@@ -451,7 +448,7 @@ const copyArn = async () => {
                   class="p-8 border-r-4 last:border-r-0 border-[#232f3e] hover:bg-[#fafafa] transition-colors">
                   <span class="block text-[10px] font-black text-[#879196] uppercase tracking-widest mb-6 italic">{{
                     stat.l
-                  }}</span>
+                    }}</span>
                   <span class="text-5xl font-black tracking-tighter uppercase" :class="stat.c">{{ stat.v }}</span>
                 </div>
               </div>
@@ -578,6 +575,7 @@ const copyArn = async () => {
                       cluster resources
                       for this protocol node.</p>
                   </div>
+                  
                   <div class="space-y-6">
                     <label class="block text-xs font-black uppercase tracking-widest text-[#232f3e]">Timeout_Threshold
                       (Sec)</label>

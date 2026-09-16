@@ -46,7 +46,7 @@ const sagemakerRoutes: RouteRecordRaw[] = [
     {
         path: '/sagemaker/projects/:id',
         name: 'sagemaker-project-details',
-        component: () => import('./pages/SageMakerProjectPage.vue'),
+        component: () => import('./pages/ProjectDetailsPage.vue'),
         meta: { requiresAuth: false }
     }
 ]

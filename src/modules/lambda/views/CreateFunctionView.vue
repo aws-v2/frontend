@@ -44,7 +44,8 @@ const createFunction = async () => {
         formData.append(key, value as any)
       }
     })
-
+    
+    
     try {
       alert(`calling lambda store to register function.: ${typeof(data.file)}`)
 

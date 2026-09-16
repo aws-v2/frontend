@@ -2,6 +2,12 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import apiClient from '@/shared/api/apiClient'
 import { any, string } from 'three/tsl'
+import { featureFlags } from '@/shared/config/featureFlags'
+import { useAuthStore } from '@/modules/auth/store/authStore'
+const authStore = useAuthStore()
+
+
+
 
 export interface Bucket {
   bucket_id: string
@@ -69,15 +75,17 @@ export interface File {
   id: string
   bucket_id: string
   key: string
+  file_name: string
   size: number
   mime_type: string
   content_type: string
-  last_modified:string
-  storage_class:string
+  last_modified: string
+  storage_class: string
 }
 
 export interface Folder {
   name: string
+  id: string
   size: number
   files: File[]
   folders: Folder[]
@@ -287,7 +295,7 @@ export const useS3Store = defineStore('s3', () => {
         folder.folders.forEach(traverseFolder)
       }
     }
- 
+
 
     return results
   }
@@ -380,7 +388,7 @@ export const useS3Store = defineStore('s3', () => {
     // if (!prefix) {
     //   return {
     //     folders: filesv2.value.folders || [],
-    //     files: filesv2.value.root_files || [],
+    // files: filesv2.value.root_files || [],
     //   }
     // }
 
@@ -430,7 +438,7 @@ export const useS3Store = defineStore('s3', () => {
 
 
 
-  const createFolder = async (bucketId: string, name: string,parentID:string) => {
+  const createFolder = async (bucketId: string, name: string, parentID: string) => {
     isLoading.value = true
     try {
       await apiClient.post(`/s3/buckets/folders/${bucketId}/${parentID}`, { name })
@@ -443,8 +451,8 @@ export const useS3Store = defineStore('s3', () => {
     }
   }
 
-  const uploadFiles = async (bucketId: string, formData: FormData, prefixx:string) => {
- 
+  const uploadFiles = async (bucketId: string, formData: FormData, prefixx: string) => {
+
     try {
       await apiClient.post(`/s3/files/upload/${bucketId}?prefix=${prefixx}`, formData, {
         headers: {
@@ -454,7 +462,7 @@ export const useS3Store = defineStore('s3', () => {
 
       // Store results for the status page
       const uploadedFiles = Array.from(formData.getAll('files') as File[])
-      const prefix = (formData.get('prefix') as string) || ''
+      const prefix = (formData.get('prefix_id') as string) || ''
 
       lastUploadResult.value = {
         destination: `s3://${bucketId}/${prefix}`,
@@ -590,20 +598,124 @@ export const useS3Store = defineStore('s3', () => {
     }
   }
 
-  const downloadFile = async (bucketId: string, fileId: string, fileName: string) => {
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // const downloadFile = async (
+  //   bucketId: string,
+  //   fileId: string,
+  //   fileName: string
+  // ) => {
+  //   try {
+  //     const base = await featureFlags.getServiceUrl("s3")
+  //     // base="http://localhost:8080/api/v1/"
+
+  //     const url =
+  //       `${base}s3/files/${bucketId}/files/${fileId}/download-direct`
+
+  //     const link = document.createElement('a')
+
+  //     link.href = url
+  //     link.download = fileName
+
+  //     document.body.appendChild(link)
+  //     link.click()
+  //     link.remove()
+
+  //   } catch (error) {
+  //     console.error('Download failed:', error)
+  //     throw error
+  //   }
+  // }
+
+
+
+
+  const downloadFile = async (
+    bucketId: string,
+    fileId: string,
+    fileName: string
+  ) => {
     try {
-      const url = `/api/v1/s3/files/${bucketId}/files/${fileId}/download`
+      const base = await featureFlags.getServiceUrl("s3")
+
+      const url = `${base}s3/files/${bucketId}/files/${fileId}/download-direct`
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization' : `Bearer ${authStore.token}`
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(
+          `Download failed with status ${response.status}`
+        )
+      }
+
+      const blob = await response.blob()
+
+      const downloadUrl = window.URL.createObjectURL(blob)
+
       const link = document.createElement('a')
-      link.href = url
-      link.setAttribute('download', fileName)
+      link.href = downloadUrl
+      link.download = fileName
+
       document.body.appendChild(link)
       link.click()
-      document.body.removeChild(link)
+      link.remove()
+
+      window.URL.revokeObjectURL(downloadUrl)
+
     } catch (error) {
       console.error('Download failed:', error)
       throw error
     }
   }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   const updateBucketVersioning = async (bucketId: string, status: string) => {
     isLoading.value = true

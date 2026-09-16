@@ -62,10 +62,13 @@ const handleCopyURL = async () => {
 const handleDownload = async () => {
     if (selectedFileIds.value.length > 0) {
         try {
+
             for (const id of selectedFileIds.value) {
                 const file = (s3Store.files?.data?.root?.files || []).find(f => (f.Key || f.key || f.ID) === id)
+    
+
                 if (file && file.mime_type !== 'folder' && !id.endsWith('/')) {
-                    await s3Store.downloadFile(props.bucketName, file.file_id, id.split('/').pop() || id)
+                    await s3Store.downloadFile(file.BucketID, file.ID, id.split('/').pop() || id)
                 }
             }
             toastStore.addToast(`Started downloading ${selectedFileIds.value.length} item(s)`, 'info')
@@ -155,7 +158,7 @@ onMounted(() => {
 const itemsToDisplay = computed(() => {
     const root = s3Store.files?.data?.root
     if (!root) return []
-    const folders = (root.folders || []).map(f => ({ ...f, isFolder: true, id: f.name }))
+    const folders = (root.folders || []).map(f => ({ ...f, isFolder: true, id: f.id }))
     const files = (root.files || []).map(f => ({ ...f, isFolder: false, id: f.Key || f.key || f.ID }))
     return [...folders, ...files]
 })
@@ -220,7 +223,7 @@ const navigateToObject = (item: any) => {
         router.push(encodeURI(`/s3/buckets/${props.bucketName}/objects/${key}?fileId=${item.ID || item.file_id || key}`))
 }
 const navigateToFolder = (item: any) => {
-        router.push(encodeURI(`/s3/buckets/${props.bucketName}/folder/${item.name}`))
+        router.push(encodeURI(`/s3/buckets/${props.bucketName}/folder/${item.name}?folder_id=${item.id}`))
     
 }
 const handleOpenObject = (type:string) => {
@@ -536,7 +539,7 @@ const handleOpenObject = (type:string) => {
                         <span
                             class="font-black text-[#232f3e] hover:text-[#ff9900] transition-colors truncate uppercase tracking-tight"
                             @click.stop="item.isFolder ? navigateToFolder(item) : navigateToObject(item)">
-                            {{ item.isFolder ? item.name : (item.Key || item.key || item.ID) }}
+                            {{ item.isFolder ?  item.name  : item.FileName ||item.file_name || item.id   }}
                         </span>
                     </div>
                     <div
@@ -604,8 +607,8 @@ const handleOpenObject = (type:string) => {
     </div>
 
     <!-- Create Folder Modal -->
-    <CreateFolderModal v-if="showCreateFolderModal" :isOpen="showCreateFolderModal" :bucketName="bucketName" :parentId="rootPreefix"
-        :prefix="rootPreefix"  @close="showCreateFolderModal = false"   />
+    <CreateFolderModal v-if="showCreateFolderModal" :isOpen="showCreateFolderModal" :bucketName="bucketName" :parentId="props.prefix || rootPreefix"
+        :prefix="props.prefix || rootPreefix" :currentPrefix="props.prefix || ''" @close="showCreateFolderModal = false" />
 
     <!-- Delete Object Modal -->
     <DeleteObjectModal v-if="showDeleteObjectModal" :isOpen="showDeleteObjectModal" :bucketName="bucketName"

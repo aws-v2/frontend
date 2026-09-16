@@ -1,11 +1,13 @@
+
 <script setup lang="ts">
 import { ref } from 'vue'
+import apiClient from '@/shared/api/apiClient'
 
 const props = defineProps<{
   isOpen: boolean
   instance: {
     id: string
-    session:string
+    session: string
     name: string
     publicIp: string
     ssh_key?: string
@@ -26,12 +28,19 @@ const copyToClipboard = (text: string) => {
   alert('Copied to clipboard!')
 }
 
-const downloadPem = () => {
-  if (!props.instance?.ssh_key) return
+const downloadPem = async () => {
+  if (!props.instance?.id) return
 
   // Use the instance name for the filename instead of the ssh_key
   const fileName = `${props.instance.name}.pem`
-  const downloadUrl = `/api/v1/ec2/ssh-keys/${props.instance.ssh_key}/download`
+  const downloadUrl = `/ec2/instances/${props.instance.id}/download/key`
+
+
+
+  const response = await apiClient.get<{ code: number; message: string; data: any }>(downloadUrl)
+
+
+
 
   // Implementation using a hidden link for the download
   const link = document.createElement('a')

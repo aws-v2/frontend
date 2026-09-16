@@ -57,6 +57,7 @@ onMounted(async () => {
 
 
 
+
 let socket: WebSocket | null = null
 
 const initTerminal = () => {

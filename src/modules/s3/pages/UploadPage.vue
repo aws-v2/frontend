@@ -140,9 +140,13 @@ const removeFile = (index: number) => {
 }
 
 const handleUpload = async () => {
+    // alert()
+    
     if (files.value.length === 0) return
 
     const formData = new FormData()
+    formData.append('prefix_id', "s3Store.currentBucket")
+
 
     // Append files
     files.value.forEach(f => {
@@ -170,8 +174,9 @@ const handleUpload = async () => {
 
     try {
         toastStore.addToast('Uploading ' + files.value.length + ' files...', 'info')
+        // 
         await s3Store.uploadFiles(bucketName.value, formData, route.query.prefix)
-        toastStore.addToast('Upload successful', 'success')
+        toastStore.addToast(route.query.prefix??'Upload successful', 'success')
         // Redirect back to bucket details with a query param to trigger the success modal
         router.push({
             name: 's3-bucket-details',

@@ -126,17 +126,19 @@ export const useLambdaStore = defineStore('lambda', () => {
             //     "name": "yet"
             // }
 
+            
+
 
 
             const result = response.data as {
                 message: string
-                name: string
-                artifact_path: string
+                code: number
+                data: any
             }
 
-            console.log('Received upload data:', result)
+            console.log('Received upload data:', result.data.upload_url)
 
-            if (!result?.artifact_path) {
+            if (!result.data.upload_url) {
                 throw new Error('Server did not return a valid upload URL.')
             }
 
@@ -144,7 +146,7 @@ export const useLambdaStore = defineStore('lambda', () => {
 
 
   await uploadToS3(
-            result?.artifact_path.replace('/api/v1', ''),
+            result.data.upload_url.replace('/api/v1', ''),
             selectedFile.value
         )
 

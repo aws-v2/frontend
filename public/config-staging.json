@@ -1,8 +1,8 @@
 {
-    "VITE_API_BASE_URL": "http://api-gateway-staging:8080/api/v1",
+    "VITE_API_BASE_URL": "http://localhost:8080/api/v1",
     "VITE_APP_PROFILE": "staging",
     "VITE_SHOW_GAMING_COMING_SOON": true,
-    "VITE_STAGING_TAILSCALE_IP": "http://api-gateway-staging:8080/api/v1",
+    "VITE_STAGING_TAILSCALE_IP": "http://localhost:8080/api/v1",
     "VITE_FF_SERVICE_S3": "staging",
     "VITE_FF_SERVICE_RDS": "staging",
     "VITE_FF_SERVICE_NETWORK": "staging",

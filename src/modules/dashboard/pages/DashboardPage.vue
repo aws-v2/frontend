@@ -76,6 +76,7 @@ const removeService = (service: any, event: MouseEvent) => {
 }
 
 onMounted(() => {
+    userIsAdmin()
     checkActiveServices()
     s3Store.fetchStorageLensData()
 })
@@ -92,7 +93,8 @@ const navigateTo = (path: string) => {
 
 
 const showUpdateModal = ref(false)
-const updateForm = ref({ sha256: '', file_name: '', host_type: '', host_change: false })
+const isUserAmin = ref(false)
+const updateForm = ref({ sha256: '',  host_type: '', host_change: false })
 const updating = ref(false)
 
 const updateAgent = async () => {
@@ -100,18 +102,26 @@ const updateAgent = async () => {
     try {
         const response = await apiClient.post('/compute/host/update-agent', {
             sha256: updateForm.value.sha256,
-            file_name: updateForm.value.file_name,
+            // file_name: updateForm.value.file_name,
             host_change: updateForm.value.host_change,
             host_type: updateForm.value.host_type,
 
         })
         console.log(response.data)
         showUpdateModal.value = false
-        updateForm.value = { sha256: '', file_name: '', host_type: '', host_change: false }
+        updateForm.value = { sha256: '',  host_type: '', host_change: false }
     } catch (error) {
         console.error(error)
     } finally {
         updating.value = false
+    }
+}
+    // const userIsAdmin = localStorage.getItem("role")
+
+const userIsAdmin = () => {
+    const role = localStorage.getItem("role")
+    if (role == "ADMIN" || role == "SYSTEM") {
+        isUserAmin.value=true
     }
 }
 </script>
@@ -144,7 +154,8 @@ const updateAgent = async () => {
                         class="px-6 py-3 bg-white border-2 border-[#232f3e] text-[#232f3e] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#232f3e] hover:text-white transition-all transform active:scale-95">
                         Documentation
                     </button>
-                    <button @click="showUpdateModal = true" id="update_agent_btn"
+              
+                    <button v-if="isUserAmin"  @click="showUpdateModal = true" id="update_agent_btn"
                         class="px-6 py-3 bg-[#232f3e] text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#1a2530] transition-all transform active:scale-95 flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
@@ -184,17 +195,15 @@ const updateAgent = async () => {
                                     <!-- Fields -->
                                     <div class="px-6 py-5 space-y-4">
 
-                                        <div>
+                                        <!-- <div>
                                             <label
                                                 class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
                                                 File Name
                                             </label>
                                             <input v-model="updateForm.file_name" type="text"
-                                            id="update_agent_file_name"
-
-                                                placeholder="e.g. agent-v1.0.3"
+                                                id="update_agent_file_name" placeholder="e.g. agent-v1.0.3"
                                                 class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-medium focus:outline-none focus:border-[#ff9900] transition-colors" />
-                                        </div>
+                                        </div> -->
 
                                         <div>
                                             <label
@@ -202,8 +211,7 @@ const updateAgent = async () => {
                                                 SHA256
                                             </label>
                                             <input v-model="updateForm.sha256" type="text"
-                                            id="update_agent_sha256_field"
-                                                placeholder="64-char hex hash"
+                                                id="update_agent_sha256_field" placeholder="64-char hex hash"
                                                 class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-mono focus:outline-none focus:border-[#ff9900] transition-colors" />
                                         </div>
 
@@ -213,8 +221,7 @@ const updateAgent = async () => {
                                                 Host Type
                                             </label>
                                             <input v-model="updateForm.host_type" type="text" placeholder="eg. rds,s3"
-                                            id="update_agent_host_type"
-
+                                                id="update_agent_host_type"
                                                 class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-medium focus:outline-none focus:border-[#ff9900] transition-colors" />
                                         </div>
 
@@ -224,27 +231,20 @@ const updateAgent = async () => {
                                                 class="block text-[9px] font-black uppercase tracking-[0.18em] text-[#545b64] mb-1.5">
                                                 Host change
                                             </label>
-                                            <input 
-                                            
-                                            id="update_agent_host_change_check_box"
-                                            
-                                            type="checkbox" v-model="updateForm.host_change"
-                                                placeholder="eg. rds,s3"
+                                            <input id="update_agent_host_change_check_box" type="checkbox"
+                                                v-model="updateForm.host_change" placeholder="eg. rds,s3"
                                                 class="w-full px-3 py-2.5 border border-gray-200 text-sm text-[#232f3e] font-medium focus:outline-none focus:border-[#ff9900] transition-colors" />
                                         </div>
                                     </div>
 
                                     <!-- Actions -->
                                     <div class="flex gap-3 px-6 pb-6">
-                                        <button @click="showUpdateModal = false"
-                                            id="update_agent_cancel"
+                                        <button @click="showUpdateModal = false" id="update_agent_cancel"
                                             class="flex-1 px-4 py-3 border-2 border-[#232f3e] text-[#232f3e] text-[9px] font-black uppercase tracking-[0.18em] hover:bg-gray-50 transition-all">
                                             Cancel
                                         </button>
-                                        <button @click="updateAgent" 
-                                            id="update_agent_submit"
-                                        
-                                        :disabled="!updateForm.file_name || updating"
+                                        <button @click="updateAgent" id="update_agent_submit"
+                                            :disabled="!updateForm.sha256 || updating"
                                             class="flex-1 px-4 py-3 bg-[#232f3e] text-white text-[9px] font-black uppercase tracking-[0.18em] hover:bg-[#1a2530] transition-all disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2">
                                             <svg v-if="updating" class="w-3.5 h-3.5 animate-spin" fill="none"
                                                 viewBox="0 0 24 24">
@@ -265,8 +265,7 @@ const updateAgent = async () => {
 
 
 
-                    <button @click="isResourceModalOpen = true"
-                    id="new_resource_button"
+                    <button @click="isResourceModalOpen = true" id="new_resource_button"
                         class="px-7 py-3 bg-[#ff9900] text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#ec7211] transition-all transform active:scale-95 flex items-center gap-2">
                         <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="3"
@@ -312,9 +311,10 @@ const updateAgent = async () => {
 
                 <!-- Active Services Grid -->
                 <div v-else class="grid grid-cols-1 md:grid-cols-2 gap-8 mt-12" id="active_service_grid">
-                    <div v-for="service in activeServices" :key="service.id" @click="router.push(service.path)" 
+                    <div v-for="service in activeServices" :key="service.id" @click="router.push(service.path)"
                         class="active_service bg-white border-2 border-[#eaeded] p-6 group cursor-pointer hover:border-[#ff9900] transition-all relative overflow-hidden shadow-sm hover:shadow-xl">
-                        <div class="absolute top-0 right-0 w-24 h-24 bg-[#ff9900]/5 -rotate-45 translate-x-12 -translate-y-12 transition-transform group-hover:scale-150">
+                        <div
+                            class="absolute top-0 right-0 w-24 h-24 bg-[#ff9900]/5 -rotate-45 translate-x-12 -translate-y-12 transition-transform group-hover:scale-150">
                         </div>
                         <!-- Unpin / Remove button (hover only) -->
                         <button @click="removeService(service, $event)"
@@ -359,8 +359,10 @@ const updateAgent = async () => {
                                             d="M15 11a1 1 0 11-2 0 1 1 0 012 0zm-4-4a1 1 0 11-2 0 1 1 0 012 0zm4 8a1 1 0 11-2 0 1 1 0 012 0zm-8-4a1 1 0 11-2 0 1 1 0 012 0zm11 0a7 7 0 11-14 0 7 7 0 0114 0z" />
                                     </svg>
                                 </div>
-                                <h3 class="grid_service_name text-3xl font-black text-[#232f3e] mb-3 uppercase tracking-tighter">{{
-                                    service.name }}</h3>
+                                <h3
+                                    class="grid_service_name text-3xl font-black text-[#232f3e] mb-3 uppercase tracking-tighter">
+                                    {{
+                                        service.name }}</h3>
                                 <p class="text-[#545b64] font-medium leading-relaxed max-w-sm">{{ service.description }}
                                 </p>
                             </div>
@@ -601,15 +603,12 @@ const updateAgent = async () => {
                         </button>
                     </div>
 
-                    <div class="p-12 grid grid-cols-1 md:grid-cols-2 gap-8" 
-                            id="resources_modal_grid"
-                    
-                    >
+                    <div class="p-12 grid grid-cols-1 md:grid-cols-2 gap-8" id="resources_modal_grid">
                         <div v-if="unactivatedServices.length === 0"
                             class="col-span-full py-12 text-center text-[#879196] font-black uppercase tracking-widest">
                             No more resources available to provision.
                         </div>
-                        <div v-else v-for="service in unactivatedServices"  :key="service.id"
+                        <div v-else v-for="service in unactivatedServices" :key="service.id"
                             @click="service.enabled && activateService(service)"
                             class="relative p-8 border-2 transition-all group overflow-hidden" :class="[
                                 service.enabled

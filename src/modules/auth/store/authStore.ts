@@ -14,6 +14,7 @@ export const useAuthStore = defineStore('auth', () => {
   // State
   const token = ref<string | null>(localStorage.getItem('auth_token'))
   const email = ref<string | null>(localStorage.getItem('auth_email'))
+  const role = ref<string | null>(localStorage.getItem('role'))
   const mfaEnabled = ref(localStorage.getItem('auth_mfa_enabled') === 'true')
   const mfaRequired = ref(localStorage.getItem('auth_mfa_required') === 'true')
   const registrationComplete = ref(false)
@@ -52,6 +53,7 @@ export const useAuthStore = defineStore('auth', () => {
     console.log('Setting session with data:', data)
     token.value = data.token || data.accessToken || data.auth_token || data.jwt || data.id_token
     email.value = data.email
+    role.value=data.role
 
     // Support both camelCase and snake_case from backend
     mfaEnabled.value = data.mfaEnabled === true || data.mfa_enabled === true
@@ -65,6 +67,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     localStorage.setItem('auth_token', token.value || '')
+    localStorage.setItem('role', data.role || '')
     localStorage.setItem('auth_email', email.value || '')
     localStorage.setItem('auth_mfa_enabled', String(mfaEnabled.value))
     localStorage.setItem('auth_mfa_required', String(mfaRequired.value))

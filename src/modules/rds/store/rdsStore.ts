@@ -216,7 +216,7 @@ export const useRdsStore = defineStore('rds', () => {
         }
     }
 
-    const createDatabase = async (payload: { name: string; user: string; password: string }) => {
+    const createDatabase = async (payload: { name: string; user: string; password: string; permissions:string[]}) => {
         isLoading.value = true
         try {
             const response = await apiClient.post('/rds/databases', payload)

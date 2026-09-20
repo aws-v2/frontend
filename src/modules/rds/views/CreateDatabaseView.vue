@@ -41,6 +41,7 @@ const createDatabase = async () => {
             name: dbIdentifier.value,
             user: masterUsername.value,
             password: masterPassword.value || 'auto-generated',
+            permissions: [...dbPermissions.value], // e.g. ["CREATEDB", "CREATEROLE"]
         })
         router.push('/rds/databases')
     } catch (e) {
@@ -53,6 +54,28 @@ const createDatabase = async () => {
 const cancel = () => {
     router.push('/rds/databases')
 }
+
+const permissionOptions = [
+  {
+    value: 'CREATEDB',
+    label: 'Create databases',
+    description: 'Allows the master user to run CREATE DATABASE.',
+  },
+  {
+    value: 'CREATEROLE',
+    label: 'Create roles',
+    description: 'Allows the master user to create, alter and drop other roles/users.',
+  },
+  {
+    value: 'REPLICATION',
+    label: 'Replication',
+    description: 'Allows streaming replication connections and creating replication slots.',
+  },
+]
+
+
+const dbPermissions = ref(['CREATEDB'])
+
 </script>
 
 <template>
@@ -249,7 +272,25 @@ const cancel = () => {
                                 placeholder="Minimum 8 characters" />
                             <p class="text-[10px] text-gray-500 mt-1">Must be at least 8 characters.</p>
                         </div>
+<!-- Master user permissions -->
+<div class="mb-6 max-w-2xl">
+    <label class="aws-label">Master user permissions</label>
+    <p class="text-[11px] text-gray-500 mb-3">Choose which privileges the master user has on this
+        instance.</p>
 
+    <div class="space-y-2">
+        <label v-for="perm in permissionOptions" :key="perm.value"
+            class="aws-card p-3 rounded-sm cursor-pointer transition-all border-2 flex items-start gap-3"
+            :class="dbPermissions.includes(perm.value) ? 'border-amber-500 bg-amber-50/30' : 'border-gray-200 hover:border-gray-400'">
+            <input type="checkbox" :value="perm.value" v-model="dbPermissions"
+                class="mt-0.5 w-4 h-4 accent-amber-500 flex-shrink-0" />
+            <div>
+                <h4 class="text-xs font-bold text-gray-800">{{ perm.label }}</h4>
+                <p class="text-[10px] text-gray-500 leading-tight mt-1">{{ perm.description }}</p>
+            </div>
+        </label>
+    </div>
+</div>
                         <!-- Credential management -->
                         <div class="max-w-4xl">
                             <label class="aws-label">Credential management</label>

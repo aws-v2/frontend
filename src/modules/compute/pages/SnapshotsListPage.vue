@@ -1,33 +1,43 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useComputeStore } from '../store/computeStore'
+import type { Snapshot } from '../types/snapshot'
 import { useToastStore } from '@/shared/store/toastStore'
 
 const router = useRouter()
 const computeStore = useComputeStore()
 const toastStore = useToastStore()
 
-const activeTab = ref('volume')
+const activeTab = ref<'volume' | 'instance'>('volume')
 
 const tabs = [
     { id: 'volume', label: 'Volume Snapshots' },
     { id: 'instance', label: 'Instance Snapshots' }
-]
+] as const
 
 onMounted(async () => {
     await computeStore.fetchSnapshots()
 })
 
-const handleDecommission = async (snap: any) => {
-    const type = snap.instance_id ? 'Instance' : 'Volume'
+const filteredSnapshots = computed<Snapshot[]>(() =>
+    computeStore.snapshots.filter(s => s.kind === activeTab.value)
+)
+
+const isHealthyStatus = (status: string | undefined) => {
+    const s = status?.toLowerCase()
+    return s === 'ready' || s === 'available'
+}
+
+const handleDecommission = async (snap: Snapshot) => {
+    const type = snap.kind === 'instance' ? 'Instance' : 'Volume'
     if (!confirm(`Are you sure you want to decommission this ${type.toLowerCase()} snapshot: ${snap.name || snap.id}?`))
         return
 
     try {
-        if (snap.instance_id) {
+        if (snap.kind === 'instance') {
             await computeStore.deleteSnapshot(snap.id)
-        } else if (snap.volume_id) {
+        } else {
             await computeStore.deleteVolumeSnapshot(snap.id)
         }
         toastStore.addToast('Snapshot decommissioned successfully', 'success')
@@ -88,9 +98,6 @@ const handleDecommission = async (snap: any) => {
                             <th v-else
                                 class="px-8 py-6 text-[10px] font-black text-[#879196] uppercase tracking-widest italic border-r-2 border-[#eaeded]">
                                 // SOURCE_INSTANCE</th>
-                            <!-- <th
-                                class="px-8 py-6 text-[10px] font-black text-[#879196] uppercase tracking-widest italic border-r-2 border-[#eaeded]">
-                                // CAPACITY_SIZE</th> -->
                             <th
                                 class="px-8 py-6 text-[10px] font-black text-[#879196] uppercase tracking-widest italic border-r-2 border-[#eaeded]">
                                 // STATUS_CODE</th>
@@ -100,24 +107,22 @@ const handleDecommission = async (snap: any) => {
                         </tr>
                     </thead>
                     <tbody class="divide-y-2 divide-[#eaeded]">
-                        <tr v-for="snap in (activeTab === 'volume' ? computeStore.snapshots.filter(s => s.volume_id) : computeStore.snapshots.filter(s => s.instance_id))"
-                            :key="snap.id" class="hover:bg-blue-500/5 transition-colors group cursor-pointer"
+                        <tr v-for="snap in filteredSnapshots" :key="snap.id"
+                            class="hover:bg-blue-500/5 transition-colors group cursor-pointer"
                             @click="router.push({ name: 'snapshot-details', params: { id: snap.id } })">
                             <td
                                 class="px-8 py-6 text-sm font-black text-blue-600 uppercase border-r-2 border-[#eaeded]">
                                 {{ snap.name || snap.id }}</td>
                             <td v-if="activeTab === 'volume'"
                                 class="px-8 py-6 text-sm font-black text-[#232f3e] uppercase border-r-2 border-[#eaeded]">
-                                {{ snap.volume_id }}</td>
+                                {{ snap.kind === 'volume' ? snap.volume_id : '' }}</td>
                             <td v-else
                                 class="px-8 py-6 text-sm font-black text-[#232f3e] uppercase border-r-2 border-[#eaeded]">
-                                {{ snap.instance_id }}</td>
-                            <!-- <td class="px-8 py-6 text-sm font-black text-[#545b64] border-r-2 border-[#eaeded]">{{
-                                snap.size }} GIB</td> -->
+                                {{ snap.kind === 'instance' ? snap.instance_id : '' }}</td>
                             <td class="px-8 py-6 border-r-2 border-[#eaeded]">
                                 <span class="text-[9px] font-black px-4 py-1 border-2 uppercase tracking-widest"
-                                    :class="snap.state?.toLowerCase() === 'ready' || snap.state?.toLowerCase() === 'available' ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-600' : 'bg-blue-500/5 border-blue-500/20 text-blue-600'">
-                                    {{ snap.state }}
+                                    :class="isHealthyStatus(snap.status) ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-600' : 'bg-blue-500/5 border-blue-500/20 text-blue-600'">
+                                    {{ snap.status }}
                                 </span>
                             </td>
                             <td class="px-8 py-6 text-right">
@@ -127,9 +132,8 @@ const handleDecommission = async (snap: any) => {
                                 </button>
                             </td>
                         </tr>
-                        <tr
-                            v-if="(activeTab === 'volume' ? computeStore.snapshots.filter(s => s.volume_id) : computeStore.snapshots.filter(s => s.instance_id)).length === 0">
-                            <td colspan="6" class="px-8 py-32 text-center">
+                        <tr v-if="filteredSnapshots.length === 0">
+                            <td colspan="4" class="px-8 py-32 text-center">
                                 <p
                                     class="text-[11px] font-black uppercase tracking-[0.4em] text-[#879196] opacity-30 italic">
                                     No_{{ activeTab }}_Snapshots_Registry_Empty</p>

@@ -81,7 +81,6 @@
                         <!-- Active Content -->
                         <div v-else-if="docsStore.currentDoc" class="fade-in">
                             <div class="mb-16 pb-12 border-b border-gray-50">
-                                <p>=============================</p>
                                 <p
                                     class="text-2xl text-[#879196] leading-relaxed font-medium tracking-tight italic max-w-3xl">
                                     {{ docsStore.currentDoc.metadata.description }}

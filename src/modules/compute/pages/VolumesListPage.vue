@@ -52,7 +52,7 @@ onMounted(async () => {
                         <tr v-for="vol in computeStore.volumes" :key="vol.id"
                             class="hover:bg-[#fafafa] transition-colors group cursor-pointer"
                             @click="router.push({ name: 'volume-details', params: { id: vol.id } })">
-                            <td class="px-8 py-6 text-sm font-black text-blue-600 uppercase">{{ vol.id }}</td>
+                            <td class="px-8 py-6 text-sm font-black text-blue-600 uppercase">{{ vol.name }}</td>
                             <td class="px-8 py-6 text-sm font-black text-[#232f3e] uppercase">{{ vol.size }} GiB</td>
                             <td class="px-8 py-6">
                                 <span

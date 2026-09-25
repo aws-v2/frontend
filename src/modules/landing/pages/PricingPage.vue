@@ -107,9 +107,9 @@ onMounted(() => {
                     </div>
 
                     <div class="flex items-baseline gap-1 mb-6">
-                        <span class="text-xs font-black" v-if="tier.price !== 'Custom'">$</span>
+                        <span class="text-xs font-black" v-if="tier.price !== 'Custom'">ksh</span>
                         <span class="text-6xl font-black tracking-tighter">{{ tier.price }}</span>
-                        <span class="text-sm font-bold opacity-60" v-if="tier.price !== 'Custom'">/mo</span>
+                        <span class="text-sm font-bold opacity-60" v-if="tier.price !== 'Custom'">/mo(Yes, {{ tier.price }} Kenyatta Shillings )</span>
                     </div>
 
                     <p class="text-sm font-medium mb-10 leading-relaxed text-[#545b64]">

@@ -11,29 +11,25 @@ export interface DocCategory {
     items: DocItem[];
 }
 
-
-
-export interface CategoriesMapped {
-    categories_mapped: DocCategory[];
-    scope: 'public' | 'internal';
-}
-
-// "service":    chooseString(publicData, internalData),
-// "apiVersion": chooseVersion(publicData, internalData),
-// "scope":      "internal",
-// "internal":   safeCategories(internalData),
-// "public":     safeCategories(publicData),
+// Shape returned by the gateway's aggregate manifest endpoint
+// (GET /api/v1/gateway/docs/all-manifest), one entry per service:
+// { ec2: { service, apiVersion, scope, internal, public }, s3: {...}, ... }
+//
+// `internal` and `public` are already role-filtered server-side — for a
+// non-privileged caller, `internal` comes back as an empty array, not
+// omitted and not the full list. The frontend never needs to re-derive
+// access from `scope` or a decoded role; it can just render whatever
+// arrays are present.
 export interface DocManifest {
     service: string;
-    version?: string;
     apiVersion?: string;
     scope?: string;
     internal?: DocCategory[];
-    public?: DocCategory;
+    public?: DocCategory[];
 }
 
 export interface ScopedCategories {
-    scope: string;
+    scope?: string;
     publicCategories: DocCategory[];
     internalCategories: DocCategory[];
 }
@@ -49,21 +45,27 @@ export interface DocResponse {
     content: string;
 }
 
-type UserRole = 'ADMIN' | 'ENGINEER' | 'USER' | null;
+type UserRole = 'ADMIN' | 'SYSTEM' | 'STAFF' | 'USER' | null;
 
+// Base paths used only for fetching a single doc's content, per service —
+// the manifest itself no longer needs this map, since the gateway's
+// aggregate endpoint already returns every service that has docs.
 const SERVICE_REGISTRY: Record<string, string> = {
     s3: '/s3',
     rds: '/rds',
     lambda: '/lambda',
-    // gamelift: '/gamelift',
     ec2: '/ec2',
     gateway: '/gateway',
     auth: '/auth',
     sagemaker: '/llm',
-
-    // config: '/config',
-    // metrics: '/metrics',
 };
+
+// Roles the gateway treats as privileged (must match ELEVATED_ROLES on the
+// gateway side) — used here only for UI treatment (the "Admin Access
+// Active" badge), never to decide what data to show. What to show is
+// already decided by the backend and reflected in which arrays are
+// populated.
+const PRIVILEGED_ROLES: UserRole[] = ['ADMIN', 'SYSTEM', 'STAFF'];
 
 // ── JWT helpers ───────────────────────────────────────────────────────────────
 
@@ -86,51 +88,16 @@ function getRoleFromToken(): UserRole {
     return (payload?.role as UserRole) ?? null;
 }
 
-function getToken(): string | null {
-    return localStorage.getItem('auth_token') ?? sessionStorage.getItem('auth_token');
-}
-// export interface DocManifest {
-//     service: string;
-//     version?: string;
-//     apiVersion?:string;
-//     scope?:string;
-//     internal?:string[];
-//     public?:string;
-//     categories: DocCategory[];
-//     categories_mapped: CategoriesMapped;
-// }
-
-// export interface ScopedCategories {
-//     scope: 'public' | 'internal';
-//     publicCategories: DocCategory[];
-//     internalCategories: DocCategory[];
-// }
-
-
-// ── categories_mapped splitting helper ────────────────────────────────────────
+// ── categories splitting helper ────────────────────────────────────────────────
 // Shared by the store getter below and safe to unit test in isolation.
+// Purely reads whatever the backend already sent — no role logic here,
+// since the backend has already filtered `internal` down to an empty
+// array for anyone who shouldn't see it.
 function splitScopedCategories(manifest: DocManifest | undefined): ScopedCategories {
-    const mapped = manifest?.apiVersion;
-
-
-
-    if (!manifest || !Array.isArray(manifest.public)) {
-        return { scope: manifest?.scope, publicCategories: [], internalCategories: [] };
-    }
-
-    if (manifest.scope === 'internal') {
-        return {
-            scope: 'internal',
-            publicCategories: manifest.public,
-            internalCategories: manifest.internal,
-        };
-    }
-
-    // scope === 'public' (or an unexpected/degraded shape) -> everything is public.
     return {
-        scope: 'public',
-        publicCategories: manifest.public,
-        internalCategories: [],
+        scope: manifest?.scope,
+        publicCategories: manifest?.public ?? [],
+        internalCategories: manifest?.internal ?? [],
     };
 }
 
@@ -138,9 +105,9 @@ function splitScopedCategories(manifest: DocManifest | undefined): ScopedCategor
 
 export const useDocsStore = defineStore('docs', {
     state: () => ({
-        // Stores one manifest per service: { s3: { service, categories, categories_mapped, ... } }
+        // One manifest per service, keyed exactly as the gateway returns it:
+        // { ec2: {...}, s3: {...} }
         manifests: {} as Record<string, DocManifest>,
-        manifestErrors: {} as Record<string, string>,
 
         currentDoc: null as DocResponse | null,
         activeService: null as string | null,
@@ -156,17 +123,16 @@ export const useDocsStore = defineStore('docs', {
     }),
 
     getters: {
-        isPrivilegedUser: (state) => state.userRole === 'ADMIN' || state.userRole === 'ENGINEER',
+        isPrivilegedUser: (state) => PRIVILEGED_ROLES.includes(state.userRole),
     },
 
     actions: {
-        // Splits a service's categories_mapped into { publicCategories, internalCategories, scope }.
-        // Use this everywhere instead of reading `categories_mapped` directly so the
-        // positional assumption above only lives in one place.
+        // Splits a service's manifest into { publicCategories, internalCategories, scope }.
+        // Use this everywhere instead of reading manifest.public/.internal directly.
         scopedCategories(serviceId: string): ScopedCategories {
-
             return splitScopedCategories(this.manifests[serviceId]);
         },
+
         openHelp(service: string, slug: string) {
             this.drawer.service = service;
             this.drawer.slug = slug;
@@ -177,33 +143,25 @@ export const useDocsStore = defineStore('docs', {
             this.drawer.isOpen = false;
         },
 
-        // ── Unified Fetch: Automatically handles role-based filtering backend ────
+        // ── Unified fetch: one call to the gateway, already role-filtered ────
         async fetchAllManifests() {
             this.loading = true;
+            this.error = null;
             this.userRole = getRoleFromToken();
 
-            const fetches = Object.entries(SERVICE_REGISTRY).map(async ([service, basePath]) => {
-                try {
-                    // One call to get the role-filtered manifest for this service.
-                    // The backend returns { data: { service, internal,public, scope, service //categories, categories_mapped, ... } }
-                    // apiClient interceptor handles Authorization header
-                    const response = await apiClient.get(`${basePath}/docs`);
-                    if (response.data?.data) {
-                        this.manifests[service] = response.data.data;
-                        console.log(`loging the base path forthe docs## url ${this.manifests[service]?.service}`)
-
-                    }
-                } catch (err: any) {
-                    const status = err?.response?.status;
-                    this.manifestErrors[service] = status === 404 ? 'No documentation found.' : 'Unreachable.';
-                }
-            });
-
-            await Promise.allSettled(fetches);
-            this.loading = false;
+            try {
+                // The gateway resolves the caller's role itself and returns the
+                // manifest map directly — no envelope, no per-service calls.
+                const response = await apiClient.get(`${SERVICE_REGISTRY.gateway}/docs/all-manifest`);
+                this.manifests = response.data ?? {};
+            } catch (err: any) {
+                this.error = 'Could not load documentation manifests.';
+            } finally {
+                this.loading = false;
+            }
         },
 
-        // ── Unified Doc Fetching: Access is handled by the backend ────
+        // ── Unified doc fetching: access is still checked by the owning service ──
         async fetchDocContent(service: string, slug: string) {
             this.loading = true;
             this.error = null;
@@ -217,10 +175,9 @@ export const useDocsStore = defineStore('docs', {
                 return;
             }
 
-
             try {
-                // The backend checks both public and internal folders based on your JWT role
-                // apiClient interceptor handles Authorization header
+                // The owning service checks the caller's role (via the standard
+                // auth headers) before returning internal vs. public content.
                 const response = await apiClient.get(`${basePath}/docs/${slug}`);
                 if (response.data?.data) {
                     this.currentDoc = response.data.data;
@@ -228,15 +185,15 @@ export const useDocsStore = defineStore('docs', {
             } catch (err: any) {
                 const status = err?.response?.status;
                 if (status === 401 || status === 403) {
-                    this.error = "Unauthorized: Access denied.";
+                    this.error = 'Unauthorized: Access denied.';
                 } else if (status === 404) {
-                    this.error = "Document not found.";
+                    this.error = 'Document not found.';
                 } else {
-                    this.error = "Could not load documentation.";
+                    this.error = 'Could not load documentation.';
                 }
             } finally {
                 this.loading = false;
             }
-        }
+        },
     },
 });

@@ -3,12 +3,13 @@ import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useComputeStore } from '../store/computeStore'
 import { useToastStore } from '@/shared/store/toastStore'
-
+import ReserveVolumeModal from '../components/ReserveVolumeModal.vue'
+import ExpandVolumeVolume from '../components/ExpandVolumeVolume.vue'
 const route = useRoute()
 const router = useRouter()
 const computeStore = useComputeStore()
 const toastStore = useToastStore()
-
+const showReserveModal = ref(false)
 const volumeId = computed(() => route.params.id as string)
 const activeTab = ref('details')
 
@@ -78,17 +79,43 @@ const handleDelete = async () => {
     }
 }
 
-const handleReserve = async () => {
+// function handleReserves() {
+//   showReserveModal.value = true
+// //    {
+// //     reserved_to: reservedTo,
+// //     expires_at: expiresAt
+// //   }
+
+
+
+// }
+
+const handleReserve = () => {
+    showReserveModal.value = true
+}
+
+const handleRelease = async () => {
     try {
-        await computeStore.reserveVolume(volumeId.value)
+        await computeStore.releaseVolumeReservation(volumeId.value)
+        toastStore.addToast('Volume reservation released', 'success')
+    } catch (error: any) {
+        toastStore.addToast(error.message || 'Failed to release volume reservation', 'error')
+    }
+}
+
+
+
+const onReserveConfirm = async ({ reservedTo, expiresAt }: { reservedTo: string; expiresAt: string }) => {
+    try {
+        await computeStore.reserveVolume(volumeId.value, reservedTo, expiresAt)
         toastStore.addToast('Volume reservation successfully committed', 'success')
     } catch (error: any) {
         toastStore.addToast(error.message || 'Failed to reserve volume', 'error')
     }
 }
-
 // Snapshot Creation State
 const isSnapshotModalOpen = ref(false)
+const isExpandModalOpen = ref(false)
 const snapshotForm = ref({
     name: '',
     description: ''
@@ -101,6 +128,35 @@ const openSnapshotModal = () => {
     }
     isSnapshotModalOpen.value = true
 }
+
+
+
+
+
+const showExpandModal = ref(false)
+const isExpanding = ref(false)
+
+function openExpandModal() {
+    showExpandModal.value = true
+}
+
+
+async function onExpandConfirm(new_size: number) {
+    isExpanding.value = true
+    try {
+        await computeStore.expandVolumeSize(volumeId.value, { new_size })
+        showExpandModal.value = false // close only on success
+    } catch (err) {
+        console.error('Failed to expand volume:', err)
+        // show a toast/error here if you have one
+    } finally {
+        isExpanding.value = false
+    }
+}
+
+
+
+
 
 const createSnapshot = async () => {
     if (!snapshotForm.value.name.trim()) {
@@ -117,6 +173,17 @@ const createSnapshot = async () => {
         activeTab.value = 'snapshots'
     } catch (error: any) {
         toastStore.addToast(error.message || 'Failed to initiate snapshot', 'error')
+    }
+}
+
+const handleDeleteSnapshot = async (snapshotId: string) => {
+    if (!confirm('Are you sure you want to decommission this volume snapshot?')) return
+    try {
+        await computeStore.deleteVolumeSnapshot(snapshotId)
+        await computeStore.fetchVolumeSnapshots(volumeId.value)
+        toastStore.addToast('Volume snapshot decommissioned successfully', 'success')
+    } catch (error: any) {
+        toastStore.addToast(error.message || 'Failed to decommission volume snapshot', 'error')
     }
 }
 </script>
@@ -186,14 +253,34 @@ const createSnapshot = async () => {
                         </p>
                     </div>
                 </div>
-                <div class="flex flex-wrap gap-4">
-                    <button @click="handleReserve"
-                        class="px-8 py-5 border-2 border-blue-600 text-blue-600 text-[11px] font-black uppercase tracking-[0.3em] hover:bg-blue-600 hover:text-white transition-all">Reserve_Volume</button>
+                <div class="flex flex-wrap gap-2">
+
+                    <button @click="volume.status === 'reserved' ? handleRelease() : handleReserve()"
+                        :disabled="volume.status === 'attached'"
+                        class="px-4 py-2 border-2 border-blue-600 text-blue-600 text-[10px] font-black uppercase tracking-[0.2em] hover:bg-blue-600 hover:text-white transition-all disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-blue-600">
+                        {{ volume.status === 'reserved' ? 'Release_Volume' : 'Reserve_Volume' }}
+                    </button>
+
+                    <button @click="openExpandModal"
+                        class="px-4 py-2 border-2 border-[#232f3e] text-[#232f3e] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#232f3e] hover:text-white transition-all">
+                        Expand_Volume
+                    </button>
+
                     <button @click="openSnapshotModal"
-                        class="px-8 py-5 border-2 border-[#232f3e] text-[#232f3e] text-[11px] font-black uppercase tracking-[0.3em] hover:bg-[#232f3e] hover:text-white transition-all">Create_Snapshot</button>
+                        class="px-4 py-2 border-2 border-[#232f3e] text-[#232f3e] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#232f3e] hover:text-white transition-all">
+                        Create_Snapshot
+                    </button>
+
                     <button @click="handleDelete"
-                        class="px-12 py-5 bg-rose-600 text-white text-[11px] font-black uppercase tracking-[0.3em] hover:bg-[#232f3e] transition-all">Decommission</button>
+                        class="px-5 py-2 bg-rose-600 text-white text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#232f3e] transition-all">
+                        Decommission
+                    </button>
+
                 </div>
+                <ExpandVolumeVolume v-model="showExpandModal" :current-size="volume.size" :is-submitting="isExpanding"
+                    @confirm="onExpandConfirm" />
+                <ReserveVolumeModal v-model="showReserveModal" :existing-instances="computeStore.instances"
+                    @confirm="onReserveConfirm" />
             </div>
 
             <!-- Quick Stats Card -->
@@ -248,7 +335,7 @@ const createSnapshot = async () => {
                                         class="text-[9px] font-black text-[#879196] uppercase tracking-[0.2em] mb-2 italic">//
                                         {{ item.label }}</span>
                                     <span class="text-sm font-black text-[#232f3e] uppercase font-mono">{{ item.value
-                                        }}</span>
+                                    }}</span>
                                 </div>
                             </div>
                         </div>
@@ -307,11 +394,12 @@ const createSnapshot = async () => {
                                     <th class="p-8 border-r-2 border-[#eaeded]">Identifier</th>
                                     <th class="p-8 border-r-2 border-[#eaeded]">Size</th>
                                     <th class="p-8 border-r-2 border-[#eaeded]">State</th>
-                                    <th class="p-8">Created</th>
+                                    <th class="p-8 border-r-2 border-[#eaeded]">Created</th>
+                                    <th class="p-8 text-right">Actions</th>
                                 </tr>
                             </thead>
                             <tbody class="text-sm divide-y-2 divide-[#eaeded] font-black uppercase">
-                                <tr v-for="snap in computeStore.snapshots.filter(s => String(s.volume_id) === String(volumeId))"
+                                <tr v-for="snap in computeStore.volumeSnapshots.filter(s => String(s.volume_id) === String(volumeId))"
                                     :key="snap.id" class="hover:bg-[#fafafa] transition-colors">
                                     <td class="p-8 border-r-2 border-[#eaeded] text-blue-600 font-mono">{{ snap.name }}
                                     </td>
@@ -319,13 +407,19 @@ const createSnapshot = async () => {
                                     <td class="p-8 border-r-2 border-[#eaeded]">
                                         <span
                                             class="text-[9px] font-black px-3 py-1 bg-emerald-500/10 text-emerald-600 border-2 border-emerald-600/20">{{
-                                                snap.state }}</span>
+                                                snap.status }}</span>
                                     </td>
-                                    <td class="p-8 text-[#545b64] italic text-xs">{{ new
+                                    <td class="p-8 border-r-2 border-[#eaeded] text-[#545b64] italic text-xs">{{ new
                                         Date(snap.created_at).toLocaleString() }}</td>
+                                    <td class="p-8 text-right">
+                                        <button @click="handleDeleteSnapshot(snap.id)"
+                                            class="text-rose-600 hover:text-rose-800 text-[10px] font-black uppercase tracking-widest hover:underline decoration-2 underline-offset-4">
+                                            Decommission
+                                        </button>
+                                    </td>
                                 </tr>
-                                <tr v-if="computeStore.snapshots.filter(s => s.volume_id === volumeId).length === 0">
-                                    <td colspan="4"
+                                <tr v-if="computeStore.volumeSnapshots.filter(s => String(s.volume_id) === String(volumeId)).length === 0">
+                                    <td colspan="5"
                                         class="p-12 text-center text-[#879196] italic opacity-50 uppercase tracking-widest text-[10px]">
                                         No snapshots found for this volume</td>
                                 </tr>

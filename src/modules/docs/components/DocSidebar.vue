@@ -3,19 +3,21 @@
         <!-- Header -->
         <div class="p-6 border-b border-gray-100">
             <div class="flex items-center justify-between mb-1">
-                <div class="flex items-center gap-3 text-[#ff6b00]">
-                    <BookOpen :size="20" />
-                    <h2 class="text-xs font-semibold uppercase tracking-wide">
+                <div class="flex items-center gap-2.5 text-[#232f3e]">
+                    <div class="w-7 h-7 rounded-lg bg-orange-50 flex items-center justify-center">
+                        <BookOpen :size="15" class="text-[#ff9900]" />
+                    </div>
+                    <h2 class="text-xs font-bold uppercase tracking-wide">
                         Documentation Portal
                     </h2>
                 </div>
                 <div v-if="isPrivileged"
-                    class="flex items-center gap-1.5 px-2 py-0.5 bg-orange-50 border border-orange-100 rounded text-[9px] font-bold text-orange-600 uppercase">
+                    class="flex items-center gap-1 px-2 py-0.5 bg-orange-50 rounded-full text-[9px] font-bold text-orange-600 uppercase">
                     <ShieldCheck :size="10" />
                     {{ userRole }}
                 </div>
             </div>
-            <p class="text-[11px] text-gray-400">SERWIN SYSTEMS CLOUD</p>
+            <p class="text-[10.5px] text-gray-400 tracking-wide pl-9">Serwin Systems Cloud</p>
         </div>
 
         <!-- Content -->
@@ -27,46 +29,49 @@
                 </div>
             </div>
 
-            <nav v-else class="space-y-8 pb-10">
+            <nav v-else class="space-y-1 pb-10">
                 <template v-for="(manifest, serviceId) in manifests" :key="serviceId">
-                    <div class="service-block">
+                    <div class="service-block pt-5 first:pt-1">
                         <!-- Service Header -->
-                        <div class="flex items-center justify-between px-4 mb-4 bg-[#ff9900]">
-                            <h3 class="text-[20px] font-bold text-white tracking-wide flex items-center gap-2">
-                                <div class="w-1.5 h-1.5 rounded-full bg-white"></div>
-                                {{ `${manifest.service.toUpperCase()}` }}
+                        <div class="flex items-center gap-2 px-2 mb-4">
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#ff9900] shrink-0"></span>
+                            <h3 class="text-[11px] font-black text-[#232f3e] tracking-[0.12em] uppercase">
+                                {{ manifest.service }}
                             </h3>
+                            <div class="flex-1 h-px bg-gray-100"></div>
                         </div>
 
-                        <!-- 1. Internal Documentation dropdown (only present when scope === 'internal') -->
-                        <div v-if="scoped(serviceId as string).internalCategories.length" class="mb-5">
+                        <!-- 1. Internal Documentation dropdown (only present when the caller can see it) -->
+                        <div v-if="scoped(serviceId as string).internalCategories.length" class="mb-4">
                             <button @click="toggleSection(serviceId as string, 'internal')"
-                                class="w-full px-6 flex items-center justify-between mb-2 group">
+                                class="w-full px-3 py-1.5 flex items-center justify-between mb-1.5 rounded-md group hover:bg-orange-50/60 transition-colors">
                                 <span
-                                    class="text-[16px] font-semibold uppercase tracking-widest  group-hover:text-orange-600 flex items-center gap-1.5">
-                                    <ShieldCheck :size="10" />
+                                    class="text-[10.5px] font-bold uppercase tracking-widest text-orange-500 group-hover:text-orange-600 flex items-center gap-1.5">
+                                    <ShieldCheck :size="11" />
                                     Internal Documentation
                                 </span>
-                                <ChevronDown :size="32" class="transition-transform duration-200"
-                                    :class="{ 'rotate-180': !isSectionCollapsed(serviceId as string, 'internal') }" />
+                                <ChevronDown :size="13" class="text-gray-400 transition-transform duration-200 group-hover:text-orange-500"
+                                    :class="{ '-rotate-90': isSectionCollapsed(serviceId as string, 'internal') }" />
                             </button>
 
-                            <div v-show="!isSectionCollapsed(serviceId as string, 'internal')">
+                            <div v-show="!isSectionCollapsed(serviceId as string, 'internal')" class="space-y-4">
                                 <div v-for="category in scoped(serviceId as string).internalCategories"
-                                    :key="category.title" class="mb-5 last:mb-0 pl-4">
-                                    <div class="px-6 mb-2">
-                                        <span class="text-[15px] font-bold text-orange-500 uppercase tracking-tighter " >
+                                    :key="category.title" class="pl-3">
+                                    <div class="px-3 mb-1">
+                                        <span class="text-[10px] font-bold text-blue uppercase tracking-wider">
                                             {{ category.title }}
                                         </span>
                                     </div>
-                                    <ul class="space-y-0.5 pl-8">
+                                    <ul class="space-y-0.5">
                                         <li v-for="item in category.items" :key="item.slug">
                                             <button
-                                                class="relative w-full text-left flex items-center px-6 py-2.5 text-[13px] font-medium rounded-lg transition-all duration-150 border-l-2 border-transparent"
+                                                class="relative w-full text-left flex items-center gap-2 px-3 py-2 text-[13px] font-medium rounded-md transition-all duration-150"
                                                 :class="isActive(serviceId as string, item.slug)
-                                                    ? 'bg-orange-50 text-orange-600 font-bold !border-orange-500'
+                                                    ? 'bg-orange-50 text-orange-600 font-semibold'
                                                     : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'"
                                                 @click="onNavigate(serviceId as string, item.slug)">
+                                                <span class="w-1 h-1 rounded-full shrink-0"
+                                                    :class="isActive(serviceId as string, item.slug) ? 'bg-orange-500' : 'bg-gray-300'"></span>
                                                 <span class="truncate">{{ item.title }}</span>
                                             </button>
                                         </li>
@@ -76,43 +81,35 @@
                         </div>
 
                         <!-- 2. Public Documentation dropdown -->
-                        <div v-if="scoped(serviceId as string).publicCategories.length" class="mb-5">
-                            <button v-if="scoped(serviceId as string).publicCategories.length"
-                                @click="toggleSection(serviceId as string, 'public')"
-                                class="w-full px-6 flex items-center justify-between mb-2 group">
+                        <div v-if="scoped(serviceId as string).publicCategories.length" class="mb-1">
+                            <button @click="toggleSection(serviceId as string, 'public')"
+                                class="w-full px-3 py-1.5 flex items-center justify-between mb-1.5 rounded-md group hover:bg-gray-50 transition-colors">
                                 <span
-                                    class="text-[16px] font-semibold uppercase tracking-widest  group-hover:text-orange-600 flex items-center gap-1.5">
-
+                                    class="text-[10.5px] font-bold uppercase tracking-widest text-gray-500 group-hover:text-gray-700">
                                     Public Documentation
                                 </span>
-                                <ChevronDown :size="32" class=" transition-transform duration-200"
-                                    :class="{ 'rotate-180': !isSectionCollapsed(serviceId as string, 'public') }" />
+                                <ChevronDown :size="13" class="text-gray-400 transition-transform duration-200 group-hover:text-gray-600"
+                                    :class="{ '-rotate-90': isSectionCollapsed(serviceId as string, 'public') }" />
                             </button>
-                            <div v-else class="px-6 mb-2">
-                                <span class="text-[10px] font-semibold uppercase tracking-widest text-gray-400">
-                                    Guides & General
-                                </span>
-                            </div>
 
-                            <div v-show="!isSectionCollapsed(serviceId as string, 'public')">
+                            <div v-show="!isSectionCollapsed(serviceId as string, 'public')" class="space-y-4">
                                 <div v-for="category in scoped(serviceId as string).publicCategories"
-                                    :key="category.title" class="mb-5 last:mb-0  pl-4" >
-                                    <div class="px-6 mb-2">
-                                        <span class="text-[15px] font-bold text-orange-500 uppercase tracking-tighter">
+                                    :key="category.title" class="pl-3">
+                                    <div class="px-3 mb-1">
+                                        <span class="text-[10px] font-bold text-blue uppercase tracking-wider">
                                             {{ category.title }}
                                         </span>
                                     </div>
-                                    <ul class="space-y-0.5 pl-8">
+                                    <ul class="space-y-0.5">
                                         <li v-for="item in category.items" :key="item.slug">
                                             <button
-                                                class="relative w-full text-left flex items-center px-6 py-2.5 text-[13px] font-medium rounded-lg transition-all duration-150"
+                                                class="relative w-full text-left flex items-center gap-2 px-3 py-2 text-[13px] font-medium rounded-md transition-all duration-150"
                                                 :class="isActive(serviceId as string, item.slug)
-                                                    ? 'bg-blue-50 text-blue-600 font-bold'
+                                                    ? 'bg-blue-50 text-blue-600 font-semibold'
                                                     : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'"
                                                 @click="onNavigate(serviceId as string, item.slug)">
-                                                <span v-if="isActive(serviceId as string, item.slug)"
-                                                    class="absolute left-0 w-1 h-5 bg-blue-500 rounded-r">
-                                                </span>
+                                                <span class="w-1 h-1 rounded-full shrink-0"
+                                                    :class="isActive(serviceId as string, item.slug) ? 'bg-blue-500' : 'bg-gray-300'"></span>
                                                 <span class="truncate">{{ item.title }}</span>
                                             </button>
                                         </li>
@@ -120,8 +117,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <div class="mx-6 mt-8 border-t border-gray-50"></div>
                     </div>
                 </template>
             </nav>
@@ -148,9 +143,9 @@ const router = useRouter();
 const { userRole } = storeToRefs(docsStore);
 const isPrivileged = computed(() => docsStore.isPrivilegedUser);
 
-// Splits a service's categories_mapped into { scope, publicCategories, internalCategories }.
-const scoped = (serviceId: string) => docsStore.scopedCategories(serviceId) as docsStore.ScopedCategories;
-// const scoped = docsStore.manifests
+// Splits a service's manifest into { scope, publicCategories, internalCategories }.
+const scoped = (serviceId: string) => docsStore.scopedCategories(serviceId);
+
 // Per-service, per-section (public/internal) manual collapse overrides.
 // Key format: "<serviceId>:<section>"
 const collapseOverrides = ref<Map<string, boolean>>(new Map());
@@ -194,3 +189,22 @@ const onNavigate = (serviceId: string, slug: string) => {
     });
 };
 </script>
+
+<style scoped>
+.custom-scrollbar::-webkit-scrollbar {
+    width: 5px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+    background: #e5e7eb;
+    border-radius: 999px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: #d1d5db;
+}
+</style>

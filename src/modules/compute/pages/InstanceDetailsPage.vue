@@ -577,7 +577,8 @@ const handleSnapshotCreate = async () => {
               </thead>
               <tbody class="text-sm divide-y-2 divide-[#eaeded] font-black uppercase">
                 <tr v-for="vol in attachedVolumes" :key="vol.id" class="hover:bg-[#fafafa] transition-colors">
-                  <td class="p-8 border-r-2 border-[#eaeded] text-blue-600">{{ vol.id }}</td>
+                  <td @click="router.push({ name: 'volume-details', params: { id: vol.id } })" class="p-8 border-r-2 border-[#eaeded] text-blue-600"> {{ vol.name }}</td>
+                  <!-- <td @click="router.push('/compute/volumes/:id')" class="p-8 border-r-2 border-[#eaeded] text-blue-600">{{ vol.id }}</td> -->
                   <td class="p-8 border-r-2 border-[#eaeded] text-[#232f3e]">{{ vol.device || '/dev/vdb' }}</td>
                   <td class="p-8 border-r-2 border-[#eaeded] text-[#232f3e]">{{ vol.size }} GIB</td>
                   <td class="p-8 border-r-2 border-[#eaeded] text-[#545b64]">{{ vol.type }}</td>
@@ -609,7 +610,7 @@ const handleSnapshotCreate = async () => {
           </div>
 
           <!-- Component Details Grid -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-16 mt-12">
+          <!-- <div class="grid grid-cols-1 md:grid-cols-2 gap-16 mt-12">
             <div class="space-y-8">
               <h3 class="text-xl font-black text-[#232f3e] flex items-center gap-4 uppercase tracking-tight">
                 <span class="w-1.5 h-6 bg-blue-600"></span>
@@ -628,7 +629,7 @@ const handleSnapshotCreate = async () => {
                 </div>
               </div>
             </div>
-          </div>
+          </div> -->
         </div>
 
         <!-- Status Checks Tab Content -->

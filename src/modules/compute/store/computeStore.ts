@@ -2,6 +2,8 @@ import { defineStore } from 'pinia'
 import { ref } from 'vue'
 import apiClient from '@/shared/api/apiClient'
 import type { Vpc } from '@/shared/types/vpc'
+import type { VolumeSnapshot, InstanceSnapshot, Snapshot, Snapshot2 } from '../types/snapshot'
+
 
 export interface Instance {
     id: string
@@ -68,12 +70,13 @@ export interface Volume {
     size: number
     type: string
     state: string
+    status: string
     az: string
     device?: string
     instance_id?: string
     created_at: string
 }
-
+// depracated
 export interface Snapshot {
     id: string
     name: string
@@ -83,6 +86,7 @@ export interface Snapshot {
     state: string
     created_at: string
 }
+
 
 export interface Template {
     id: string
@@ -160,6 +164,9 @@ export interface UpdateScalingPolicyPayload {
     scale_in_cooldown: number
 }
 
+
+
+
 export const useComputeStore = defineStore('compute', () => {
     const instances = ref<Instance[]>([])
     const currentInstance = ref<Instance | null>(null)
@@ -178,18 +185,69 @@ export const useComputeStore = defineStore('compute', () => {
 
     // New Resource Refs
     const volumes = ref<Volume[]>([])
-    const snapshots = ref<Snapshot[]>([])
+    const snapshots = ref<Snapshot2[]>([])
     const templates = ref<Template[]>([])
     const sshKeys = ref<SSHKey[]>([])
     const instanceStatusChecks = ref<StatusCheck[]>([])
     const currentInstanceMetrics = ref<InstanceMetrics | null>(null)
     const instanceTags = ref<Tag[]>([])
     const volumeTags = ref<Tag[]>([])
-    const volumeSnapshots = ref<Snapshot[]>([])
+    const volumeSnapshots = ref<VolumeSnapshot[]>([])
     const currentVolume = ref<Volume | null>(null)
     const vpcs = ref<Vpc[]>([])
     const currentTemplate = ref<Template | null>(null)
     const scalingPolicies = ref<ScalingPolicy[]>([])
+
+
+
+
+
+    // --- Snapshot Actions ---
+    interface SnapshotsResponse {
+        code: number
+        message: string
+        data: {
+            volume_snapshots: VolumeSnapshot[] | null
+            instance_snapshots: InstanceSnapshot[] | null
+        }
+    }
+
+
+
+    const fetchSnapshots = async () => {
+        try {
+            const response = await apiClient.get<SnapshotsResponse>('/ec2/snapshots')
+            const volumeSnapshots = response.data?.data?.volume_snapshots || []
+            const instanceSnapshots = response.data?.data?.instance_snapshots || []
+
+            const mappedVolumeSnapshots: Snapshot2[] = volumeSnapshots.map(s => ({
+                ...s,
+                id: String(s.id),
+                volume_id: s.volume_id ? String(s.volume_id) : null,
+                instance_id: s.instance_id ? String(s.instance_id) : null,
+                kind: 'volume' as const,
+            }))
+
+            const mappedInstanceSnapshots: Snapshot2[] = instanceSnapshots.map(s => ({
+                ...s,
+                id: String(s.id),
+                instance_id: s.instance_id ? String(s.instance_id) : null,
+                kind: 'instance' as const,
+            }))
+
+            snapshots.value = [...mappedVolumeSnapshots, ...mappedInstanceSnapshots]
+        } catch (error) {
+            console.error('Failed to fetch snapshots:', error)
+        }
+    }
+
+
+
+
+
+
+
+
 
     const fetchInstances = async () => {
         isLoading.value = true
@@ -237,6 +295,8 @@ export const useComputeStore = defineStore('compute', () => {
                 name: v.name || v.volume_name || 'Unnamed',
                 size: v.size,
                 type: v.type,
+                status: v.status,
+
                 state: v.status || v.state,
                 az: v.availability_zone || v.az,
                 device: v.device_path || v.device,
@@ -258,6 +318,7 @@ export const useComputeStore = defineStore('compute', () => {
                     name: v.name || v.volume_name || 'Unnamed',
                     size: v.size,
                     type: v.type,
+                    status: v.status,
                     state: v.status || v.state,
                     az: v.availability_zone || v.az,
                     device: v.device_path || v.device,
@@ -300,11 +361,26 @@ export const useComputeStore = defineStore('compute', () => {
         await fetchVolumes()
     }
 
-    const reserveVolume = async (id: string) => {
-        await apiClient.post(`/ec2/volumes/${id}/reserve`)
+    const reserveVolume = async (id: string, reservedTo: string, expiresAt: string) => {
+        await apiClient.post(`/ec2/volumes/${id}/reserve`, {
+            reserved_to: reservedTo,
+            expires_at: expiresAt
+        })
         await fetchVolume(id)
     }
+    const releaseVolumeReservation = async (id: string) => {
+        await apiClient.post(`/ec2/volumes/${id}/release-reservation`)
+        await fetchVolume(id)
+    }
+    const fetchAllSnapshots = async () => {
+        const res = await apiClient.get('/ec2/snapshots')
+        return res.data.data
+    }
 
+    const createVolumeFromSnapshot = async (payload: { snapshot_id: number; volume_name: string }) => {
+        const res = await apiClient.post('/ec2/volumes/from-snapshot', payload)
+        return res.data.data
+    }
     const fetchVolumeSnapshots = async (volumeId: string) => {
         try {
             const response = await apiClient.get<{ data: any[] }>(`/ec2/volumes/${volumeId}/snapshots`)
@@ -315,7 +391,8 @@ export const useComputeStore = defineStore('compute', () => {
                 volume_id: String(s.volume_id),
                 instance_id: s.instance_id ? String(s.instance_id) : null,
                 size: s.size,
-                state: s.status || s.state,
+                status: s.status || s.state,
+                description: s.description,
                 created_at: s.created_at
             }))
             // Also update the global snapshots list if needed
@@ -325,28 +402,14 @@ export const useComputeStore = defineStore('compute', () => {
         }
     }
 
-    const createVolumeSnapshot = async (volumeId: string, payload: { name: string, description: string }) => {
+    const createVolumeSnapshot = async (volumeId: string, payload: { name: string, description?: string }) => {
         await apiClient.post(`/ec2/volumes/${volumeId}/snapshots`, payload)
         await fetchVolumeSnapshots(volumeId)
+        await fetchSnapshots()
     }
-
-    // --- Snapshot Actions ---
-    const fetchSnapshots = async () => {
-        try {
-            const response = await apiClient.get<{ data: any[] }>('/ec2/snapshots')
-            const rawData = response.data?.data || []
-            snapshots.value = rawData.map(s => ({
-                id: String(s.id),
-                name: s.name || s.snapshot_id,
-                volume_id: s.volume_id ? String(s.volume_id) : null,
-                instance_id: s.instance_id ? String(s.instance_id) : null,
-                size: s.size,
-                state: s.status || s.state,
-                created_at: s.created_at
-            }))
-        } catch (error) {
-            console.error('Failed to fetch snapshots:', error)
-        }
+    const expandVolumeSize = async (volumeId: string, payload: { newSize: number }) => {
+        await apiClient.post(`/ec2/volumes/${volumeId}/expand`, payload)
+        await fetchVolumes() // or whatever you use to refresh a single volume
     }
 
     const createSnapshot = async (instanceId: string, payload: any) => {
@@ -470,7 +533,7 @@ export const useComputeStore = defineStore('compute', () => {
                     vpc_id: inst.vpc_id,
                     subnet_id: inst.subnet_id,
                     privateIp: inst.private_ip,
-                    session:inst.session_id
+                    session: inst.session_id
                 }
             }
         } catch (error) {
@@ -833,7 +896,7 @@ export const useComputeStore = defineStore('compute', () => {
         templates,
         sshKeys,
         fetchVolumes,
-        createVolume,
+        createVolume, fetchAllSnapshots, createVolumeFromSnapshot, expandVolumeSize,
         deleteVolume,
         fetchSnapshots,
         createSnapshot,
@@ -865,6 +928,7 @@ export const useComputeStore = defineStore('compute', () => {
         currentVolume,
         fetchVolume,
         reserveVolume,
+        releaseVolumeReservation,
         createVolumeSnapshot,
         fetchVolumeSnapshots,
         currentTemplate,

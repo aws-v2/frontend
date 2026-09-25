@@ -2,33 +2,67 @@
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useComputeStore } from '../store/computeStore'
+import { useToastStore } from '@/shared/store/toastStore'
 
 const router = useRouter()
 const route = useRoute()
 const computeStore = useComputeStore()
+const toastStore = useToastStore()
+
+const activeTab = ref<'volume' | 'instance'>(
+    route.query.instanceId ? 'instance' : 'volume'
+)
 
 const form = ref({
     name: '',
-    volume_id: (route.query.volumeId as string) || ''
+    description: '',
+    volume_id: (route.query.volumeId as string) || '',
+    instance_id: (route.query.instanceId as string) || ''
 })
 
 const isSubmitting = ref(false)
 
+const tabs = [
+    { id: 'volume', label: 'Volume Snapshot' },
+    { id: 'instance', label: 'Instance Snapshot' }
+] as const
+
 onMounted(async () => {
-    if (computeStore.volumes.length === 0) {
-        await computeStore.fetchVolumes()
-    }
+    await Promise.all([
+        computeStore.fetchVolumes(),
+        computeStore.fetchInstances()
+    ])
 })
 
 const handleCreate = async () => {
-    if (!form.value.name || !form.value.volume_id) return
+    if (activeTab.value === 'volume') {
+        if (!form.value.name || !form.value.volume_id) return
+    } else {
+        if (!form.value.name || !form.value.instance_id) return
+    }
 
     isSubmitting.value = true
     try {
-        await computeStore.createSnapshot(form.value.volume_id, { name: form.value.name })
+        if (activeTab.value === 'volume') {
+            await computeStore.createVolumeSnapshot(form.value.volume_id, {
+                name: form.value.name,
+                description: form.value.description
+            })
+            toastStore.addToast('Volume snapshot created successfully', 'success')
+        } else {
+            await computeStore.createSnapshot(form.value.instance_id, {
+                name: form.value.name,
+                description: form.value.description
+            })
+            toastStore.addToast('Instance snapshot created successfully', 'success')
+        }
         router.push({ name: 'snapshots-list' })
-    } catch (error) {
+    } catch (error: any) {
         console.error('Failed to create snapshot:', error)
+        toastStore.addToast(
+            error.response?.data?.message || 'Failed to create snapshot',
+            'error'
+        )
     } finally {
         isSubmitting.value = false
     }
@@ -62,25 +96,53 @@ const goBack = () => router.push({ name: 'snapshots-list' })
                     Generation</p>
             </div>
 
+            <!-- Tabs Selection -->
+            <div class="flex border-b-2 border-[#eaeded]">
+                <button v-for="tab in tabs" :key="tab.id" @click="activeTab = tab.id"
+                    class="px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative"
+                    :class="activeTab === tab.id ? 'text-amber-600 bg-[#fafafa]' : 'text-[#879196] hover:text-[#232f3e]'">
+                    {{ tab.label }}
+                    <div v-if="activeTab === tab.id" class="absolute bottom-[-2px] left-0 right-0 h-[4px] bg-amber-600">
+                    </div>
+                </button>
+            </div>
+
             <!-- Form -->
             <div class="bg-[#fafafa] border-4 border-[#232f3e] p-12 space-y-12 relative">
                 <div class="absolute top-0 right-0 w-32 h-32 bg-amber-600/5 -rotate-45 translate-x-16 -translate-y-16">
                 </div>
 
                 <div class="space-y-10">
-                    <!-- Source Volume -->
-                    <div class="space-y-4">
+                    <!-- Source Volume (When Volume tab active) -->
+                    <div v-if="activeTab === 'volume'" class="space-y-4">
                         <label
-                            class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest block italic">SOURCE_BLOCK_DEVICE</label>
+                            class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest block italic">SOURCE_BLOCK_VOLUME</label>
                         <select v-model="form.volume_id"
                             class="w-full bg-white border-4 border-[#232f3e] p-5 text-sm font-black uppercase tracking-tight focus:ring-0 focus:border-amber-600 transition-colors outline-none appearance-none cursor-pointer">
                             <option value="" disabled>SELECT_ACTIVE_DISK_RESOURCES</option>
                             <option v-for="vol in computeStore.volumes" :key="vol.id" :value="vol.id">
-                                {{ vol.id }} // {{ vol.size }} GiB ({{ vol.state }})
+                                {{ vol.name || vol.id }} // {{ vol.id }} // {{ vol.size }} GiB ({{ vol.state || vol.status }})
                             </option>
                         </select>
-                        <p class="text-[9px] text-[#879196] font-bold uppercase tracking-widest leading-relaxed">The
-                            volume from which the snapshot will be cloned.</p>
+                        <p class="text-[9px] text-[#879196] font-bold uppercase tracking-widest leading-relaxed">
+                            The EBS volume from which the point-in-time snapshot will be created.
+                        </p>
+                    </div>
+
+                    <!-- Source Instance (When Instance tab active) -->
+                    <div v-else class="space-y-4">
+                        <label
+                            class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest block italic">SOURCE_COMPUTE_INSTANCE</label>
+                        <select v-model="form.instance_id"
+                            class="w-full bg-white border-4 border-[#232f3e] p-5 text-sm font-black uppercase tracking-tight focus:ring-0 focus:border-amber-600 transition-colors outline-none appearance-none cursor-pointer">
+                            <option value="" disabled>SELECT_ACTIVE_COMPUTE_INSTANCES</option>
+                            <option v-for="inst in computeStore.instances" :key="inst.id" :value="inst.id">
+                                {{ inst.name || inst.id }} // {{ inst.id }} ({{ inst.state }}) - {{ inst.type }}
+                            </option>
+                        </select>
+                        <p class="text-[9px] text-[#879196] font-bold uppercase tracking-widest leading-relaxed">
+                            The compute instance from which an image/instance snapshot will be frozen.
+                        </p>
                     </div>
 
                     <!-- Snapshot Name -->
@@ -90,7 +152,19 @@ const goBack = () => router.push({ name: 'snapshots-list' })
                         <input v-model="form.name" type="text" placeholder="e.g. PRE_MAINTENANCE_BACKUP_04"
                             class="w-full bg-white border-4 border-[#232f3e] p-5 text-sm font-black uppercase tracking-tight focus:ring-0 focus:border-amber-600 transition-colors outline-none">
                         <p class="text-[9px] text-[#879196] font-bold uppercase tracking-widest leading-relaxed">
-                            Descriptive tag for historical retrieval.</p>
+                            Descriptive identifier for historical retrieval.
+                        </p>
+                    </div>
+
+                    <!-- Snapshot Description -->
+                    <div class="space-y-4">
+                        <label
+                            class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest block italic">SNAPSHOT_DESCRIPTION</label>
+                        <input v-model="form.description" type="text" placeholder="Optional description..."
+                            class="w-full bg-white border-4 border-[#232f3e] p-5 text-sm font-black uppercase tracking-tight focus:ring-0 focus:border-amber-600 transition-colors outline-none">
+                        <p class="text-[9px] text-[#879196] font-bold uppercase tracking-widest leading-relaxed">
+                            Detailed operational notes or backup justification.
+                        </p>
                     </div>
                 </div>
 
@@ -107,7 +181,8 @@ const goBack = () => router.push({ name: 'snapshots-list' })
                             class="flex-1 md:flex-initial px-12 py-5 border-4 border-[#232f3e] text-[#232f3e] text-[10px] font-black uppercase tracking-widest hover:bg-[#232f3e] hover:text-white transition-all">
                             ABORT
                         </button>
-                        <button @click="handleCreate" :disabled="isSubmitting || !form.name || !form.volume_id"
+                        <button @click="handleCreate"
+                            :disabled="isSubmitting || !form.name || (activeTab === 'volume' ? !form.volume_id : !form.instance_id)"
                             class="flex-1 md:flex-initial px-16 py-5 bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#232f3e] transition-all disabled:opacity-50 disabled:cursor-not-allowed group">
                             <span v-if="!isSubmitting">GENERATE_SNAPSHOT &rarr;</span>
                             <span v-else class="animate-pulse">FREEZING_BLOCKS...</span>

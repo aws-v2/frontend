@@ -4,7 +4,7 @@ const lambdaRoutes: RouteRecordRaw[] = [
     {
         path: '/lambda',
         name: 'lambda-landing',
-        component: () => import('../compute/pages/ComputeLandingPage.vue'),
+        component: () => import('./views/LambdaLandingPage.vue'),
         meta: { requiresAuth: true }
     },
     {

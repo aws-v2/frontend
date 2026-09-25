@@ -6,17 +6,19 @@ import BaseWidget from '@/shared/components/BaseWidget.vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
 import { useComputeStore } from '@/modules/compute/store/computeStore'
 import { useS3Store } from '@/modules/s3/store/s3Store'
+import { useLambdaStore } from '@/modules/lambda/store/lambdaStore'
 import apiClient from '@/shared/api/apiClient'
 
 const authStore = useAuthStore()
 const computeStore = useComputeStore()
 const s3Store = useS3Store()
+const lambdaStore = useLambdaStore()
 const { storageLensData } = storeToRefs(s3Store)
 const router = useRouter()
 
-// Available Services Types
 const serviceCatalog = [
-    { id: 'compute', name: 'Compute Engine', icon: 'server', description: 'Manage clusters & serverless functions', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/compute', enabled: true },
+    { id: 'compute', name: 'Compute Engine', icon: 'server', description: 'Manage virtual machines & block storage', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/compute', enabled: true },
+    { id: 'lambda', name: 'Serverless Compute', icon: 'zap', description: 'Event-driven functions, triggers & auto-scaling', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/lambda', enabled: true },
     { id: 'storage', name: 'Object Storage', icon: 'database', description: 'Buckets, policies & replication', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/s3/buckets', enabled: true },
     { id: 'rds', name: 'Managed Database', icon: 'rds', description: 'Relational DB instances, snapshots & scaling', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/rds/databases', enabled: true },
     { id: 'sagemaker', name: 'SageMaker', icon: 'brain', description: 'Train & deploy ML models', color: 'text-[#ff9900]', bg: 'bg-[#fafafa]', border: 'border-[#eaeded]', path: '/sagemaker', enabled: true },
@@ -44,7 +46,7 @@ const checkActiveServices = async () => {
         })
     }
 
-    // 2. Then check for auto-activations (Compute)
+    // 2. Then check for auto-activations (Compute & Lambda)
     if (computeStore.instances.length === 0) {
         await computeStore.fetchInstances()
     }
@@ -53,6 +55,16 @@ const checkActiveServices = async () => {
         // If not already active, activate and save
         if (!activeServices.value.find(s => s.id === 'compute')) {
             activateService(computeService)
+        }
+    }
+
+    if (lambdaStore.functions.length === 0) {
+        await lambdaStore.fetchFunctions()
+    }
+    const lambdaService = serviceCatalog.find(s => s.id === 'lambda')
+    if (lambdaStore.functions.length > 0 && lambdaService?.enabled) {
+        if (!activeServices.value.find(s => s.id === 'lambda')) {
+            activateService(lambdaService)
         }
     }
 }
@@ -333,6 +345,11 @@ const userIsAdmin = () => {
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 01-2 2v4a2 2 0 012 2h14a2 2 0 012-2v-4a2 2 0 01-2-2m-2-4h.01M17 16h.01" />
+                                    </svg>
+                                    <svg v-if="service.icon === 'zap'" class="w-7 h-7" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M13 10V3L4 14h7v7l9-11h-7z" />
                                     </svg>
                                     <svg v-if="service.icon === 'database'" class="w-7 h-7" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">
@@ -626,6 +643,11 @@ const userIsAdmin = () => {
                                         viewBox="0 0 24 24" stroke="currentColor">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
                                             d="M5 12h14M5 12a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v4a2 2 0 01-2 2M5 12a2 2 0 01-2 2v4a2 2 0 012 2h14a2 2 0 012-2v-4a2 2 0 01-2-2m-2-4h.01M17 16h.01" />
+                                    </svg>
+                                    <svg v-if="service.icon === 'zap'" class="w-8 h-8" fill="none"
+                                        viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                            d="M13 10V3L4 14h7v7l9-11h-7z" />
                                     </svg>
                                     <svg v-if="service.icon === 'database'" class="w-8 h-8" fill="none"
                                         viewBox="0 0 24 24" stroke="currentColor">

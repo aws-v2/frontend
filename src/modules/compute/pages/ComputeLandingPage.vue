@@ -302,13 +302,6 @@ const getStatusColor = (type: string) => {
                                 <div v-if="activeTab === 'nodes'"
                                     class="absolute bottom-0 left-0 right-0 h-1 bg-blue-600"></div>
                             </button>
-                            <button @click="activeTab = 'functions'"
-                                class="px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden hover:bg-[#fafafa]"
-                                :class="activeTab === 'functions' ? 'text-amber-600 bg-white' : 'text-[#879196]'">
-                                Forge_Functions
-                                <div v-if="activeTab === 'functions'"
-                                    class="absolute bottom-0 left-0 right-0 h-1 bg-amber-500"></div>
-                            </button>
                             <button @click="() => { }"
                                 class="px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-[#eaeded] cursor-not-allowed">
                                 Mesh_Clusters (TBD)
@@ -355,102 +348,7 @@ const getStatusColor = (type: string) => {
                             </div>
                         </div>
 
-                        <!-- Functions Section -->
-                        <div v-if="activeTab === 'functions'"
-                            class="bg-white border-x-2 border-b-2 border-[#232f3e] p-10 animate-in fade-in duration-500">
-                            <div class="flex justify-between items-end mb-12">
-                                <div>
-                                    <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tight mb-2">
-                                        Active_Functions</h3>
-                                    <p class="text-[10px] font-black text-[#879196] uppercase tracking-widest">
-                                        Event-Driven Forge Deployments
-                                    </p>
-                                </div>
-                                <div class="flex items-center gap-4">
-                                    <button @click="openLambdaScalingCrudModal"
-                                        class="px-4 py-2 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest hover:bg-amber-600 transition-all shadow-[4px_4px_0px_#232f3e] active:translate-y-1 active:shadow-none">
-                                        Scaling Policies
-                                    </button>
-                                    <button @click="router.push('/lambda/create')"
-                                        class="text-[10px] font-black text-amber-600 hover:text-[#232f3e] transition-colors uppercase tracking-[0.2em] border-b-2 border-amber-600 pb-1">Initialize
-                                        Forge &rarr;</button>
-                                </div>
-                            </div>
 
-                            <div class="border-2 border-[#232f3e] overflow-hidden">
-                                <table class="w-full text-left border-collapse">
-                                    <thead>
-                                        <tr class="bg-[#fafafa] border-b-2 border-[#232f3e]">
-                                            <th
-                                                class="px-6 py-4 text-[10px] font-black text-[#232f3e] uppercase tracking-widest">
-                                                Identifier
-                                            </th>
-                                            <th
-                                                class="px-6 py-4 text-[10px] font-black text-[#232f3e] uppercase tracking-widest">
-                                                Environment
-                                            </th>
-                                            <th
-                                                class="px-6 py-4 text-[10px] font-black text-[#232f3e] uppercase tracking-widest">
-                                                State</th>
-                                            <th
-                                                class="px-6 py-4 text-[10px] font-black text-[#232f3e] uppercase tracking-widest text-right">
-                                                Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        <tr v-for="func in lambdaStore.functions.slice(0, 5)" :key="func.id"
-                                            class="border-b border-[#eaeded] hover:bg-[#fafafa] transition-colors group">
-                                            <td class="px-6 py-4">
-                                                <div class="flex items-center gap-3">
-                                                    <div
-                                                        class="w-8 h-8 border-2 border-[#eaeded] group-hover:border-amber-500 flex items-center justify-center text-[#232f3e] transition-colors font-black italic text-[10px]">
-                                                        f</div>
-                                                    <button
-                                                        @click="router.push({ name: 'lambda-details', params: { id: func.id } })"
-                                                        class="text-[11px] font-black text-[#232f3e] hover:text-amber-600 transition-colors uppercase tracking-tight">{{
-                                                            func.name }}</button>
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4">
-                                                <span
-                                                    class="text-[9px] font-black text-[#545b64] uppercase tracking-widest">{{
-                                                        func.runtime
-                                                    }}</span>
-                                            </td>
-                                            <td class="px-6 py-4">
-                                                <div class="flex items-center gap-2">
-                                                    <div class="w-1 h-1"
-                                                        :class="func.status === 'Active' ? 'bg-amber-500' : 'bg-[#eaeded]'">
-                                                    </div>
-                                                    <span class="text-[9px] font-black uppercase tracking-widest"
-                                                        :class="func.status === 'Active' ? 'text-[#232f3e]' : 'text-[#879196]'">{{
-                                                            func.status
-                                                        }}</span>
-                                                </div>
-                                            </td>
-                                            <td class="px-6 py-4 text-right">
-                                                <button
-                                                    class="p-1 border-2 border-transparent hover:border-[#232f3e] text-[#879196] hover:text-[#232f3e] transition-all">
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor"
-                                                        viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round"
-                                                            stroke-width="3"
-                                                            d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                                                    </svg>
-                                                </button>
-                                            </td>
-                                        </tr>
-                                        <tr v-if="lambdaStore.functions.length === 0">
-                                            <td colspan="4" class="px-6 py-12 text-center">
-                                                <p
-                                                    class="text-[9px] font-black text-[#879196] uppercase tracking-[0.3em]">
-                                                    No_Forge_Entities_Detected</p>
-                                            </td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
 
                         <!-- Terminal Trace -->
                         <div class="bg-white border-2 border-[#232f3e] overflow-hidden flex flex-col h-[350px]">
@@ -625,30 +523,7 @@ const getStatusColor = (type: string) => {
                                 </div>
                             </div>
 
-                            <!-- Lambda Scaling Card -->
-                            <div
-                                class="bg-white border-2 border-[#232f3e] p-8 hover:shadow-[10px_10px_0px_#eaeded] transition-all group">
-                                <div class="flex justify-between items-start mb-8">
-                                    <p class="text-[10px] font-black text-[#879196] tracking-widest uppercase italic">
-                                        Forge_Policies</p>
-                                    <button @click="openLambdaScalingCrudModal"
-                                        class="text-[9px] font-black text-blue-600 uppercase border-b border-blue-600">Forge
-                                        Rules
-                                        &rarr;</button>
-                                </div>
-                                <div class="flex items-center gap-6">
-                                    <div
-                                        class="w-12 h-12 border-2 border-[#232f3e] flex items-center justify-center bg-[#fafafa]">
-                                        <span class="font-black italic text-[#232f3e]">λ</span>
-                                    </div>
-                                    <div>
-                                        <p class="text-2xl font-black text-[#232f3e] leading-none mb-1">{{
-                                            lambdaStore.policies?.length || 0 }}</p>
-                                        <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">Lambda
-                                            Scale Rules</p>
-                                    </div>
-                                </div>
-                            </div>
+
                         </div>
 
                         <!-- Code Protocol Widget (Only on Functions tab or Bottom) -->
@@ -709,13 +584,7 @@ const getStatusColor = (type: string) => {
                                         computeStore.snapshots.length
                                     }}</span>
                                 </div>
-                                <div class="flex justify-between items-end border-b-2 border-[#eaeded] pb-4">
-                                    <span
-                                        class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">Lambda</span>
-                                    <span class="text-5xl font-black text-amber-600 tracking-tighter">{{
-                                        lambdaStore.functions.length
-                                    }}</span>
-                                </div>
+
                                 <div class="flex justify-between items-end">
                                     <span class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">SSH
                                         Keys</span>
@@ -735,9 +604,9 @@ const getStatusColor = (type: string) => {
                                 <span>Provision_VM</span>
                                 <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
                             </button>
-                            <button @click="router.push('/lambda/create')"
-                                class="w-full p-5 border-2 border-amber-500/30 hover:border-amber-500 text-amber-400 hover:text-white text-xs font-black uppercase tracking-widest flex justify-between items-center group transition-all">
-                                <span>Deploy_Forge</span>
+                            <button @click="router.push({ name: 'volumes-list' })"
+                                class="w-full p-5 border-2 border-blue-500/30 hover:border-blue-500 text-blue-400 hover:text-white text-xs font-black uppercase tracking-widest flex justify-between items-center group transition-all">
+                                <span>Storage_Volumes</span>
                                 <span class="group-hover:translate-x-1 transition-transform">&rarr;</span>
                             </button>
                         </div>

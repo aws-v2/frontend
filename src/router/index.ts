@@ -13,6 +13,8 @@ import gameliftRoutes from '@/modules/gamelift/routes'
 import servicesRoutes from '@/modules/services/routes'
 import docsRoutes from '@/modules/docs/routes'
 import accountRoutes from '@/modules/account/routes'
+import adminRoutes from '@/modules/admin/routes'
+import notificationsRoutes from '@/modules/notifications/routes'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -29,7 +31,9 @@ const router = createRouter({
     ...gameliftRoutes,
     ...servicesRoutes,
     ...docsRoutes,
-    ...accountRoutes
+    ...accountRoutes,
+    ...notificationsRoutes,
+    ...adminRoutes
   ],
 })
 

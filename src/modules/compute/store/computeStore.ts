@@ -13,6 +13,7 @@ export interface Instance {
     statusCheck: string
     alarm: string
     publicIp: string
+    ip: string
     az: string
     image?: string
     cpu?: number
@@ -56,13 +57,15 @@ export interface FleetEvent {
     resource: string
 }
 
-export interface CreateInstancePayload {
-    image: string
+export type CreateInstancePayload = {
     name: string
     cpu: number
     ram: number
     ssh_key: string
-}
+} & (
+    | { image: string; ami_id?: never }
+    | { ami_id: string; image?: never }
+)
 
 export interface Volume {
     id: string
@@ -166,6 +169,19 @@ export interface UpdateScalingPolicyPayload {
 
 
 
+export interface AmiResponse{
+    code: number
+    message: string
+    data: Ami
+}
+export interface Ami {
+    id: string
+    name: string
+    description?: string
+    status?: string
+    source_instance_id?: string
+    created_at?: string
+}
 
 export const useComputeStore = defineStore('compute', () => {
     const instances = ref<Instance[]>([])
@@ -197,6 +213,7 @@ export const useComputeStore = defineStore('compute', () => {
     const vpcs = ref<Vpc[]>([])
     const currentTemplate = ref<Template | null>(null)
     const scalingPolicies = ref<ScalingPolicy[]>([])
+    const amis = ref<Ami[]>([])
 
 
 
@@ -243,7 +260,10 @@ export const useComputeStore = defineStore('compute', () => {
 
 
 
-
+    const createImage = async (instanceId: string, payload: { name: string; description?: string; no_reboot?: boolean }) => {
+        const { data } = await apiClient.post(`/ec2/instances/${instanceId}/images`, payload)
+        return data
+    }
 
 
 
@@ -272,6 +292,7 @@ export const useComputeStore = defineStore('compute', () => {
                     image: inst.image,
                     cpu: inst.cpu,
                     ram: inst.ram,
+                    ip: inst.ip,
                     ssh_key: inst.ssh_key,
                     vpc_id: inst.vpc_id,
                     subnet_id: inst.subnet_id,
@@ -867,6 +888,24 @@ export const useComputeStore = defineStore('compute', () => {
         }
     }
 
+    const fetchAmis = async () => {
+        try {
+            const response = await apiClient.get<any>('/ec2/instances/ami/images')
+            const raw = response.data?.data || []
+            console.log(raw)
+            amis.value = raw.map((img: any) => ({
+                id: String(img.id),
+                name: img.name || img.image_name || img.id,
+                description: img.description || '',
+                status: img.status || img.state,
+                source_instance_id: img.source_instance_id ? String(img.source_instance_id) : undefined,
+                created_at: img.created_at
+            }))
+        } catch (error) {
+            console.error('Failed to fetch AMIs:', error)
+        }
+    }
+
     return {
         instances,
         currentInstance,
@@ -898,6 +937,7 @@ export const useComputeStore = defineStore('compute', () => {
         fetchVolumes,
         createVolume, fetchAllSnapshots, createVolumeFromSnapshot, expandVolumeSize,
         deleteVolume,
+        createImage,
         fetchSnapshots,
         createSnapshot,
         deleteSnapshot,
@@ -941,6 +981,8 @@ export const useComputeStore = defineStore('compute', () => {
         fetchScalingPolicies,
         createScalingPolicy,
         updateScalingPolicy,
-        deleteScalingPolicy
+        deleteScalingPolicy,
+        amis,
+        fetchAmis,
     }
 })

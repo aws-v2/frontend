@@ -107,7 +107,7 @@ const launchFromTemplate = () => {
                 </div>
                 <div class="flex flex-wrap gap-4">
                     <button @click="launchFromTemplate"
-                        class="px-12 py-5 bg-blue-600 text-white text-[11px] font-black uppercase tracking-[0.3em] hover:bg-[#232f3e] transition-all shadow-[8px_8px_0px_rgba(37,99,235,0.2)]">Launch_Instance</button>
+                        class="px-12 py-5 bg-blue-600 text-white text-[11px] font-black uppercase tracking-[0.3em] hover:bg-[#232f3e] transition-all shadow-[8px_8px_0px_rgba(37,99,235,0.2)]">Launch_From_Template</button>
                     <button @click="handleDelete"
                         class="px-12 py-5 border-2 border-rose-600 text-rose-600 text-[11px] font-black uppercase tracking-[0.3em] hover:bg-rose-600 hover:text-white transition-all">Decommission</button>
                 </div>

@@ -48,21 +48,14 @@ apiClient.interceptors.response.use(
     if (error.response?.status === 401) {
       try {
         const authStore = useAuthStore()
-        // Determine the service from the request URL (e.g. 'auth', 'llm', etc.)
-        const reqUrl: string = error.config?.url || ''
-        const service = reqUrl.split('/')[0] || ''
-
-        // Only perform automatic logout when the 401 comes from the identity/auth service.
-        // Other 401s (expired token on downstream services) should be handled by the caller.
-        if (service === 'auth' || reqUrl.includes('/auth/')) {
-          if (authStore.token) {
-            authStore.logout()
+        if (authStore.token || authStore.isAuthenticated) {
+          console.warn('[apiClient] 401 Unauthorized received - logging out user immediately')
+          authStore.logout()
+          if (window.location.pathname !== '/login') {
+            window.location.href = '/login'
           }
-        } else {
-          console.warn('[apiClient] 401 received from', service, '- skipping automatic logout')
         }
       } catch (e) {
-        // Fallback: if anything unexpected happens, avoid accidentally logging out the user.
         console.warn('[apiClient] error handling 401 response', e)
       }
     }
@@ -92,14 +85,12 @@ apiClient.stream = async (url: string, body?: unknown): Promise<ReadableStreamDe
   })
 
   if (response.status === 401) {
-    // Only logout if the stream endpoint is the auth service
     try {
-      const urlParts = url.startsWith('/') ? url.substring(1).split('/') : url.split('/')
-      const service = urlParts[0] || ''
-      if (service === 'auth' || url.includes('/auth/')) {
-        useAuthStore().logout()
-      } else {
-        console.warn('[apiClient.stream] 401 from', service, '- skipping automatic logout')
+      if (authStore.token || authStore.isAuthenticated) {
+        authStore.logout()
+        if (window.location.pathname !== '/login') {
+          window.location.href = '/login'
+        }
       }
     } catch (e) {
       console.warn('[apiClient.stream] error handling 401 response', e)

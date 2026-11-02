@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useComputeStore } from '../store/computeStore'
 import { useToastStore } from '@/shared/store/toastStore'
@@ -9,6 +9,10 @@ const route = useRoute()
 const computeStore = useComputeStore()
 const toastStore = useToastStore()
 
+const instanceMode = ref<'snapshot' | 'ami'>('snapshot')
+
+
+
 const activeTab = ref<'volume' | 'instance'>(
     route.query.instanceId ? 'instance' : 'volume'
 )
@@ -17,8 +21,22 @@ const form = ref({
     name: '',
     description: '',
     volume_id: (route.query.volumeId as string) || '',
-    instance_id: (route.query.instanceId as string) || ''
+    instance_id: (route.query.instanceId as string) || '',
+    no_reboot: false // NEW: AMI only
 })
+const instanceModes = [
+    { id: 'snapshot', label: 'Instance Snapshot', desc: 'Point-in-time backup of this instance.' },
+    { id: 'ami', label: 'AMI (Golden Image)', desc: 'Reusable machine image to launch new instances from.' }
+] as const
+
+
+
+const isAmi = computed(() => activeTab.value === 'instance' && instanceMode.value === 'ami')
+
+const submitLabel = computed(() => (isAmi.value ? 'CREATE_AMI' : 'GENERATE_SNAPSHOT'))
+const submittingLabel = computed(() => (isAmi.value ? 'BAKING_IMAGE...' : 'FREEZING_BLOCKS...'))
+
+
 
 const isSubmitting = ref(false)
 
@@ -49,18 +67,28 @@ const handleCreate = async () => {
                 description: form.value.description
             })
             toastStore.addToast('Volume snapshot created successfully', 'success')
+            router.push({ name: 'snapshots-list' })
+        } else if (instanceMode.value === 'ami') {
+            await computeStore.createImage(form.value.instance_id, {
+                name: form.value.name,
+                description: form.value.description,
+                no_reboot: form.value.no_reboot
+            })
+            toastStore.addToast('AMI creation started', 'success')
+            router.push({ name: 'snapshots-list' }) // <-- your AMI list route
         } else {
             await computeStore.createSnapshot(form.value.instance_id, {
                 name: form.value.name,
                 description: form.value.description
             })
             toastStore.addToast('Instance snapshot created successfully', 'success')
+            router.push({ name: 'snapshots-list' })
         }
-        router.push({ name: 'snapshots-list' })
     } catch (error: any) {
-        console.error('Failed to create snapshot:', error)
+        console.error('Failed to create:', error)
         toastStore.addToast(
-            error.response?.data?.message || 'Failed to create snapshot',
+            error.response?.data?.message ||
+            (isAmi.value ? 'Failed to create AMI' : 'Failed to create snapshot'),
             'error'
         )
     } finally {
@@ -90,7 +118,7 @@ const goBack = () => router.push({ name: 'snapshots-list' })
             <!-- Header -->
             <div class="border-l-8 border-amber-600 pl-10 py-4 mb-20">
                 <h1 class="text-7xl font-black text-[#232f3e] tracking-tight uppercase leading-none mb-4">
-                    Create <span class="text-amber-600 italic">Snapshot</span>
+                    Create <span class="text-amber-600 italic">{{ isAmi ? 'AMI' : 'Snapshot' }}</span>
                 </h1>
                 <p class="text-[11px] font-black text-[#879196] uppercase tracking-[0.4em]">Atomic Point-In-Time Backup
                     Generation</p>
@@ -121,7 +149,8 @@ const goBack = () => router.push({ name: 'snapshots-list' })
                             class="w-full bg-white border-4 border-[#232f3e] p-5 text-sm font-black uppercase tracking-tight focus:ring-0 focus:border-amber-600 transition-colors outline-none appearance-none cursor-pointer">
                             <option value="" disabled>SELECT_ACTIVE_DISK_RESOURCES</option>
                             <option v-for="vol in computeStore.volumes" :key="vol.id" :value="vol.id">
-                                {{ vol.name || vol.id }} // {{ vol.id }} // {{ vol.size }} GiB ({{ vol.state || vol.status }})
+                                {{ vol.name || vol.id }} // {{ vol.id }} // {{ vol.size }} GiB ({{ vol.state ||
+                                    vol.status }})
                             </option>
                         </select>
                         <p class="text-[9px] text-[#879196] font-bold uppercase tracking-widest leading-relaxed">
@@ -130,26 +159,70 @@ const goBack = () => router.push({ name: 'snapshots-list' })
                     </div>
 
                     <!-- Source Instance (When Instance tab active) -->
-                    <div v-else class="space-y-4">
-                        <label
-                            class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest block italic">SOURCE_COMPUTE_INSTANCE</label>
-                        <select v-model="form.instance_id"
-                            class="w-full bg-white border-4 border-[#232f3e] p-5 text-sm font-black uppercase tracking-tight focus:ring-0 focus:border-amber-600 transition-colors outline-none appearance-none cursor-pointer">
-                            <option value="" disabled>SELECT_ACTIVE_COMPUTE_INSTANCES</option>
-                            <option v-for="inst in computeStore.instances" :key="inst.id" :value="inst.id">
-                                {{ inst.name || inst.id }} // {{ inst.id }} ({{ inst.state }}) - {{ inst.type }}
-                            </option>
-                        </select>
-                        <p class="text-[9px] text-[#879196] font-bold uppercase tracking-widest leading-relaxed">
-                            The compute instance from which an image/instance snapshot will be frozen.
-                        </p>
-                    </div>
+                 <div v-else class="space-y-4">
+    <!-- Source Instance / VM -->
+    <div class="space-y-4">
+        <label class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest block italic">
+            {{ instanceMode === 'ami' ? 'SOURCE_VM_FOR_AMI' : 'SOURCE_COMPUTE_INSTANCE' }}
+        </label>
+        <select v-model="form.instance_id"
+            class="w-full bg-white border-4 border-[#232f3e] p-5 text-sm font-black uppercase tracking-tight focus:ring-0 focus:border-amber-600 transition-colors outline-none appearance-none cursor-pointer">
+            <option value="" disabled>
+                {{ instanceMode === 'ami' ? 'SELECT_VM_TO_IMAGE' : 'SELECT_ACTIVE_COMPUTE_INSTANCES' }}
+            </option>
+            <option v-for="inst in computeStore.instances" :key="inst.id" :value="inst.id">
+                {{ inst.name || inst.id }} // {{ inst.id }} ({{ inst.state }}) - {{ inst.type }}
+            </option>
+        </select>
+        <p class="text-[9px] text-[#879196] font-bold uppercase tracking-widest leading-relaxed">
+            {{ instanceMode === 'ami'
+                ? 'The VM whose disk will be captured as a reusable golden image (AMI).'
+                : 'The compute instance from which an instance snapshot will be frozen.' }}
+        </p>
+    </div>
+
+    <!-- Instance output type -->
+    <div class="space-y-4">
+        <label class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest block italic">
+            OUTPUT_TYPE
+        </label>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <button v-for="m in instanceModes" :key="m.id" type="button"
+                @click="instanceMode = m.id" class="text-left p-5 border-4 transition-all" :class="instanceMode === m.id
+                    ? 'border-amber-600 bg-white'
+                    : 'border-[#232f3e] bg-white hover:border-amber-600'">
+                <div class="flex items-center gap-3 mb-2">
+                    <div class="w-3 h-3 border-2 border-[#232f3e] rounded-full"
+                        :class="instanceMode === m.id ? 'bg-amber-600 border-amber-600' : ''"></div>
+                    <span class="text-[10px] font-black uppercase tracking-widest text-[#232f3e]">{{ m.label }}</span>
+                </div>
+                <p class="text-[9px] text-[#879196] font-bold uppercase tracking-widest leading-relaxed">
+                    {{ m.desc }}
+                </p>
+            </button>
+        </div>
+    </div>
+
+    <!-- AMI-only options -->
+    <div v-if="instanceMode === 'ami'"
+        class="flex items-start gap-4 bg-white border-4 border-[#232f3e] p-5">
+        <input id="no-reboot" v-model="form.no_reboot" type="checkbox"
+            class="mt-1 w-4 h-4 accent-amber-600 cursor-pointer">
+        <label for="no-reboot" class="cursor-pointer">
+            <span class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest block">NO_REBOOT</span>
+            <span class="text-[9px] text-[#879196] font-bold uppercase tracking-widest leading-relaxed block">
+                Skip stopping the instance before imaging. Faster, but the filesystem may not be consistent.
+            </span>
+        </label>
+    </div>
+</div>
 
                     <!-- Snapshot Name -->
                     <div class="space-y-4">
                         <label
                             class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest block italic">SNAPSHOT_DESCRIPTOR</label>
-                        <input v-model="form.name" type="text" placeholder="e.g. PRE_MAINTENANCE_BACKUP_04"
+                        <input v-model="form.name" type="text"
+                            :placeholder="isAmi ? 'e.g. UBUNTU_22_GOLDEN_V1' : 'e.g. PRE_MAINTENANCE_BACKUP_04'"
                             class="w-full bg-white border-4 border-[#232f3e] p-5 text-sm font-black uppercase tracking-tight focus:ring-0 focus:border-amber-600 transition-colors outline-none">
                         <p class="text-[9px] text-[#879196] font-bold uppercase tracking-widest leading-relaxed">
                             Descriptive identifier for historical retrieval.
@@ -184,8 +257,8 @@ const goBack = () => router.push({ name: 'snapshots-list' })
                         <button @click="handleCreate"
                             :disabled="isSubmitting || !form.name || (activeTab === 'volume' ? !form.volume_id : !form.instance_id)"
                             class="flex-1 md:flex-initial px-16 py-5 bg-amber-600 text-white text-[10px] font-black uppercase tracking-widest hover:bg-[#232f3e] transition-all disabled:opacity-50 disabled:cursor-not-allowed group">
-                            <span v-if="!isSubmitting">GENERATE_SNAPSHOT &rarr;</span>
-                            <span v-else class="animate-pulse">FREEZING_BLOCKS...</span>
+                            <span v-if="!isSubmitting">{{ submitLabel }} &rarr;</span>
+                            <span v-else class="animate-pulse">{{ submittingLabel }}</span>
                         </button>
                     </div>
                 </div>

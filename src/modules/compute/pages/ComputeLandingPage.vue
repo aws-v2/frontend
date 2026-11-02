@@ -302,9 +302,12 @@ const getStatusColor = (type: string) => {
                                 <div v-if="activeTab === 'nodes'"
                                     class="absolute bottom-0 left-0 right-0 h-1 bg-blue-600"></div>
                             </button>
-                            <button @click="() => { }"
-                                class="px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-[#eaeded] cursor-not-allowed">
-                                Mesh_Clusters (TBD)
+                            <button @click="activeTab = 'golden_images'"
+                                class="px-10 py-5 text-[10px] font-black uppercase tracking-[0.2em] transition-all relative overflow-hidden hover:bg-[#fafafa]"
+                                :class="activeTab === 'golden_images' ? 'text-blue-600 bg-white' : 'text-[#879196]'">
+                                Cluster_Nodes
+                                <div v-if="activeTab === 'golden_images'"
+                                    class="absolute bottom-0 left-0 right-0 h-1 bg-blue-600"></div>
                             </button>
                         </div>
 
@@ -350,6 +353,56 @@ const getStatusColor = (type: string) => {
 
 
 
+
+                        <!-- Golden images tab -->
+                        <div v-if="activeTab === 'golden_images'"
+                            class="bg-white border-x-2 border-b-2 border-[#232f3e] p-10 animate-in fade-in duration-500">
+                            <div class="flex justify-between items-end mb-12">
+                                <div>
+                                    <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tight mb-2">
+                                        AMI_Inventory</h3>
+                                    <p class="text-[10px] font-black text-[#879196] uppercase tracking-widest">Active
+                                        Hybrid-Core VMS</p>
+                                </div>
+                                <button @click="router.push({ name: 'instances-list' })"
+                                    class="text-[10px] font-black text-blue-600 hover:text-[#232f3e] transition-colors uppercase tracking-[0.2em] border-b-2 border-blue-600 pb-1">View
+                                    Terminal &rarr;</button>
+                            </div>
+
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                <template v-if="computeStore.instances.length > 0">
+                                    <div v-for="inst in computeStore.instances.slice(0, 7)" :key="inst.id"
+                                        @click="router.push({ name: 'instance-details', params: { id: inst.id } })"
+                                        class="p-5 border-2 border-[#eaeded] hover:border-blue-600 transition-all cursor-pointer group bg-[#fafafa] hover:bg-white relative overflow-hidden">
+                                        <div class="flex justify-between items-start mb-4">
+                                            <div class="w-3 h-3 border-2 border-emerald-500 bg-emerald-500"></div>
+                                            <span class="text-[10px] text-[#879196] font-black tracking-widest">{{
+                                                inst.id.substring(0, 8).toUpperCase() }}</span>
+                                        </div>
+                                        <p
+                                            class="text-xs font-black text-[#232f3e] truncate mb-1 uppercase tracking-tight">
+                                            {{ inst.name }}</p>
+                                        <p class="text-[9px] font-black text-[#879196] uppercase tracking-widest">{{
+                                            inst.type }} // {{ inst.az }}</p>
+                                    </div>
+                                </template>
+                                <button @click="router.push({ name: 'launch-instance' })"
+                                    class="p-5 border-2 border-dashed border-blue-600 text-blue-600 hover:bg-blue-600 hover:text-white transition-all flex flex-col items-center justify-center group font-black uppercase">
+                                    <span class="text-2xl mb-1">+</span>
+                                    <span class="text-[9px] tracking-widest">Deploy</span>
+                                </button>
+                            </div>
+                        </div>
+
+
+
+
+
+
+
+
+
+
                         <!-- Terminal Trace -->
                         <div class="bg-white border-2 border-[#232f3e] overflow-hidden flex flex-col h-[350px]">
                             <div class="bg-[#232f3e] px-6 py-3 flex items-center justify-between">
@@ -373,7 +426,7 @@ const getStatusColor = (type: string) => {
                                     <span class="text-slate-400 shrink-0">{{ event.timestamp.substring(11, 19) }}</span>
                                     <span :class="getStatusColor(event.type)" class="shrink-0 font-black">[{{
                                         event.type.toUpperCase()
-                                    }}]</span>
+                                        }}]</span>
                                     <span class="text-blue-600 shrink-0 font-bold">{{ event.resource }}:</span>
                                     <span class="text-[#232f3e] font-medium">{{ event.message }}</span>
                                 </div>
@@ -568,21 +621,21 @@ const getStatusColor = (type: string) => {
                                         class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">Instances</span>
                                     <span class="text-5xl font-black text-blue-600 tracking-tighter">{{
                                         computeStore.instances.length
-                                    }}</span>
+                                        }}</span>
                                 </div>
                                 <div class="flex justify-between items-end border-b-2 border-[#eaeded] pb-4">
                                     <span
                                         class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">Volumes</span>
                                     <span class="text-5xl font-black text-[#232f3e] tracking-tighter">{{
                                         computeStore.volumes.length
-                                    }}</span>
+                                        }}</span>
                                 </div>
                                 <div class="flex justify-between items-end border-b-2 border-[#eaeded] pb-4">
                                     <span
                                         class="text-[10px] font-black text-[#232f3e] uppercase tracking-widest">Snapshots</span>
                                     <span class="text-5xl font-black text-[#232f3e] tracking-tighter">{{
                                         computeStore.snapshots.length
-                                    }}</span>
+                                        }}</span>
                                 </div>
 
                                 <div class="flex justify-between items-end">
@@ -590,7 +643,7 @@ const getStatusColor = (type: string) => {
                                         Keys</span>
                                     <span class="text-5xl font-black text-emerald-600 tracking-tighter">{{
                                         computeStore.sshKeys.length
-                                    }}</span>
+                                        }}</span>
                                 </div>
                             </div>
                         </div>
@@ -913,7 +966,7 @@ const getStatusColor = (type: string) => {
                                         <span class="font-mono text-xs text-[#232f3e] font-bold">{{
                                             lambdaStore.functions.find(f => f.id === (policy.function_id ||
                                                 policy.target_id))?.name ||
-                                            (policy.function_id || policy.target_id) }}</span>
+                                            (policy.function_id || policy.target_id)}}</span>
                                     </td>
                                     <td class="p-4 font-bold text-xs text-[#545b64]">{{ policy.metric_name }}</td>
                                     <td class="p-4 font-mono text-xs text-[#545b64]">{{ policy.scale_up_threshold ||

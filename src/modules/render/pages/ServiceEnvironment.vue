@@ -116,7 +116,7 @@ const isProdProfile = viteAppProfile === 'prod'
 
 const initialEnvVars = [
   { key: 'ALCHEMY_URL', value: 'https://eth-mainnet.g.alchemy.com/v2/your-api-key', show: false },
-  { key: 'DATABASE_URL', value: `postgresql://root:root@${isProdProfile ? 'postgres' : 'localhost'}:5432/aws_cloud`, show: false },
+  { key: 'DATABASE_URL', value: `postgresql://root:root@${isProdProfile ? 'postgres' : 'localshost'}:5432/aws_cloud`, show: false },
   { key: 'DEV_MAIL_HOST', value: 'smtp.mailtrap.io', show: false },
   { key: 'DEV_MAIL_PASSWORD', value: 'your-password', show: false },
   { key: 'DEV_MAIL_PORT', value: '2525', show: false },

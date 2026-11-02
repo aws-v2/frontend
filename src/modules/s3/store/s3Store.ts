@@ -617,33 +617,6 @@ export const useS3Store = defineStore('s3', () => {
 
 
 
-  // const downloadFile = async (
-  //   bucketId: string,
-  //   fileId: string,
-  //   fileName: string
-  // ) => {
-  //   try {
-  //     const base = await featureFlags.getServiceUrl("s3")
-  //     // base="http://localhost:8080/api/v1/"
-
-  //     const url =
-  //       `${base}s3/files/${bucketId}/files/${fileId}/download-direct`
-
-  //     const link = document.createElement('a')
-
-  //     link.href = url
-  //     link.download = fileName
-
-  //     document.body.appendChild(link)
-  //     link.click()
-  //     link.remove()
-
-  //   } catch (error) {
-  //     console.error('Download failed:', error)
-  //     throw error
-  //   }
-  // }
-
 
 
 

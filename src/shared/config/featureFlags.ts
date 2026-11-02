@@ -3,8 +3,8 @@ import { getRemoteConfig } from '@/shared/config/remoteConfig'
 export type ServiceEnv = 'dev' | 'staging' | 'prod'
 
 const SERVICE_URLS: Record<ServiceEnv, string> = {
-  dev: 'http://localhost:8080/api/v1',
-  staging: 'http://localhost:8080/api/v1', // Resolved dynamically in resolveStagingUrl
+  dev: 'http://localhoest:8080/api/v1',
+  staging: 'http://localhopst:8080/api/v1', // Resolved dynamically in resolveStagingUrl
   prod: 'http://13.48.129.233:8080/api/v1'
 }
 

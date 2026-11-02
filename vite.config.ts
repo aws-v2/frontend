@@ -21,7 +21,8 @@ export default defineConfig({
   server: {
     allowedHosts: [
     "8d4a-105-164-119-56.ngrok-free.app",
-    "laptop.tailb98511.ts.net"
+    "laptop.tailb98511.ts.net",
+    "produces-scanners-motorcycles-supplied.trycloudflare.com"
     ],
     proxy: {
       '/api': {

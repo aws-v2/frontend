@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useComputeStore } from '../store/computeStore'
 import { useToastStore } from '@/shared/store/toastStore'
+import apiClient from '@/shared/api/apiClient'
 import ConnectInstanceModal from '../components/ConnectInstanceModal.vue'
 import ChangeVpcModal from '@/shared/components/ChangeVpcModal.vue'
 
@@ -25,6 +26,7 @@ const tabs = [
   { id: 'security', label: 'Security' },
   { id: 'networking', label: 'Networking' },
   { id: 'storage', label: 'Storage' },
+  { id: 'snapshots', label: 'Snapshots' },
   { id: 'checks', label: 'Status checks' },
   { id: 'monitoring', label: 'Monitoring' },
   { id: 'tags', label: 'Tags' }
@@ -39,6 +41,7 @@ onMounted(async () => {
   await computeStore.fetchInstanceMetrics(instanceId.value)
   await computeStore.fetchInstanceTags(instanceId.value)
   await computeStore.fetchVpcs()
+  await fetchInstanceSnapshots()
   console.log('[DEBUG] Security groups loaded:', computeStore.instanceSecurityGroups)
 })
 
@@ -238,11 +241,59 @@ const handleSnapshotCreate = async () => {
     await computeStore.createSnapshot(instanceId.value, { ...snapshotForm.value })
     toastStore.addToast('Snapshot creation protocol initiated', 'success')
     isSnapshotModalOpen.value = false
+    await fetchInstanceSnapshots()
   } catch (error: any) {
     console.error('Failed to create instance snapshot:', error)
     toastStore.addToast(error.response?.data?.message || 'Failed to initiate snapshot', 'error')
   } finally {
     isCreatingSnapshot.value = false
+  }
+}
+
+// Instance Snapshots Tab Logic
+const instanceSnapshots = ref<any[]>([])
+const isLoadingSnapshots = ref(false)
+
+const fetchInstanceSnapshots = async () => {
+  if (!instanceId.value) return
+  isLoadingSnapshots.value = true
+  try {
+    const response = await apiClient.get(`/ec2/snapshots/${instanceId.value}`)
+    const rawData = response.data?.data ?? response.data
+    if (Array.isArray(rawData)) {
+      instanceSnapshots.value = rawData
+    } else if (rawData && typeof rawData === 'object') {
+      instanceSnapshots.value = rawData.instance_snapshots || rawData.snapshots || rawData.items || []
+    } else {
+      instanceSnapshots.value = []
+    }
+  } catch (error: any) {
+    console.error('Failed to fetch instance snapshots:', error)
+    toastStore.addToast(error.response?.data?.message || 'Failed to fetch snapshots', 'error')
+  } finally {
+    isLoadingSnapshots.value = false
+  }
+}
+
+const handleRestoreSnapshot = async (snapshotId: string) => {
+  try {
+    await apiClient.get(`/ec2/snapshots/${snapshotId}/restore`)
+    toastStore.addToast('Snapshot restoration initiated successfully', 'success')
+    await fetchInstanceSnapshots()
+  } catch (error: any) {
+    console.error(`Failed to restore snapshot ${snapshotId}:`, error)
+    toastStore.addToast(error.response?.data?.message || 'Failed to restore snapshot', 'error')
+  }
+}
+
+const handleClearSnapshot = async (snapshotId: string) => {
+  try {
+    await apiClient.get(`/ec2/snapshots/${snapshotId}/clear`)
+    toastStore.addToast('Snapshot cleared successfully', 'success')
+    await fetchInstanceSnapshots()
+  } catch (error: any) {
+    console.error(`Failed to clear snapshot ${snapshotId}:`, error)
+    toastStore.addToast(error.response?.data?.message || 'Failed to clear snapshot', 'error')
   }
 }
 </script>
@@ -365,7 +416,7 @@ const handleSnapshotCreate = async () => {
       <!-- Quick Metrics Grid -->
       <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div v-for="metric in [
-          { label: 'Network_Ingress_IP', value: computeStore.currentInstance.publicIp || '0.0.0.0', sub: 'IPv4_Public_Protocol' },
+          { label: 'Network_Ingress_IP', value: computeStore.currentInstance.publicIp || '0.0.0.0', sub: computeStore.currentInstance.ip },
           { label: 'Logical_State', value: computeStore.currentInstance.state, sub: 'Hardware_Lifecycle' },
           { label: 'Compute_Tier', value: computeStore.currentInstance.type, sub: 'Resource_Class' },
           { label: 'Infrastructure_Zone', value: computeStore.currentInstance.az || 'US-EAST-1A', sub: 'Regional_Endpoint' }
@@ -523,7 +574,7 @@ const handleSnapshotCreate = async () => {
               <div class="space-y-4">
                 <div v-for="item in [
                   { label: 'PUBLIC_IPV4_PROTOCOL', value: computeStore.currentInstance.publicIp || '0.0.0.0' },
-                  { label: 'PRIVATE_IPV4_INTRA', value: computeStore.currentInstance.privateIp || '10.0.1.15' },
+                  { label: 'PRIVATE_IPV4_INTRA', value: computeStore.currentInstance.ip || '10.0.1.15' },
                   { label: 'ELASTIC_IP_MAP', value: computeStore.currentInstance.publicIp ? 'MAPPED' : 'UNMAPPED' }
                 ]" :key="item.label" class="py-4 border-b-2 border-[#eaeded] flex flex-col">
                   <span class="text-[9px] font-black text-[#879196] uppercase tracking-[0.2em] mb-2 italic">// {{
@@ -630,6 +681,76 @@ const handleSnapshotCreate = async () => {
               </div>
             </div>
           </div> -->
+        </div>
+
+        <!-- Snapshots Tab Content -->
+        <div v-else-if="activeTab === 'snapshots'" class="space-y-10">
+          <div class="flex items-end justify-between border-b-2 border-[#eaeded] pb-6">
+            <div>
+              <h3 class="text-xl font-black text-[#232f3e] uppercase tracking-tight">Instance_Snapshot_Registry</h3>
+              <p class="text-[10px] font-black text-[#545b64] uppercase tracking-[0.2em] mt-1 italic">// SNAPSHOT_STATE_RECOVERY_HUB</p>
+            </div>
+            <button @click="fetchInstanceSnapshots"
+              class="px-8 py-3 border-2 border-[#232f3e] text-[#232f3e] text-[10px] font-black uppercase tracking-widest hover:bg-[#232f3e] hover:text-[#232f3e] hover:border-blue-600 transition-all">
+              Refresh_Snapshots
+            </button>
+          </div>
+
+          <div v-if="isLoadingSnapshots" class="flex justify-center py-16">
+            <div class="w-12 h-12 border-4 border-blue-100 border-t-blue-600 rounded-none animate-spin"></div>
+          </div>
+
+          <div v-else class="overflow-x-auto border-2 border-[#eaeded]">
+            <table class="w-full text-left border-collapse">
+              <thead class="bg-[#fafafa] text-[10px] font-black uppercase tracking-[0.2em] text-[#545b64] border-b-2 border-[#eaeded]">
+                <tr>
+                  <th class="p-8 border-r-2 border-[#eaeded]">Snapshot_Descriptor</th>
+                  <th class="p-8 border-r-2 border-[#eaeded]">Capacity_Alloc</th>
+                  <th class="p-8 border-r-2 border-[#eaeded]">Lifecycle_State</th>
+                  <th class="p-8 border-r-2 border-[#eaeded]">Creation_Timestamp</th>
+                  <th class="p-8">Actions</th>
+                </tr>
+              </thead>
+              <tbody class="text-sm divide-y-2 divide-[#eaeded] font-black uppercase">
+                <tr v-for="snap in instanceSnapshots" :key="snap.id" class="hover:bg-[#fafafa] transition-colors">
+                  <td class="p-8 border-r-2 border-[#eaeded] text-blue-600 font-mono">
+                    <div>{{ snap.name || snap.id }}</div>
+                    <div v-if="snap.description" class="text-[10px] text-[#879196] italic mt-1 font-sans lowercase">{{ snap.description }}</div>
+                  </td>
+                  <td class="p-8 border-r-2 border-[#eaeded] text-[#232f3e]">{{ snap.size ? snap.size + ' GIB' : 'N/A' }}</td>
+                  <td class="p-8 border-r-2 border-[#eaeded]">
+                    <span :class="[
+                      'text-[10px] font-black px-3 py-1 border-2 tracking-widest',
+                      (snap.status || snap.state)?.toLowerCase() === 'ready' || (snap.status || snap.state)?.toLowerCase() === 'available' || (snap.status || snap.state)?.toLowerCase() === 'completed' ? 'text-emerald-600 border-emerald-600/20 bg-emerald-500/5' :
+                      'text-blue-600 border-blue-600/20 bg-blue-500/5'
+                    ]">
+                      {{ snap.status || snap.state || 'AVAILABLE' }}
+                    </span>
+                  </td>
+                  <td class="p-8 border-r-2 border-[#eaeded] text-[#545b64] font-mono text-xs">
+                    {{ snap.created_at ? new Date(snap.created_at).toLocaleString() : 'N/A' }}
+                  </td>
+                  <td class="p-8">
+                    <div class="flex items-center gap-6">
+                      <button @click="handleRestoreSnapshot(snap.id)"
+                        class="text-blue-600 hover:underline decoration-2 underline-offset-4 text-xs font-black uppercase tracking-widest">
+                        Restore
+                      </button>
+                      <button @click="handleClearSnapshot(snap.id)"
+                        class="text-rose-600 hover:underline decoration-2 underline-offset-4 text-xs font-black uppercase tracking-widest">
+                        Clear
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+                <tr v-if="instanceSnapshots.length === 0">
+                  <td colspan="5" class="p-16 text-center text-[#879196] italic opacity-50 uppercase tracking-widest text-[10px]">
+                    No snapshots found for this node
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <!-- Status Checks Tab Content -->

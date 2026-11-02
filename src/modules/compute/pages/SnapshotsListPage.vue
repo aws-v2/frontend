@@ -9,20 +9,24 @@ const router = useRouter()
 const computeStore = useComputeStore()
 const toastStore = useToastStore()
 
-const activeTab = ref<'volume' | 'instance'>('volume')
+const activeTab = ref<'volume' | 'instance' | 'ami'>('volume')
 
 const tabs = [
     { id: 'volume', label: 'Volume Snapshots' },
-    { id: 'instance', label: 'Instance Snapshots' }
+    { id: 'instance', label: 'Instance Snapshots' },
+    { id: 'ami', label: 'AMIs' }
 ] as const
 
 onMounted(async () => {
     await computeStore.fetchSnapshots()
+    await computeStore.fetchAmis()
 })
 
 const filteredSnapshots = computed<Snapshot[]>(() =>
-    computeStore.snapshots.filter(s => s.kind === activeTab.value)
+    computeStore.snapshots.filter(s => s.kind === (activeTab.value as 'volume' | 'instance'))
 )
+
+const amis = computed(() => computeStore.amis)
 
 const isHealthyStatus = (status: string | undefined) => {
     const s = status?.toLowerCase()
@@ -85,7 +89,8 @@ const handleDecommission = async (snap: Snapshot) => {
                 </button>
             </div>
 
-            <div class="border-2 border-[#232f3e] overflow-hidden bg-white shadow-[20px_20px_0px_rgba(35,47,62,0.05)]">
+            <!-- Snapshots Table (volume / instance tabs) -->
+            <div v-if="activeTab !== 'ami'" class="border-2 border-[#232f3e] overflow-hidden bg-white shadow-[20px_20px_0px_rgba(35,47,62,0.05)]">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="bg-[#fafafa] border-b-2 border-[#232f3e]">
@@ -103,6 +108,9 @@ const handleDecommission = async (snap: Snapshot) => {
                                 // STATUS_CODE</th>
                             <th
                                 class="px-8 py-6 text-[10px] font-black text-[#879196] uppercase tracking-widest italic text-right">
+                                // Type</th>
+                            <th
+                                class="px-8 py-6 text-[10px] font-black text-[#879196] uppercase tracking-widest italic text-right">
                                 // ACTIONS</th>
                         </tr>
                     </thead>
@@ -112,19 +120,25 @@ const handleDecommission = async (snap: Snapshot) => {
                             @click="router.push({ name: 'snapshot-details', params: { id: snap.id } })">
                             <td
                                 class="px-8 py-6 text-sm font-black text-blue-600 uppercase border-r-2 border-[#eaeded]">
-                                {{ snap.name || snap.id }}</td>
+                                {{ snap.snapshot_name || snap.id }}</td>
                             <td v-if="activeTab === 'volume'"
                                 class="px-8 py-6 text-sm font-black text-[#232f3e] uppercase border-r-2 border-[#eaeded]">
                                 {{ snap.kind === 'volume' ? snap.volume_id : '' }}</td>
                             <td v-else
                                 class="px-8 py-6 text-sm font-black text-[#232f3e] uppercase border-r-2 border-[#eaeded]">
-                                {{ snap.kind === 'instance' ? snap.instance_id : '' }}</td>
+                                {{ snap.kind === 'instance' ? snap.vm_name : '' }}</td>
                             <td class="px-8 py-6 border-r-2 border-[#eaeded]">
                                 <span class="text-[9px] font-black px-4 py-1 border-2 uppercase tracking-widest"
                                     :class="isHealthyStatus(snap.status) ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-600' : 'bg-blue-500/5 border-blue-500/20 text-blue-600'">
                                     {{ snap.status }}
                                 </span>
                             </td>
+                            <td v-if="activeTab === 'volume'"
+                                class="px-8 py-6 text-sm font-black text-[#232f3e] uppercase border-r-2 border-[#eaeded]">
+                                {{ snap.kind === 'volume' ? 'Volume Snapshot' : '' }}</td>
+                            <td v-else
+                                class="px-8 py-6 text-sm font-black text-[#232f3e] uppercase border-r-2 border-[#eaeded]">
+                                {{ snap.kind === 'instance' ? (snap.disk_only ? 'Disk Only' : 'Full') : '' }}</td>
                             <td class="px-8 py-6 text-right">
                                 <button @click.stop="handleDecommission(snap)"
                                     class="text-[10px] font-black text-rose-600 hover:underline decoration-2 underline-offset-4 uppercase tracking-widest">
@@ -133,10 +147,54 @@ const handleDecommission = async (snap: Snapshot) => {
                             </td>
                         </tr>
                         <tr v-if="filteredSnapshots.length === 0">
-                            <td colspan="4" class="px-8 py-32 text-center">
-                                <p
-                                    class="text-[11px] font-black uppercase tracking-[0.4em] text-[#879196] opacity-30 italic">
+                            <td colspan="5" class="px-8 py-32 text-center">
+                                <p class="text-[11px] font-black uppercase tracking-[0.4em] text-[#879196] opacity-30 italic">
                                     No_{{ activeTab }}_Snapshots_Registry_Empty</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- AMIs Table -->
+            <div v-else class="border-2 border-[#232f3e] overflow-hidden bg-white shadow-[20px_20px_0px_rgba(35,47,62,0.05)]">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-[#fafafa] border-b-2 border-[#232f3e]">
+                            <th class="px-8 py-6 text-[10px] font-black text-[#879196] uppercase tracking-widest italic border-r-2 border-[#eaeded]">
+                                // NAME</th>
+                            <th class="px-8 py-6 text-[10px] font-black text-[#879196] uppercase tracking-widest italic border-r-2 border-[#eaeded]">
+                                // DESCRIPTION</th>
+                            <th class="px-8 py-6 text-[10px] font-black text-[#879196] uppercase tracking-widest italic border-r-2 border-[#eaeded]">
+                                // STATUS</th>
+                            <th class="px-8 py-6 text-[10px] font-black text-[#879196] uppercase tracking-widest italic border-r-2 border-[#eaeded]">
+                                // SOURCE_INSTANCE</th>
+                            <th class="px-8 py-6 text-[10px] font-black text-[#879196] uppercase tracking-widest italic">
+                                // CREATED_AT</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y-2 divide-[#eaeded]">
+                        <tr v-for="ami in amis" :key="ami.id"
+                            class="hover:bg-blue-500/5 transition-colors group">
+                            <td class="px-8 py-6 text-sm font-black text-blue-600 uppercase border-r-2 border-[#eaeded]">
+                                {{ ami.name }}</td>
+                            <td class="px-8 py-6 text-sm text-[#545b64] border-r-2 border-[#eaeded]">
+                                {{ ami.description || '—' }}</td>
+                            <td class="px-8 py-6 border-r-2 border-[#eaeded]">
+                                <span class="text-[9px] font-black px-4 py-1 border-2 uppercase tracking-widest"
+                                    :class="isHealthyStatus(ami.status) ? 'bg-emerald-500/5 border-emerald-500/20 text-emerald-600' : 'bg-blue-500/5 border-blue-500/20 text-blue-600'">
+                                    {{ ami.status || '—' }}
+                                </span>
+                            </td>
+                            <td class="px-8 py-6 text-sm font-black text-[#232f3e] uppercase border-r-2 border-[#eaeded]">
+                                {{ ami.source_instance_id || '—' }}</td>
+                            <td class="px-8 py-6 text-sm text-[#545b64]">
+                                {{ ami.created_at ? new Date(ami.created_at).toLocaleString() : '—' }}</td>
+                        </tr>
+                        <tr v-if="amis.length === 0">
+                            <td colspan="5" class="px-8 py-32 text-center">
+                                <p class="text-[11px] font-black uppercase tracking-[0.4em] text-[#879196] opacity-30 italic">
+                                    No_AMIs_Registry_Empty</p>
                             </td>
                         </tr>
                     </tbody>

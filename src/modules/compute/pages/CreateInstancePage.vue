@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useComputeStore } from '../store/computeStore'
+import apiClient from '@/shared/api/apiClient'
 
 const router = useRouter()
 const computeStore = useComputeStore()
@@ -11,6 +12,7 @@ const selectedInstanceType = ref('t2.micro')
 const selectedKeyPair = ref('None')
 const selectedDistro = ref('ubuntu')
 const selectedVersion = ref('ubuntu-22.04')
+const selectedImageSource = ref<'os' | 'ami'>('os')
 
 const sshKey = 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIAWSD46Vyxczl1G8cSz0Pi5G9UExByRnFMML5QY/lyRK github-actions-prod'
 
@@ -41,28 +43,82 @@ const distroList = [
 const selectDistro = (distroId: string) => {
     const distro = distroList.find(d => d.id === distroId)
     if (!distro || !distro.available) return
+    selectedImageSource.value = 'os'
+    selectedAmiId.value = null
     selectedDistro.value = distroId
     selectedVersion.value = distro.versions[0] || ''
 }
-
 const goBack = () => {
     router.push({ name: 'instances-list' })
 }
 
 const launchInstance = async () => {
     try {
-        await computeStore.launchInstance({
-            image: selectedVersion.value,
+        if (selectedImageSource.value === 'ami' && !selectedAmiIsAvailable.value) {
+            return
+        }
+
+        const base = {
             cpu: 2,
             ram: 2048,
             ssh_key: sshKey,
-            name:instanceName.value
-        })
+            name: instanceName.value,
+        }
+        await computeStore.launchInstance(
+            selectedImageSource.value === 'ami' && selectedAmiId.value
+                ? { ...base, ami_id: selectedAmiId.value }
+                : { ...base, image: selectedVersion.value }
+        )
         router.push({ name: 'instances-list' })
     } catch (error) {
         alert('Failed to launch instance. Please check console.')
     }
 }
+
+
+
+interface AmiSummary {
+    id: string
+    name: string
+    description?: string
+    status?: string
+    source_instance_id?: string
+    created_at?: string
+}
+
+const amis = ref<AmiSummary[]>([])
+const amisLoading = ref(false)
+const selectedAmiId = ref<string | null>(null)
+const amiError = ref('')
+
+const availableAmis = computed(() =>
+    amis.value.filter(ami => (ami.status || '').toLowerCase() === 'available')
+)
+const selectedAmi = computed(() => amis.value.find(a => a.id === selectedAmiId.value) || null)
+const selectedAmiIsAvailable = computed(() =>
+    (selectedAmi.value?.status || '').toLowerCase() === 'available'
+)
+
+const fetchAmis = async () => {
+    amisLoading.value = true
+    amiError.value = ''
+    try {
+        const response = await apiClient.get<{ data?: AmiSummary[] }>('/ec2/instances/ami/images')
+        amis.value = response.data?.data || []
+    } catch (error) {
+        console.error('Failed to fetch AMIs:', error)
+        amiError.value = 'Unable to load custom images. Please retry.'
+    } finally {
+        amisLoading.value = false
+    }
+}
+
+const selectAmi = (id: string) => {
+    selectedAmiId.value = id
+    selectedImageSource.value = 'ami'
+}
+
+onMounted(fetchAmis)
 </script>
 
 <template>
@@ -131,6 +187,26 @@ const launchInstance = async () => {
                         <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tight">Operating_Environment
                         </h3>
 
+                        <div class="flex flex-wrap gap-3">
+                            <button type="button" @click="selectedImageSource = 'os'"
+                                :aria-pressed="selectedImageSource === 'os'"
+                                :class="[
+                                    'px-5 py-3 border-2 text-[10px] font-black uppercase tracking-widest transition-all',
+                                    selectedImageSource === 'os' ? 'border-blue-600 bg-blue-600 text-white' : 'border-[#eaeded] text-[#879196] hover:border-[#232f3e]'
+                                ]">
+                                Operating_System
+                            </button>
+                            <button type="button" @click="selectedImageSource = 'ami'"
+                                :aria-pressed="selectedImageSource === 'ami'"
+                                :class="[
+                                    'px-5 py-3 border-2 text-[10px] font-black uppercase tracking-widest transition-all',
+                                    selectedImageSource === 'ami' ? 'border-blue-600 bg-blue-600 text-white' : 'border-[#eaeded] text-[#879196] hover:border-[#232f3e]'
+                                ]">
+                                Custom_AMI
+                            </button>
+                        </div>
+
+                        <template v-if="selectedImageSource === 'os'">
                         <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
                             <div v-for="distro in distroList" :key="distro.id" @click="selectDistro(distro.id)" :class="[
                                 'p-5 border-2 transition-all flex flex-col items-center gap-4 group relative overflow-hidden',
@@ -185,7 +261,7 @@ const launchInstance = async () => {
                                 </div>
                                 <p class="text-[10px] font-black uppercase tracking-widest text-center"
                                     :class="selectedDistro === distro.id ? 'text-blue-600' : 'text-[#879196]'">{{
-                                    distro.name }}</p>
+                                        distro.name }}</p>
                             </div>
                         </div>
 
@@ -235,8 +311,58 @@ const launchInstance = async () => {
                                 </div>
                             </div>
                         </div>
-                    </section>
+                        </template>
 
+                        <div v-else class="space-y-6">
+                            <div>
+                                <label for="ami-selection"
+                                    class="text-[10px] font-black text-[#879196] uppercase tracking-widest block mb-3 italic">
+                                    // Select_Custom_AMI
+                                </label>
+                                <select id="ami-selection" :value="selectedAmiId || ''"
+                                    :disabled="amisLoading || amis.length === 0"
+                                    @change="selectAmi(($event.target as HTMLSelectElement).value)"
+                                    class="w-full max-w-2xl bg-[#fafafa] border-2 border-[#eaeded] px-6 py-4 text-sm text-[#232f3e] font-bold outline-none appearance-none focus:border-blue-600 transition-all disabled:cursor-not-allowed disabled:opacity-60">
+                                    <option value="" disabled>
+                                        {{ amisLoading ? 'Loading custom images...' : 'Choose a custom image' }}
+                                    </option>
+                                    <option v-for="ami in amis" :key="ami.id" :value="ami.id"
+                                        :disabled="(ami.status || '').toLowerCase() !== 'available'">
+                                        {{ ami.name }} ({{ ami.id }}) — {{ ami.status || 'status unknown' }}
+                                    </option>
+                                </select>
+                            </div>
+
+                            <p v-if="amiError" role="alert"
+                                class="text-[11px] text-red-600 font-bold uppercase tracking-wide">
+                                {{ amiError }}
+                                <button type="button" @click="fetchAmis" class="ml-2 underline">Retry</button>
+                            </p>
+                            <p v-else-if="amisLoading"
+                                class="text-[10px] font-black text-[#879196] uppercase tracking-widest italic">
+                                // Loading_Images...
+                            </p>
+                            <p v-else-if="amis.length === 0"
+                                class="text-[11px] text-[#545b64] font-medium uppercase tracking-wide">
+                                No custom images found for this account.
+                            </p>
+                            <p v-else-if="availableAmis.length === 0"
+                                class="text-[11px] text-[#545b64] font-medium uppercase tracking-wide">
+                                No custom images are ready to launch yet.
+                            </p>
+
+                            <div v-if="selectedAmi" class="p-8 bg-[#fafafa] border-2 border-[#eaeded]">
+                                <h4 class="text-sm font-black text-blue-600 uppercase tracking-tight mb-3">
+                                    {{ selectedAmi.name }}
+                                </h4>
+                                <p v-if="selectedAmi.description"
+                                    class="text-[11px] text-[#545b64] font-medium mb-3">
+                                    {{ selectedAmi.description }}
+                                </p>
+                                <p class="text-[10px] font-mono text-[#879196]">{{ selectedAmi.id }}</p>
+                            </div>
+                        </div>
+                    </section>
                     <!-- Instance Type -->
                     <section class="bg-white border-2 border-[#232f3e] p-10 space-y-8">
                         <h3 class="text-2xl font-black text-[#232f3e] uppercase tracking-tight">Computational_Tier</h3>
@@ -306,16 +432,21 @@ const launchInstance = async () => {
                                 </div>
                                 <div class="space-y-4 pt-4">
                                     <div v-for="item in [
-                                        { label: 'AMI_PROTOCOL', value: selectedVersion.toUpperCase() },
+                                        {
+                                            label: 'AMI_PROTOCOL',
+                                            value: selectedImageSource === 'ami'
+                                                ? (selectedAmi?.name || 'SELECT_AMI')
+                                                : selectedVersion.toUpperCase()
+                                        },
                                         { label: 'TIER_SELECTED', value: selectedInstanceType.toUpperCase() },
                                         { label: 'SECURITY_MESH', value: 'NEW_MESH_PROTOCOL' },
                                         { label: 'BLOCK_STORAGE', value: '8 GiB NVMe' }
                                     ]" :key="item.label" class="flex flex-col">
                                         <span
                                             class="text-[10px] font-black text-[#879196] uppercase tracking-widest mb-1 italic">{{
-                                            item.label }}</span>
+                                                item.label }}</span>
                                         <span class="text-xs font-black text-[#232f3e] tracking-tight">{{ item.value
-                                            }}</span>
+                                        }}</span>
                                     </div>
                                 </div>
                             </div>
@@ -328,7 +459,8 @@ const launchInstance = async () => {
                                     <span class="text-4xl font-black text-[#232f3e] tracking-tighter">$8.35</span>
                                 </div>
                                 <button @click="launchInstance"
-                                    class="w-full py-6 bg-blue-600 text-white text-sm font-black uppercase tracking-[0.3em] hover:bg-[#232f3e] transition-all relative overflow-hidden group">
+                                    :disabled="selectedImageSource === 'ami' && !selectedAmiIsAvailable"
+                                    class="w-full py-6 bg-blue-600 text-white text-sm font-black uppercase tracking-[0.3em] hover:bg-[#232f3e] transition-all relative overflow-hidden group disabled:cursor-not-allowed disabled:opacity-50">
                                     <span class="relative z-10">Initialize_Deploy</span>
                                     <div
                                         class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300">

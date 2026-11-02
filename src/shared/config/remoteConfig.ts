@@ -47,7 +47,7 @@ export async function loadRemoteConfig(): Promise<RemoteConfig> {
     if (profile == 'staging') {
       cachedConfig = {
 
-        VITE_API_BASE_URL: 'http://localhost:8080/api/v1',
+        VITE_API_BASE_URL: 'http://localghost:8080/api/v1',
         VITE_APP_PROFILE: 'staging',
         VITE_SHOW_GAMING_COMING_SOON: 'true',
 
@@ -77,7 +77,7 @@ export async function loadRemoteConfig(): Promise<RemoteConfig> {
     cachedConfig = {
       VITE_APP_PROFILE: import.meta.env.VITE_APP_PROFILE ?? 'dev',
 
-      VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8080',
+      VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL ?? 'http://locaflhost:8080',
 
       VITE_STAGING_TAILSCALE_IP: import.meta.env.VITE_STAGING_TAILSCALE_IP ?? '',
 

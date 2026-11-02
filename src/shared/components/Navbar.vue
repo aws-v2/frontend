@@ -1,13 +1,21 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import { useNotificationStore } from '@/modules/notifications/store/notificationStore'
 import { useRouter, useRoute } from 'vue-router'
 
 const authStore = useAuthStore()
+const notifications = useNotificationStore()
 const router = useRouter()
 const route = useRoute()
 
 const isMenuOpen = ref(false)
+
+watch(
+    () => authStore.isAuthenticated,
+    (loggedIn) => (loggedIn ? notifications.connect() : notifications.disconnect()),
+    { immediate: true }
+)
 
 // Determine the current vertical based on the route
 const currentVertical = computed(() => {
@@ -18,6 +26,7 @@ const currentVertical = computed(() => {
 const isLandingPage = computed(() => route.path === '/')
 
 const handleLogout = () => {
+    notifications.disconnect()
     authStore.logout()
     router.push('/login')
 }
@@ -94,6 +103,23 @@ const isDarkMode = computed(() => !!route.meta.isDarkNavbar)
                 <div class="flex items-center gap-6">
                     <div v-if="authStore.isAuthenticated" class="flex items-center gap-6">
 
+                        <!-- Notifications Bell -->
+                        <router-link to="/notifications" id="go_to_notifications" aria-label="Notifications"
+                            class="relative p-2 transition-all"
+                            :class="isDarkMode
+                                ? 'bg-white/5 border border-white/10 text-slate-400 hover:text-white hover:border-white/20'
+                                : 'bg-[#fafafa] border border-[#eaeded] text-[#545b64] hover:text-[#232f3e] hover:border-[#232f3e]'">
+                            <svg class="w-5 h-5" :class="notifications.activeCount ? 'animate-pulse' : ''" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                            </svg>
+                            <span v-if="notifications.unreadCount"
+                                class="absolute -top-1.5 -right-1.5 min-w-[18px] h-[18px] px-1 flex items-center justify-center bg-[#ff9900] text-[#232f3e] text-[10px] font-black">
+                                {{ notifications.unreadCount > 99 ? '99+' : notifications.unreadCount }}
+                            </span>
+                        </router-link>
+
                         <!-- Console Button -->
                         <router-link to="/dashboard" id="consle_btn"
                             class="hidden md:flex items-center px-4 py-2 bg-[#ff9900] text-[#232f3e] text-[10px] font-black uppercase tracking-[0.2em] hover:bg-[#232f3e] hover:text-[#ff9900] transition-all border-b-2 border-transparent">
@@ -148,6 +174,15 @@ const isDarkMode = computed(() => !!route.meta.isDarkNavbar)
                                                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                                         </svg>
                                         Account
+                                    </router-link>
+                                    <router-link to="/admin"
+                                    id="go_to_admin"
+                                        class="flex items-center gap-3 px-4 py-3 hover:bg-[#fafafa] text-xs font-black uppercase tracking-widest text-[#545b64] hover:text-[#232f3e] transition-colors">
+                                        <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5"
+                                                d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                                        </svg>
+                                        Admin Panel
                                     </router-link>
                                     <router-link to="/settings"
                                     id="go_to_setting"

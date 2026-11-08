@@ -77,7 +77,7 @@ jobs:
               --network aws-staging-network \
               -e VITE_API_BASE_URL=http://localhost:8080 \
               -e VITE_APP_PROFILE=staging \
-              -e API_GATEWAY_HOST=api-gateway-staging \
+              -e API_GATEWAY_HOST=staging-api-gateway \
               -p 5173:80 \
               qarani/frontend-server:staging-${{github.sha}}
 

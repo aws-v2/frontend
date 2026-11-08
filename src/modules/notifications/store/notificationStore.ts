@@ -1,5 +1,6 @@
 import { reactive } from 'vue'
 import { useAuthStore } from '@/modules/auth/store/authStore'
+import { getRemoteConfig } from '@/shared/config/remoteConfig'
 
 export type NotificationStatus = 'running' | 'completed' | 'failed' | 'info'
 
@@ -64,7 +65,10 @@ function connect() {
   if (eventSource) return
 
   const auth = useAuthStore()
-  const url = new URL(STREAM_PATH, import.meta.env.VITE_API_URL || window.location.origin)
+      const config = getRemoteConfig() ??{ }
+  
+  const baseUrl = config.VITE_API_BASE_URL
+  const url = new URL(STREAM_PATH, baseUrl || window.location.origin)
   if (auth.token) url.searchParams.set('token', auth.token)
 
   eventSource = new EventSource(url.toString())
